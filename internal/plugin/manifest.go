@@ -42,6 +42,7 @@ type Spec struct {
 	ConfigSchema   map[string]any `yaml:"configSchema,omitempty"`
 	Permissions    Permissions    `yaml:"permissions"`
 	HealthCheck    *HealthCheck   `yaml:"healthCheck,omitempty"`
+	RestartPolicy  *RestartPolicy `yaml:"restartPolicy,omitempty"`
 }
 
 type Entrypoint struct {
@@ -69,6 +70,15 @@ type FilesystemPermission struct {
 type HealthCheck struct {
 	IntervalSeconds int `yaml:"intervalSeconds"`
 	TimeoutSeconds  int `yaml:"timeoutSeconds"`
+}
+
+// RestartPolicy controls automatic recovery after an unexpected plugin failure.
+// A plugin is restarted at most MaxAttempts times inside WindowSeconds.
+type RestartPolicy struct {
+	Enabled       bool `yaml:"enabled"`
+	MaxAttempts   int  `yaml:"maxAttempts,omitempty"`
+	WindowSeconds int  `yaml:"windowSeconds,omitempty"`
+	BackoffMillis int  `yaml:"backoffMillis,omitempty"`
 }
 
 // ParseManifest parses and validates a plugin manifest.
@@ -164,6 +174,17 @@ func (m Manifest) Validate() error {
 	if m.Spec.Entrypoint.Type == "container" && !m.Spec.Permissions.Network.Enabled {
 		if !strings.HasPrefix(m.Spec.Entrypoint.GRPCAddress, "unix://") || !strings.HasPrefix(m.Spec.Entrypoint.ContainerGRPCAddress, "unix://") {
 			return fmt.Errorf("network-disabled container plugins require unix:// gRPC addresses")
+		}
+	}
+	if policy := m.Spec.RestartPolicy; policy != nil && policy.Enabled {
+		if policy.MaxAttempts <= 0 || policy.MaxAttempts > 10 {
+			return fmt.Errorf("restart policy maxAttempts must be between 1 and 10")
+		}
+		if policy.WindowSeconds <= 0 || policy.WindowSeconds > 3600 {
+			return fmt.Errorf("restart policy windowSeconds must be between 1 and 3600")
+		}
+		if policy.BackoffMillis < 0 || policy.BackoffMillis > 60000 {
+			return fmt.Errorf("restart policy backoffMillis must be between 0 and 60000")
 		}
 	}
 	return nil

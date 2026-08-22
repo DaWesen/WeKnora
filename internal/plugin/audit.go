@@ -27,6 +27,8 @@ const (
 	AuditActionPluginHealthFailed  = "plugin.health_failed"
 	AuditActionPluginIdentityFail  = "plugin.identity_failed"
 	AuditActionPluginNetworkDenied = "plugin.network_denied"
+	AuditActionPluginRestarted     = "plugin.restarted"
+	AuditActionPluginRestartDenied = "plugin.restart_denied"
 )
 
 const defaultAuditEventLimit = 512

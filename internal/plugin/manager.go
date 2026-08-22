@@ -33,6 +33,12 @@ type Plugin struct {
 	DiscoveredAt time.Time
 }
 
+type restartState struct {
+	attempts []time.Time
+}
+
+const defaultRestartBackoff = 250 * time.Millisecond
+
 // CheckHealth invokes the lifecycle health check of a plugin already started by
 // its runtime. Process and container startup is deliberately kept separate from
 // the protocol client.
@@ -48,19 +54,21 @@ func (m *Manager) CheckHealth(ctx context.Context, id, address string, timeout t
 // Manager discovers manifests and maintains the plugin registry. Runtime launch
 // is intentionally deferred to the next phase, after the gRPC plugin protocol is added.
 type Manager struct {
-	root    string
-	runtime *Runtime
-	audit   *AuditLog
-	mu      sync.RWMutex
-	byID    map[string]*Plugin
+	root     string
+	runtime  *Runtime
+	audit    *AuditLog
+	mu       sync.RWMutex
+	byID     map[string]*Plugin
+	restarts map[string]*restartState
 }
 
 func NewManager(root string) *Manager {
 	return &Manager{
-		root:    root,
-		runtime: NewRuntime(),
-		audit:   NewAuditLog(0),
-		byID:    make(map[string]*Plugin),
+		root:     root,
+		runtime:  NewRuntime(),
+		audit:    NewAuditLog(0),
+		byID:     make(map[string]*Plugin),
+		restarts: make(map[string]*restartState),
 	}
 }
 
@@ -157,6 +165,75 @@ func validatePluginInfo(manifest Manifest, id, version string, extensionTypes []
 		}
 	}
 	return fmt.Errorf("plugin does not provide declared extension type %q", manifest.Spec.ExtensionType)
+}
+
+// Restart restarts a failed plugin while enforcing its manifest recovery budget.
+// The caller supplies the same configuration used to launch the failing runtime.
+func (m *Manager) Restart(ctx context.Context, id string, config map[string]string) error {
+	plugin, ok := m.Get(id)
+	if !ok {
+		return fs.ErrNotExist
+	}
+	policy := plugin.Manifest.Spec.RestartPolicy
+	if policy == nil || !policy.Enabled {
+		err := fmt.Errorf("automatic restart is disabled for plugin %q", id)
+		m.recordAudit(id, AuditActionPluginRestartDenied, "denied", "", err.Error(), nil)
+		return err
+	}
+	attempt, err := m.reserveRestartAttempt(id, *policy, time.Now().UTC())
+	if err != nil {
+		m.recordAudit(id, AuditActionPluginRestartDenied, "denied", "", err.Error(), nil)
+		return err
+	}
+
+	if err := m.runtime.Stop(ctx, id); err != nil {
+		m.recordAudit(id, AuditActionPluginStopFailed, "failed", "", err.Error(), map[string]string{"stage": "restart"})
+		return err
+	}
+	backoff := restartBackoff(*policy)
+	if backoff > 0 {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(backoff):
+		}
+	}
+	if err := m.StartWithConfig(ctx, id, config); err != nil {
+		return err
+	}
+	m.recordAudit(id, AuditActionPluginRestarted, "success", "", "plugin restarted", map[string]string{"attempt": fmt.Sprintf("%d", attempt)})
+	return nil
+}
+
+func (m *Manager) reserveRestartAttempt(id string, policy RestartPolicy, now time.Time) (int, error) {
+	windowStart := now.Add(-time.Duration(policy.WindowSeconds) * time.Second)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	state := m.restarts[id]
+	if state == nil {
+		state = &restartState{}
+		m.restarts[id] = state
+	}
+	active := state.attempts[:0]
+	for _, attemptedAt := range state.attempts {
+		if !attemptedAt.Before(windowStart) {
+			active = append(active, attemptedAt)
+		}
+	}
+	if len(active) >= policy.MaxAttempts {
+		state.attempts = active
+		return 0, fmt.Errorf("restart budget exhausted: %d attempts within %ds", policy.MaxAttempts, policy.WindowSeconds)
+	}
+	state.attempts = append(active, now)
+	return len(state.attempts), nil
+}
+
+func restartBackoff(policy RestartPolicy) time.Duration {
+	if policy.BackoffMillis > 0 {
+		return time.Duration(policy.BackoffMillis) * time.Millisecond
+	}
+	return defaultRestartBackoff
 }
 
 func (m *Manager) Stop(ctx context.Context, id string) error {
