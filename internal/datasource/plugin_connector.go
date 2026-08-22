@@ -29,7 +29,8 @@ func NewPluginConnector(manager *plugin.Manager, pluginID string) *PluginConnect
 func (c *PluginConnector) Type() string { return c.pluginID }
 
 func (c *PluginConnector) Validate(ctx context.Context, config *types.DataSourceConfig) error {
-	if err := c.manager.Start(ctx, c.pluginID); err != nil {
+	configValues := pluginConfig(config)
+	if err := c.manager.StartWithConfig(ctx, c.pluginID, configValues); err != nil {
 		return err
 	}
 	client, err := c.manager.Connect(ctx, c.pluginID)
@@ -65,7 +66,8 @@ func (c *PluginConnector) FetchIncremental(context.Context, *types.DataSourceCon
 }
 
 func (c *PluginConnector) FetchStream(ctx context.Context, config *types.DataSourceConfig, cursor *types.SyncCursor, handler StreamHandler) (*types.SyncCursor, error) {
-	if err := c.manager.Start(ctx, c.pluginID); err != nil {
+	configValues := pluginConfig(config)
+	if err := c.manager.StartWithConfig(ctx, c.pluginID, configValues); err != nil {
 		return nil, err
 	}
 	client, err := c.manager.Connect(ctx, c.pluginID)

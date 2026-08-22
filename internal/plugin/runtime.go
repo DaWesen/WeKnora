@@ -29,7 +29,7 @@ func NewRuntime() *Runtime {
 	return &Runtime{started: make(map[string]*startedPlugin)}
 }
 
-func (r *Runtime) Start(ctx context.Context, plugin Plugin) error {
+func (r *Runtime) Start(ctx context.Context, plugin Plugin, config map[string]string) error {
 	r.mu.Lock()
 	if _, exists := r.started[plugin.Manifest.Metadata.ID]; exists {
 		r.mu.Unlock()
@@ -43,7 +43,7 @@ func (r *Runtime) Start(ctx context.Context, plugin Plugin) error {
 	case "process":
 		started, err = startProcess(ctx, plugin)
 	case "container":
-		started, err = startContainer(ctx, plugin)
+		started, err = startContainer(ctx, plugin, config)
 	default:
 		err = fmt.Errorf("unsupported plugin runtime %q", plugin.Manifest.Spec.Entrypoint.Type)
 	}
@@ -111,7 +111,7 @@ func startProcess(ctx context.Context, plugin Plugin) (*startedPlugin, error) {
 	return &startedPlugin{command: cmd}, nil
 }
 
-func startContainer(ctx context.Context, plugin Plugin) (*startedPlugin, error) {
+func startContainer(ctx context.Context, plugin Plugin, config map[string]string) (*startedPlugin, error) {
 	entrypoint := plugin.Manifest.Spec.Entrypoint
 	name := "weknora-plugin-" + sanitizeContainerName(plugin.Manifest.Metadata.ID)
 	args := []string{"run", "-d", "--rm", "--name", name, "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--read-only", "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m"}
@@ -130,7 +130,11 @@ func startContainer(ctx context.Context, plugin Plugin) (*startedPlugin, error) 
 		args = append(args, "--network", "none", "--mount", fmt.Sprintf("type=bind,src=%s,dst=%s", socketDir, containerSocketDir))
 	}
 	for _, path := range plugin.Manifest.Spec.Permissions.Filesystem.ReadOnly {
-		args = append(args, "--mount", fmt.Sprintf("type=bind,src=%s,dst=%s,readonly", path, path))
+		resolvedPath, err := resolveReadOnlyPath(path, config)
+		if err != nil {
+			return nil, fmt.Errorf("resolve plugin filesystem permission: %w", err)
+		}
+		args = append(args, "--mount", fmt.Sprintf("type=bind,src=%s,dst=%s,readonly", resolvedPath, resolvedPath))
 	}
 	grpcAddress := entrypoint.GRPCAddress
 	if entrypoint.ContainerGRPCAddress != "" {
@@ -143,6 +147,21 @@ func startContainer(ctx context.Context, plugin Plugin) (*startedPlugin, error) 
 		return nil, fmt.Errorf("start plugin container %q: %w: %s", plugin.Manifest.Metadata.ID, err, strings.TrimSpace(string(output)))
 	}
 	return &startedPlugin{containerName: name}, nil
+}
+
+func resolveReadOnlyPath(permission string, config map[string]string) (string, error) {
+	if !strings.HasPrefix(permission, "${config.") || !strings.HasSuffix(permission, "}") {
+		return permission, nil
+	}
+	key := strings.TrimSuffix(strings.TrimPrefix(permission, "${config."), "}")
+	path := strings.TrimSpace(config[key])
+	if path == "" {
+		return "", fmt.Errorf("required config value %q is empty", key)
+	}
+	if !filepath.IsAbs(path) {
+		return "", fmt.Errorf("config value %q must be an absolute path", key)
+	}
+	return filepath.Clean(path), nil
 }
 
 func sanitizeContainerName(id string) string {

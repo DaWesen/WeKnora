@@ -56,13 +56,19 @@ func NewManager(root string) *Manager {
 	return &Manager{root: root, runtime: NewRuntime(), byID: make(map[string]*Plugin)}
 }
 
-// Start launches a discovered plugin and verifies its gRPC lifecycle endpoint.
+// Start launches a discovered plugin without runtime configuration.
 func (m *Manager) Start(ctx context.Context, id string) error {
+	return m.StartWithConfig(ctx, id, nil)
+}
+
+// StartWithConfig launches a discovered plugin and resolves configuration-backed
+// filesystem permissions before verifying its gRPC lifecycle endpoint.
+func (m *Manager) StartWithConfig(ctx context.Context, id string, config map[string]string) error {
 	plugin, ok := m.Get(id)
 	if !ok {
 		return fs.ErrNotExist
 	}
-	if err := m.runtime.Start(ctx, *plugin); err != nil {
+	if err := m.runtime.Start(ctx, *plugin, config); err != nil {
 		_ = m.SetStatus(id, StatusFailed, err)
 		return err
 	}

@@ -17,6 +17,7 @@ spec:
     network:
       enabled: false
     filesystem:
-      readOnly: []
+      readOnly:
+        - "${config.rootPath}"
   healthCheck:
     timeoutSeconds: 5
