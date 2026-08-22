@@ -1,0 +1,114 @@
+syntax = "proto3";
+
+package weknora.plugin.v1;
+
+option go_package = "github.com/Tencent/WeKnora/internal/plugin/proto";
+
+service PluginLifecycle {
+  rpc GetInfo(GetInfoRequest) returns (PluginInfo);
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+  rpc ValidateConfig(ValidateConfigRequest) returns (ValidateConfigResponse);
+  rpc Shutdown(ShutdownRequest) returns (ShutdownResponse);
+}
+
+service DataSourcePlugin {
+  rpc ValidateCredentials(ValidateCredentialsRequest) returns (ValidateCredentialsResponse);
+  rpc Sync(SyncRequest) returns (stream SyncEvent);
+}
+
+message GetInfoRequest {}
+
+message PluginInfo {
+  string id = 1;
+  string version = 2;
+  repeated string extension_types = 3;
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_SERVING = 1;
+    STATUS_NOT_SERVING = 2;
+  }
+
+  Status status = 1;
+  string message = 2;
+}
+
+message ValidateConfigRequest {
+  map<string, string> config = 1;
+}
+
+message ValidateConfigResponse {
+  bool valid = 1;
+  repeated FieldError errors = 2;
+}
+
+message FieldError {
+  string field = 1;
+  string message = 2;
+}
+
+message ShutdownRequest {}
+message ShutdownResponse {}
+
+message ValidateCredentialsRequest {
+  map<string, string> config = 1;
+}
+
+message ValidateCredentialsResponse {
+  bool valid = 1;
+  string message = 2;
+}
+
+message SyncRequest {
+  string datasource_id = 1;
+  map<string, string> config = 2;
+  string cursor = 3;
+}
+
+message SyncEvent {
+  oneof payload {
+    UpsertDocument upsert_document = 1;
+    DeleteDocument delete_document = 2;
+    Progress progress = 3;
+    Checkpoint checkpoint = 4;
+    SyncError error = 5;
+    Completed completed = 6;
+  }
+}
+
+message UpsertDocument {
+  string source_id = 1;
+  string name = 2;
+  bytes content = 3;
+  string content_type = 4;
+  map<string, string> metadata = 5;
+  string updated_at = 6;
+}
+
+message DeleteDocument {
+  string source_id = 1;
+}
+
+message Progress {
+  uint64 completed = 1;
+  uint64 total = 2;
+  string message = 3;
+}
+
+message Checkpoint {
+  string cursor = 1;
+}
+
+message SyncError {
+  string source_id = 1;
+  string message = 2;
+  bool retryable = 3;
+}
+
+message Completed {
+  string cursor = 1;
+}
