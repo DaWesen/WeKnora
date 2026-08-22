@@ -81,7 +81,19 @@ func (m *Manager) Stop(ctx context.Context, id string) error {
 }
 
 func (m *Manager) StopAll(ctx context.Context) error {
-	return m.runtime.StopAll(ctx)
+	if err := m.runtime.StopAll(ctx); err != nil {
+		return err
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for _, plugin := range m.byID {
+		if plugin.Status == StatusRunning || plugin.Status == StatusFailed {
+			plugin.Status = StatusDisabled
+			plugin.LastError = ""
+		}
+	}
+	return nil
 }
 
 // Connect dials a discovered plugin's declared gRPC endpoint. Callers should

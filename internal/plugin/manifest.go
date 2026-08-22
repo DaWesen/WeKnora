@@ -45,10 +45,11 @@ type Spec struct {
 }
 
 type Entrypoint struct {
-	Type        string   `yaml:"type"`
-	Command     []string `yaml:"command,omitempty"`
-	Image       string   `yaml:"image,omitempty"`
-	GRPCAddress string   `yaml:"grpcAddress"`
+	Type                 string   `yaml:"type"`
+	Command              []string `yaml:"command,omitempty"`
+	Image                string   `yaml:"image,omitempty"`
+	GRPCAddress          string   `yaml:"grpcAddress"`
+	ContainerGRPCAddress string   `yaml:"containerGrpcAddress,omitempty"`
 }
 
 type Permissions struct {
@@ -112,6 +113,9 @@ func (m Manifest) Validate() error {
 	}
 	if m.Spec.Entrypoint.Type == "container" && strings.TrimSpace(m.Spec.Entrypoint.Image) == "" {
 		return fmt.Errorf("container plugin entrypoint image is required")
+	}
+	if m.Spec.Entrypoint.Type == "container" && strings.TrimSpace(m.Spec.Entrypoint.ContainerGRPCAddress) != "" && !strings.HasPrefix(m.Spec.Entrypoint.ContainerGRPCAddress, "unix://") {
+		return fmt.Errorf("container gRPC address must use unix://")
 	}
 	if !m.Spec.Permissions.Network.Enabled && len(m.Spec.Permissions.Network.Hosts) > 0 {
 		return fmt.Errorf("network hosts require network permission")

@@ -343,9 +343,10 @@ func BuildContainer(container *dig.Container) *dig.Container {
 	// Chat pipeline components for processing chat requests
 	logger.Debugf(ctx, "[Container] Registering chat pipeline plugins...")
 
-	// Plugin framework discovers external manifests. Runtime launch and gRPC
-	// dispatch are introduced after the plugin protocol is finalized.
+	// Plugin framework discovers external manifests and ensures child plugin
+	// runtimes are terminated during graceful shutdown.
 	must(container.Provide(initPluginManager))
+	must(container.Invoke(registerPluginCleanup))
 
 	// Data source sync framework
 	logger.Debugf(ctx, "[Container] Registering data source sync framework...")
@@ -1653,6 +1654,12 @@ func initPluginManager() (*plugin.Manager, error) {
 	}
 	logger.Infof(context.Background(), "[Container] discovered %d external plugins", len(manager.List("")))
 	return manager, nil
+}
+
+func registerPluginCleanup(manager *plugin.Manager, cleaner interfaces.ResourceCleaner) {
+	cleaner.RegisterWithName("PluginRuntime", func() error {
+		return manager.StopAll(context.Background())
+	})
 }
 
 // initConnectorRegistry creates and populates the connector registry with all available connectors.

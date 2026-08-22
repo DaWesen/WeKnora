@@ -1,0 +1,22 @@
+apiVersion: weknora.plugin/v1
+kind: Plugin
+metadata:
+  id: com.weknora.local-files
+  name: Local Files
+  version: 0.1.0
+  description: Sync markdown and text files from an explicitly configured directory.
+spec:
+  extensionType: datasource
+  weknoraVersion: ">=0.1.0"
+  entrypoint:
+    type: container
+    image: weknora/local-files-plugin:0.1.0
+    grpcAddress: unix:///var/lib/weknora/plugins/local-files/plugin.sock
+    containerGrpcAddress: unix:///run/weknora/plugin.sock
+  permissions:
+    network:
+      enabled: false
+    filesystem:
+      readOnly: []
+  healthCheck:
+    timeoutSeconds: 5

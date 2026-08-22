@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -134,12 +135,29 @@ func contentType(path string) string {
 	return "text/plain"
 }
 
+func listen(address string) (net.Listener, error) {
+	if !strings.HasPrefix(address, "unix://") {
+		return net.Listen("tcp", address)
+	}
+	if runtime.GOOS == "windows" {
+		return nil, fmt.Errorf("unix socket plugin endpoints are not supported on Windows")
+	}
+	socketPath := strings.TrimPrefix(address, "unix://")
+	if err := os.MkdirAll(filepath.Dir(socketPath), 0o755); err != nil {
+		return nil, err
+	}
+	if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+	return net.Listen("unix", socketPath)
+}
+
 func main() {
 	address := os.Getenv("WEKNORA_PLUGIN_GRPC_ADDRESS")
 	if address == "" {
 		address = "127.0.0.1:50071"
 	}
-	listener, err := net.Listen("tcp", address)
+	listener, err := listen(address)
 	if err != nil {
 		panic(fmt.Errorf("listen plugin gRPC: %w", err))
 	}

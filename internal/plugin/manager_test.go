@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -38,6 +39,26 @@ spec:
 	require.Len(t, plugins, 1)
 	require.Equal(t, "com.example.local-files", plugins[0].Manifest.Metadata.ID)
 	require.Equal(t, StatusDiscovered, plugins[0].Status)
+}
+
+func TestStopAllMarksRunningPluginsDisabled(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	manager.byID["running"] = &Plugin{Status: StatusRunning}
+	manager.byID["failed"] = &Plugin{Status: StatusFailed, LastError: "health check failed"}
+	manager.byID["discovered"] = &Plugin{Status: StatusDiscovered}
+
+	require.NoError(t, manager.StopAll(context.Background()))
+
+	running, ok := manager.Get("running")
+	require.True(t, ok)
+	require.Equal(t, StatusDisabled, running.Status)
+	require.Empty(t, running.LastError)
+	failed, ok := manager.Get("failed")
+	require.True(t, ok)
+	require.Equal(t, StatusDisabled, failed.Status)
+	discovered, ok := manager.Get("discovered")
+	require.True(t, ok)
+	require.Equal(t, StatusDiscovered, discovered.Status)
 }
 
 func TestParseManifestRejectsNetworkHostsWithoutNetworkPermission(t *testing.T) {

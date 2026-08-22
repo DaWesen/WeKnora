@@ -123,12 +123,20 @@ func startContainer(ctx context.Context, plugin Plugin) (*startedPlugin, error) 
 		if err := os.MkdirAll(socketDir, 0o755); err != nil {
 			return nil, fmt.Errorf("create plugin socket directory: %w", err)
 		}
-		args = append(args, "--network", "none", "--mount", fmt.Sprintf("type=bind,src=%s,dst=%s", socketDir, socketDir))
+		containerSocketDir := socketDir
+		if entrypoint.ContainerGRPCAddress != "" {
+			containerSocketDir = filepath.Dir(strings.TrimPrefix(entrypoint.ContainerGRPCAddress, "unix://"))
+		}
+		args = append(args, "--network", "none", "--mount", fmt.Sprintf("type=bind,src=%s,dst=%s", socketDir, containerSocketDir))
 	}
 	for _, path := range plugin.Manifest.Spec.Permissions.Filesystem.ReadOnly {
 		args = append(args, "--mount", fmt.Sprintf("type=bind,src=%s,dst=%s,readonly", path, path))
 	}
-	args = append(args, "-e", "WEKNORA_PLUGIN_GRPC_ADDRESS="+entrypoint.GRPCAddress, entrypoint.Image)
+	grpcAddress := entrypoint.GRPCAddress
+	if entrypoint.ContainerGRPCAddress != "" {
+		grpcAddress = entrypoint.ContainerGRPCAddress
+	}
+	args = append(args, "-e", "WEKNORA_PLUGIN_GRPC_ADDRESS="+grpcAddress, entrypoint.Image)
 	args = append(args, entrypoint.Command...)
 	output, err := exec.CommandContext(ctx, "docker", args...).CombinedOutput()
 	if err != nil {
