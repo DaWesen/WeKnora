@@ -21,6 +21,52 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type SyncErrorCode int32
+
+const (
+	SyncErrorCode_SYNC_ERROR_CODE_UNSPECIFIED            SyncErrorCode = 0
+	SyncErrorCode_SYNC_ERROR_CODE_SECURITY_POLICY_DENIED SyncErrorCode = 1
+)
+
+// Enum value maps for SyncErrorCode.
+var (
+	SyncErrorCode_name = map[int32]string{
+		0: "SYNC_ERROR_CODE_UNSPECIFIED",
+		1: "SYNC_ERROR_CODE_SECURITY_POLICY_DENIED",
+	}
+	SyncErrorCode_value = map[string]int32{
+		"SYNC_ERROR_CODE_UNSPECIFIED":            0,
+		"SYNC_ERROR_CODE_SECURITY_POLICY_DENIED": 1,
+	}
+)
+
+func (x SyncErrorCode) Enum() *SyncErrorCode {
+	p := new(SyncErrorCode)
+	*p = x
+	return p
+}
+
+func (x SyncErrorCode) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SyncErrorCode) Descriptor() protoreflect.EnumDescriptor {
+	return file_internal_plugin_proto_plugin_proto_enumTypes[0].Descriptor()
+}
+
+func (SyncErrorCode) Type() protoreflect.EnumType {
+	return &file_internal_plugin_proto_plugin_proto_enumTypes[0]
+}
+
+func (x SyncErrorCode) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SyncErrorCode.Descriptor instead.
+func (SyncErrorCode) EnumDescriptor() ([]byte, []int) {
+	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{0}
+}
+
 type HealthCheckResponse_Status int32
 
 const (
@@ -54,11 +100,11 @@ func (x HealthCheckResponse_Status) String() string {
 }
 
 func (HealthCheckResponse_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_internal_plugin_proto_plugin_proto_enumTypes[0].Descriptor()
+	return file_internal_plugin_proto_plugin_proto_enumTypes[1].Descriptor()
 }
 
 func (HealthCheckResponse_Status) Type() protoreflect.EnumType {
-	return &file_internal_plugin_proto_plugin_proto_enumTypes[0]
+	return &file_internal_plugin_proto_plugin_proto_enumTypes[1]
 }
 
 func (x HealthCheckResponse_Status) Number() protoreflect.EnumNumber {
@@ -1013,6 +1059,8 @@ type SyncError struct {
 	SourceId      string                 `protobuf:"bytes,1,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
 	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
 	Retryable     bool                   `protobuf:"varint,3,opt,name=retryable,proto3" json:"retryable,omitempty"`
+	Code          SyncErrorCode          `protobuf:"varint,4,opt,name=code,proto3,enum=weknora.plugin.v1.SyncErrorCode" json:"code,omitempty"`
+	Target        string                 `protobuf:"bytes,5,opt,name=target,proto3" json:"target,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1066,6 +1114,20 @@ func (x *SyncError) GetRetryable() bool {
 		return x.Retryable
 	}
 	return false
+}
+
+func (x *SyncError) GetCode() SyncErrorCode {
+	if x != nil {
+		return x.Code
+	}
+	return SyncErrorCode_SYNC_ERROR_CODE_UNSPECIFIED
+}
+
+func (x *SyncError) GetTarget() string {
+	if x != nil {
+		return x.Target
+	}
+	return ""
 }
 
 type Completed struct {
@@ -1189,13 +1251,18 @@ const file_internal_plugin_proto_plugin_proto_rawDesc = "" +
 	"\amessage\x18\x03 \x01(\tR\amessage\"$\n" +
 	"\n" +
 	"Checkpoint\x12\x16\n" +
-	"\x06cursor\x18\x01 \x01(\tR\x06cursor\"`\n" +
+	"\x06cursor\x18\x01 \x01(\tR\x06cursor\"\xae\x01\n" +
 	"\tSyncError\x12\x1b\n" +
 	"\tsource_id\x18\x01 \x01(\tR\bsourceId\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1c\n" +
-	"\tretryable\x18\x03 \x01(\bR\tretryable\"#\n" +
+	"\tretryable\x18\x03 \x01(\bR\tretryable\x124\n" +
+	"\x04code\x18\x04 \x01(\x0e2 .weknora.plugin.v1.SyncErrorCodeR\x04code\x12\x16\n" +
+	"\x06target\x18\x05 \x01(\tR\x06target\"#\n" +
 	"\tCompleted\x12\x16\n" +
-	"\x06cursor\x18\x01 \x01(\tR\x06cursor2\xf8\x02\n" +
+	"\x06cursor\x18\x01 \x01(\tR\x06cursor*\\\n" +
+	"\rSyncErrorCode\x12\x1f\n" +
+	"\x1bSYNC_ERROR_CODE_UNSPECIFIED\x10\x00\x12*\n" +
+	"&SYNC_ERROR_CODE_SECURITY_POLICY_DENIED\x10\x012\xf8\x02\n" +
 	"\x0fPluginLifecycle\x12K\n" +
 	"\aGetInfo\x12!.weknora.plugin.v1.GetInfoRequest\x1a\x1d.weknora.plugin.v1.PluginInfo\x12\\\n" +
 	"\vHealthCheck\x12%.weknora.plugin.v1.HealthCheckRequest\x1a&.weknora.plugin.v1.HealthCheckResponse\x12e\n" +
@@ -1217,64 +1284,66 @@ func file_internal_plugin_proto_plugin_proto_rawDescGZIP() []byte {
 	return file_internal_plugin_proto_plugin_proto_rawDescData
 }
 
-var file_internal_plugin_proto_plugin_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_internal_plugin_proto_plugin_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_internal_plugin_proto_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_internal_plugin_proto_plugin_proto_goTypes = []any{
-	(HealthCheckResponse_Status)(0),     // 0: weknora.plugin.v1.HealthCheckResponse.Status
-	(*GetInfoRequest)(nil),              // 1: weknora.plugin.v1.GetInfoRequest
-	(*PluginInfo)(nil),                  // 2: weknora.plugin.v1.PluginInfo
-	(*HealthCheckRequest)(nil),          // 3: weknora.plugin.v1.HealthCheckRequest
-	(*HealthCheckResponse)(nil),         // 4: weknora.plugin.v1.HealthCheckResponse
-	(*ValidateConfigRequest)(nil),       // 5: weknora.plugin.v1.ValidateConfigRequest
-	(*ValidateConfigResponse)(nil),      // 6: weknora.plugin.v1.ValidateConfigResponse
-	(*FieldError)(nil),                  // 7: weknora.plugin.v1.FieldError
-	(*ShutdownRequest)(nil),             // 8: weknora.plugin.v1.ShutdownRequest
-	(*ShutdownResponse)(nil),            // 9: weknora.plugin.v1.ShutdownResponse
-	(*ValidateCredentialsRequest)(nil),  // 10: weknora.plugin.v1.ValidateCredentialsRequest
-	(*ValidateCredentialsResponse)(nil), // 11: weknora.plugin.v1.ValidateCredentialsResponse
-	(*SyncRequest)(nil),                 // 12: weknora.plugin.v1.SyncRequest
-	(*SyncEvent)(nil),                   // 13: weknora.plugin.v1.SyncEvent
-	(*UpsertDocument)(nil),              // 14: weknora.plugin.v1.UpsertDocument
-	(*DeleteDocument)(nil),              // 15: weknora.plugin.v1.DeleteDocument
-	(*Progress)(nil),                    // 16: weknora.plugin.v1.Progress
-	(*Checkpoint)(nil),                  // 17: weknora.plugin.v1.Checkpoint
-	(*SyncError)(nil),                   // 18: weknora.plugin.v1.SyncError
-	(*Completed)(nil),                   // 19: weknora.plugin.v1.Completed
-	nil,                                 // 20: weknora.plugin.v1.ValidateConfigRequest.ConfigEntry
-	nil,                                 // 21: weknora.plugin.v1.ValidateCredentialsRequest.ConfigEntry
-	nil,                                 // 22: weknora.plugin.v1.SyncRequest.ConfigEntry
-	nil,                                 // 23: weknora.plugin.v1.UpsertDocument.MetadataEntry
+	(SyncErrorCode)(0),                  // 0: weknora.plugin.v1.SyncErrorCode
+	(HealthCheckResponse_Status)(0),     // 1: weknora.plugin.v1.HealthCheckResponse.Status
+	(*GetInfoRequest)(nil),              // 2: weknora.plugin.v1.GetInfoRequest
+	(*PluginInfo)(nil),                  // 3: weknora.plugin.v1.PluginInfo
+	(*HealthCheckRequest)(nil),          // 4: weknora.plugin.v1.HealthCheckRequest
+	(*HealthCheckResponse)(nil),         // 5: weknora.plugin.v1.HealthCheckResponse
+	(*ValidateConfigRequest)(nil),       // 6: weknora.plugin.v1.ValidateConfigRequest
+	(*ValidateConfigResponse)(nil),      // 7: weknora.plugin.v1.ValidateConfigResponse
+	(*FieldError)(nil),                  // 8: weknora.plugin.v1.FieldError
+	(*ShutdownRequest)(nil),             // 9: weknora.plugin.v1.ShutdownRequest
+	(*ShutdownResponse)(nil),            // 10: weknora.plugin.v1.ShutdownResponse
+	(*ValidateCredentialsRequest)(nil),  // 11: weknora.plugin.v1.ValidateCredentialsRequest
+	(*ValidateCredentialsResponse)(nil), // 12: weknora.plugin.v1.ValidateCredentialsResponse
+	(*SyncRequest)(nil),                 // 13: weknora.plugin.v1.SyncRequest
+	(*SyncEvent)(nil),                   // 14: weknora.plugin.v1.SyncEvent
+	(*UpsertDocument)(nil),              // 15: weknora.plugin.v1.UpsertDocument
+	(*DeleteDocument)(nil),              // 16: weknora.plugin.v1.DeleteDocument
+	(*Progress)(nil),                    // 17: weknora.plugin.v1.Progress
+	(*Checkpoint)(nil),                  // 18: weknora.plugin.v1.Checkpoint
+	(*SyncError)(nil),                   // 19: weknora.plugin.v1.SyncError
+	(*Completed)(nil),                   // 20: weknora.plugin.v1.Completed
+	nil,                                 // 21: weknora.plugin.v1.ValidateConfigRequest.ConfigEntry
+	nil,                                 // 22: weknora.plugin.v1.ValidateCredentialsRequest.ConfigEntry
+	nil,                                 // 23: weknora.plugin.v1.SyncRequest.ConfigEntry
+	nil,                                 // 24: weknora.plugin.v1.UpsertDocument.MetadataEntry
 }
 var file_internal_plugin_proto_plugin_proto_depIdxs = []int32{
-	0,  // 0: weknora.plugin.v1.HealthCheckResponse.status:type_name -> weknora.plugin.v1.HealthCheckResponse.Status
-	20, // 1: weknora.plugin.v1.ValidateConfigRequest.config:type_name -> weknora.plugin.v1.ValidateConfigRequest.ConfigEntry
-	7,  // 2: weknora.plugin.v1.ValidateConfigResponse.errors:type_name -> weknora.plugin.v1.FieldError
-	21, // 3: weknora.plugin.v1.ValidateCredentialsRequest.config:type_name -> weknora.plugin.v1.ValidateCredentialsRequest.ConfigEntry
-	22, // 4: weknora.plugin.v1.SyncRequest.config:type_name -> weknora.plugin.v1.SyncRequest.ConfigEntry
-	14, // 5: weknora.plugin.v1.SyncEvent.upsert_document:type_name -> weknora.plugin.v1.UpsertDocument
-	15, // 6: weknora.plugin.v1.SyncEvent.delete_document:type_name -> weknora.plugin.v1.DeleteDocument
-	16, // 7: weknora.plugin.v1.SyncEvent.progress:type_name -> weknora.plugin.v1.Progress
-	17, // 8: weknora.plugin.v1.SyncEvent.checkpoint:type_name -> weknora.plugin.v1.Checkpoint
-	18, // 9: weknora.plugin.v1.SyncEvent.error:type_name -> weknora.plugin.v1.SyncError
-	19, // 10: weknora.plugin.v1.SyncEvent.completed:type_name -> weknora.plugin.v1.Completed
-	23, // 11: weknora.plugin.v1.UpsertDocument.metadata:type_name -> weknora.plugin.v1.UpsertDocument.MetadataEntry
-	1,  // 12: weknora.plugin.v1.PluginLifecycle.GetInfo:input_type -> weknora.plugin.v1.GetInfoRequest
-	3,  // 13: weknora.plugin.v1.PluginLifecycle.HealthCheck:input_type -> weknora.plugin.v1.HealthCheckRequest
-	5,  // 14: weknora.plugin.v1.PluginLifecycle.ValidateConfig:input_type -> weknora.plugin.v1.ValidateConfigRequest
-	8,  // 15: weknora.plugin.v1.PluginLifecycle.Shutdown:input_type -> weknora.plugin.v1.ShutdownRequest
-	10, // 16: weknora.plugin.v1.DataSourcePlugin.ValidateCredentials:input_type -> weknora.plugin.v1.ValidateCredentialsRequest
-	12, // 17: weknora.plugin.v1.DataSourcePlugin.Sync:input_type -> weknora.plugin.v1.SyncRequest
-	2,  // 18: weknora.plugin.v1.PluginLifecycle.GetInfo:output_type -> weknora.plugin.v1.PluginInfo
-	4,  // 19: weknora.plugin.v1.PluginLifecycle.HealthCheck:output_type -> weknora.plugin.v1.HealthCheckResponse
-	6,  // 20: weknora.plugin.v1.PluginLifecycle.ValidateConfig:output_type -> weknora.plugin.v1.ValidateConfigResponse
-	9,  // 21: weknora.plugin.v1.PluginLifecycle.Shutdown:output_type -> weknora.plugin.v1.ShutdownResponse
-	11, // 22: weknora.plugin.v1.DataSourcePlugin.ValidateCredentials:output_type -> weknora.plugin.v1.ValidateCredentialsResponse
-	13, // 23: weknora.plugin.v1.DataSourcePlugin.Sync:output_type -> weknora.plugin.v1.SyncEvent
-	18, // [18:24] is the sub-list for method output_type
-	12, // [12:18] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	1,  // 0: weknora.plugin.v1.HealthCheckResponse.status:type_name -> weknora.plugin.v1.HealthCheckResponse.Status
+	21, // 1: weknora.plugin.v1.ValidateConfigRequest.config:type_name -> weknora.plugin.v1.ValidateConfigRequest.ConfigEntry
+	8,  // 2: weknora.plugin.v1.ValidateConfigResponse.errors:type_name -> weknora.plugin.v1.FieldError
+	22, // 3: weknora.plugin.v1.ValidateCredentialsRequest.config:type_name -> weknora.plugin.v1.ValidateCredentialsRequest.ConfigEntry
+	23, // 4: weknora.plugin.v1.SyncRequest.config:type_name -> weknora.plugin.v1.SyncRequest.ConfigEntry
+	15, // 5: weknora.plugin.v1.SyncEvent.upsert_document:type_name -> weknora.plugin.v1.UpsertDocument
+	16, // 6: weknora.plugin.v1.SyncEvent.delete_document:type_name -> weknora.plugin.v1.DeleteDocument
+	17, // 7: weknora.plugin.v1.SyncEvent.progress:type_name -> weknora.plugin.v1.Progress
+	18, // 8: weknora.plugin.v1.SyncEvent.checkpoint:type_name -> weknora.plugin.v1.Checkpoint
+	19, // 9: weknora.plugin.v1.SyncEvent.error:type_name -> weknora.plugin.v1.SyncError
+	20, // 10: weknora.plugin.v1.SyncEvent.completed:type_name -> weknora.plugin.v1.Completed
+	24, // 11: weknora.plugin.v1.UpsertDocument.metadata:type_name -> weknora.plugin.v1.UpsertDocument.MetadataEntry
+	0,  // 12: weknora.plugin.v1.SyncError.code:type_name -> weknora.plugin.v1.SyncErrorCode
+	2,  // 13: weknora.plugin.v1.PluginLifecycle.GetInfo:input_type -> weknora.plugin.v1.GetInfoRequest
+	4,  // 14: weknora.plugin.v1.PluginLifecycle.HealthCheck:input_type -> weknora.plugin.v1.HealthCheckRequest
+	6,  // 15: weknora.plugin.v1.PluginLifecycle.ValidateConfig:input_type -> weknora.plugin.v1.ValidateConfigRequest
+	9,  // 16: weknora.plugin.v1.PluginLifecycle.Shutdown:input_type -> weknora.plugin.v1.ShutdownRequest
+	11, // 17: weknora.plugin.v1.DataSourcePlugin.ValidateCredentials:input_type -> weknora.plugin.v1.ValidateCredentialsRequest
+	13, // 18: weknora.plugin.v1.DataSourcePlugin.Sync:input_type -> weknora.plugin.v1.SyncRequest
+	3,  // 19: weknora.plugin.v1.PluginLifecycle.GetInfo:output_type -> weknora.plugin.v1.PluginInfo
+	5,  // 20: weknora.plugin.v1.PluginLifecycle.HealthCheck:output_type -> weknora.plugin.v1.HealthCheckResponse
+	7,  // 21: weknora.plugin.v1.PluginLifecycle.ValidateConfig:output_type -> weknora.plugin.v1.ValidateConfigResponse
+	10, // 22: weknora.plugin.v1.PluginLifecycle.Shutdown:output_type -> weknora.plugin.v1.ShutdownResponse
+	12, // 23: weknora.plugin.v1.DataSourcePlugin.ValidateCredentials:output_type -> weknora.plugin.v1.ValidateCredentialsResponse
+	14, // 24: weknora.plugin.v1.DataSourcePlugin.Sync:output_type -> weknora.plugin.v1.SyncEvent
+	19, // [19:25] is the sub-list for method output_type
+	13, // [13:19] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_internal_plugin_proto_plugin_proto_init() }
@@ -1295,7 +1364,7 @@ func file_internal_plugin_proto_plugin_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_internal_plugin_proto_plugin_proto_rawDesc), len(file_internal_plugin_proto_plugin_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   2,

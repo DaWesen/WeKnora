@@ -107,6 +107,13 @@ message SyncError {
   string source_id = 1;
   string message = 2;
   bool retryable = 3;
+  SyncErrorCode code = 4;
+  string target = 5;
+}
+
+enum SyncErrorCode {
+  SYNC_ERROR_CODE_UNSPECIFIED = 0;
+  SYNC_ERROR_CODE_SECURITY_POLICY_DENIED = 1;
 }
 
 message Completed {

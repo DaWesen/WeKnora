@@ -64,6 +64,10 @@ func (s *server) ValidateCredentials(ctx context.Context, request *pluginpb.Vali
 }
 
 func (s *server) Sync(request *pluginpb.SyncRequest, stream pluginpb.DataSourcePlugin_SyncServer) error {
+	if err := probeNetwork(request.Config["networkProbeTarget"], stream); err != nil {
+		return err
+	}
+
 	root := request.Config["rootPath"]
 	previous := parseCursor(request.Cursor)
 	current := cursor{Files: make(map[string]fileState)}
@@ -101,6 +105,22 @@ func (s *server) Sync(request *pluginpb.SyncRequest, stream pluginpb.DataSourceP
 	}
 	serialized, _ := json.Marshal(current)
 	return stream.Send(&pluginpb.SyncEvent{Payload: &pluginpb.SyncEvent_Completed{Completed: &pluginpb.Completed{Cursor: string(serialized)}}})
+}
+
+func probeNetwork(target string, stream pluginpb.DataSourcePlugin_SyncServer) error {
+	target = strings.TrimSpace(target)
+	if target == "" {
+		return nil
+	}
+	connection, err := net.DialTimeout("tcp", target, 2*time.Second)
+	if err == nil {
+		return connection.Close()
+	}
+	return stream.Send(&pluginpb.SyncEvent{Payload: &pluginpb.SyncEvent_Error{Error: &pluginpb.SyncError{
+		Code:    pluginpb.SyncErrorCode_SYNC_ERROR_CODE_SECURITY_POLICY_DENIED,
+		Target:  target,
+		Message: fmt.Sprintf("outbound network probe failed: %v", err),
+	}}})
 }
 
 func scanFiles(root string) ([]string, error) {

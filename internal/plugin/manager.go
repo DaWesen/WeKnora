@@ -9,6 +9,8 @@ import (
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/Tencent/WeKnora/internal/logger"
 )
 
 const ManifestFileName = "plugin.yaml"
@@ -70,24 +72,65 @@ func (m *Manager) StartWithConfig(ctx context.Context, id string, config map[str
 	}
 	if err := m.runtime.Start(ctx, *plugin, config); err != nil {
 		_ = m.SetStatus(id, StatusFailed, err)
+		logger.Errorf(ctx, "[Plugin] start failed id=%s error=%v", id, err)
 		return err
 	}
 	if err := m.CheckHealth(ctx, id, plugin.Manifest.Spec.Entrypoint.GRPCAddress, healthCheckTimeout(*plugin)); err != nil {
 		_ = m.runtime.Stop(context.Background(), id)
+		logger.Errorf(ctx, "[Plugin] health check failed id=%s error=%v", id, err)
 		return err
 	}
+	if err := m.verifyIdentity(ctx, *plugin); err != nil {
+		_ = m.runtime.Stop(context.Background(), id)
+		_ = m.SetStatus(id, StatusFailed, err)
+		logger.Errorf(ctx, "[Plugin] identity verification failed id=%s error=%v", id, err)
+		return err
+	}
+	logger.Infof(ctx, "[Plugin] started id=%s type=%s network=%t", id, plugin.Manifest.Spec.ExtensionType, plugin.Manifest.Spec.Permissions.Network.Enabled)
 	return nil
+}
+
+func (m *Manager) verifyIdentity(ctx context.Context, plugin Plugin) error {
+	client, err := Dial(ctx, plugin.Manifest.Spec.Entrypoint.GRPCAddress)
+	if err != nil {
+		return fmt.Errorf("dial plugin for identity verification: %w", err)
+	}
+	defer client.Close()
+
+	info, err := client.GetInfo(ctx)
+	if err != nil {
+		return fmt.Errorf("get plugin identity: %w", err)
+	}
+	return validatePluginInfo(plugin.Manifest, info.Id, info.Version, info.ExtensionTypes)
+}
+
+func validatePluginInfo(manifest Manifest, id, version string, extensionTypes []string) error {
+	if id != manifest.Metadata.ID {
+		return fmt.Errorf("plugin id mismatch: manifest=%q runtime=%q", manifest.Metadata.ID, id)
+	}
+	if version != manifest.Metadata.Version {
+		return fmt.Errorf("plugin version mismatch: manifest=%q runtime=%q", manifest.Metadata.Version, version)
+	}
+	for _, extensionType := range extensionTypes {
+		if extensionType == string(manifest.Spec.ExtensionType) {
+			return nil
+		}
+	}
+	return fmt.Errorf("plugin does not provide declared extension type %q", manifest.Spec.ExtensionType)
 }
 
 func (m *Manager) Stop(ctx context.Context, id string) error {
 	if err := m.runtime.Stop(ctx, id); err != nil {
+		logger.Errorf(ctx, "[Plugin] stop failed id=%s error=%v", id, err)
 		return err
 	}
+	logger.Infof(ctx, "[Plugin] stopped id=%s", id)
 	return m.SetStatus(id, StatusDisabled, nil)
 }
 
 func (m *Manager) StopAll(ctx context.Context) error {
 	if err := m.runtime.StopAll(ctx); err != nil {
+		logger.Errorf(ctx, "[Plugin] stop all failed error=%v", err)
 		return err
 	}
 

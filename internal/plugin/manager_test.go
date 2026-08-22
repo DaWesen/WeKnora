@@ -41,6 +41,18 @@ spec:
 	require.Equal(t, StatusDiscovered, plugins[0].Status)
 }
 
+func TestValidatePluginInfo(t *testing.T) {
+	manifest := Manifest{
+		Metadata: Metadata{ID: "com.example.local-files", Version: "1.0.0"},
+		Spec:     Spec{ExtensionType: ExtensionTypeDataSource},
+	}
+
+	require.NoError(t, validatePluginInfo(manifest, "com.example.local-files", "1.0.0", []string{"datasource"}))
+	require.ErrorContains(t, validatePluginInfo(manifest, "other", "1.0.0", []string{"datasource"}), "id mismatch")
+	require.ErrorContains(t, validatePluginInfo(manifest, "com.example.local-files", "2.0.0", []string{"datasource"}), "version mismatch")
+	require.ErrorContains(t, validatePluginInfo(manifest, "com.example.local-files", "1.0.0", []string{"retriever"}), "does not provide")
+}
+
 func TestStopAllMarksRunningPluginsDisabled(t *testing.T) {
 	manager := NewManager(t.TempDir())
 	manager.byID["running"] = &Plugin{Status: StatusRunning}

@@ -7,6 +7,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/plugin"
 	pluginpb "github.com/Tencent/WeKnora/internal/plugin/proto"
 	"github.com/Tencent/WeKnora/internal/types"
@@ -39,7 +40,10 @@ func (c *PluginConnector) Validate(ctx context.Context, config *types.DataSource
 	}
 	defer client.Close()
 
-	response, err := client.ValidateCredentials(ctx, pluginConfig(config))
+	if err := validatePluginConfig(ctx, client, configValues); err != nil {
+		return err
+	}
+	response, err := client.ValidateCredentials(ctx, configValues)
 	if err != nil {
 		return err
 	}
@@ -76,7 +80,10 @@ func (c *PluginConnector) FetchStream(ctx context.Context, config *types.DataSou
 	}
 	defer client.Close()
 
-	stream, err := client.Sync(ctx, "", pluginConfig(config), readPluginCursor(cursor))
+	if err := validatePluginConfig(ctx, client, configValues); err != nil {
+		return nil, err
+	}
+	stream, err := client.Sync(ctx, "", configValues, readPluginCursor(cursor))
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +113,7 @@ func (c *PluginConnector) FetchStream(ctx context.Context, config *types.DataSou
 				return next, err
 			}
 		case *pluginpb.SyncEvent_Error:
-			return next, fmt.Errorf("plugin sync error for %s: %s", payload.Error.SourceId, payload.Error.Message)
+			return next, c.syncError(ctx, payload.Error)
 		case *pluginpb.SyncEvent_Completed:
 			next = pluginSyncCursor(payload.Completed.Cursor)
 			if err := handler.Checkpoint(ctx, next); err != nil {
@@ -118,6 +125,28 @@ func (c *PluginConnector) FetchStream(ctx context.Context, config *types.DataSou
 
 func (c *PluginConnector) Checkpoint(ctx context.Context, cursor *types.SyncCursor) error {
 	return nil
+}
+
+func (c *PluginConnector) syncError(ctx context.Context, syncErr *pluginpb.SyncError) error {
+	if syncErr.Code == pluginpb.SyncErrorCode_SYNC_ERROR_CODE_SECURITY_POLICY_DENIED {
+		logger.Warnf(ctx, "[Plugin] security policy denied id=%s target=%s message=%s", c.pluginID, syncErr.Target, syncErr.Message)
+		return fmt.Errorf("plugin security policy denied access to %s: %s", syncErr.Target, syncErr.Message)
+	}
+	return fmt.Errorf("plugin sync error for %s: %s", syncErr.SourceId, syncErr.Message)
+}
+
+func validatePluginConfig(ctx context.Context, client *plugin.Client, config map[string]string) error {
+	response, err := client.ValidateConfig(ctx, config)
+	if err != nil {
+		return fmt.Errorf("validate plugin configuration: %w", err)
+	}
+	if response.Valid {
+		return nil
+	}
+	if len(response.Errors) == 0 {
+		return fmt.Errorf("plugin configuration is invalid")
+	}
+	return fmt.Errorf("plugin configuration is invalid: %s: %s", response.Errors[0].Field, response.Errors[0].Message)
 }
 
 func pluginConfig(config *types.DataSourceConfig) map[string]string {

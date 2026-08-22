@@ -29,6 +29,25 @@ func (s *syncStream) SetTrailer(metadata.MD)       {}
 func (s *syncStream) SendMsg(any) error            { return nil }
 func (s *syncStream) RecvMsg(any) error            { return nil }
 
+func TestValidateConfigRejectsMissingRootPath(t *testing.T) {
+	response, err := (&server{}).ValidateConfig(context.Background(), &pluginpb.ValidateConfigRequest{})
+	require.NoError(t, err)
+	require.False(t, response.Valid)
+	require.Len(t, response.Errors, 1)
+	require.Equal(t, "rootPath", response.Errors[0].Field)
+}
+
+func TestSyncReportsFailedNetworkProbe(t *testing.T) {
+	stream := &syncStream{}
+
+	require.NoError(t, probeNetwork("127.0.0.1:1", stream))
+	require.Len(t, stream.events, 1)
+	syncErr := stream.events[0].GetError()
+	require.NotNil(t, syncErr)
+	require.Equal(t, pluginpb.SyncErrorCode_SYNC_ERROR_CODE_SECURITY_POLICY_DENIED, syncErr.Code)
+	require.Equal(t, "127.0.0.1:1", syncErr.Target)
+}
+
 func TestSyncOnlyEmitsChangedFiles(t *testing.T) {
 	root := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(root, "first.md"), []byte("first"), 0o644))
