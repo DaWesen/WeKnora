@@ -3,6 +3,7 @@ package datasource
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -11,6 +12,8 @@ import (
 	"github.com/Tencent/WeKnora/internal/plugin"
 	pluginpb "github.com/Tencent/WeKnora/internal/plugin/proto"
 	"github.com/Tencent/WeKnora/internal/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const pluginCursorKey = "plugin_cursor"
@@ -76,6 +79,7 @@ func (c *PluginConnector) FetchStream(ctx context.Context, config *types.DataSou
 	}
 	client, err := c.manager.Connect(ctx, c.pluginID)
 	if err != nil {
+		c.markTransportFailure(ctx, err)
 		return nil, err
 	}
 	defer client.Close()
@@ -85,6 +89,7 @@ func (c *PluginConnector) FetchStream(ctx context.Context, config *types.DataSou
 	}
 	stream, err := client.Sync(ctx, "", configValues, readPluginCursor(cursor))
 	if err != nil {
+		c.markTransportFailure(ctx, err)
 		return nil, err
 	}
 
@@ -95,6 +100,7 @@ func (c *PluginConnector) FetchStream(ctx context.Context, config *types.DataSou
 			return next, nil
 		}
 		if receiveErr != nil {
+			c.markTransportFailure(ctx, receiveErr)
 			return next, fmt.Errorf("receive plugin sync event: %w", receiveErr)
 		}
 
@@ -134,6 +140,30 @@ func (c *PluginConnector) syncError(ctx context.Context, syncErr *pluginpb.SyncE
 		return fmt.Errorf("plugin security policy denied access to %s: %s", syncErr.Target, syncErr.Message)
 	}
 	return fmt.Errorf("plugin sync error for %s: %s", syncErr.SourceId, syncErr.Message)
+}
+
+// markTransportFailure preserves a failed runtime state only for transport
+// faults. Plugin-reported business errors, policy denials, host cancellation,
+// and ingestion failures must not consume restart budget.
+func (c *PluginConnector) markTransportFailure(ctx context.Context, err error) {
+	if !shouldMarkRuntimeFailed(ctx, err) {
+		return
+	}
+	if markErr := c.manager.MarkRuntimeFailed(c.pluginID, err); markErr != nil {
+		logger.Warnf(ctx, "[Plugin] failed to record runtime failure id=%s error=%v", c.pluginID, markErr)
+	}
+}
+
+func shouldMarkRuntimeFailed(ctx context.Context, err error) bool {
+	if err == nil || ctx.Err() != nil || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return false
+	}
+	switch status.Code(err) {
+	case codes.Unavailable, codes.Unknown, codes.Internal, codes.DataLoss:
+		return true
+	default:
+		return false
+	}
 }
 
 func validatePluginConfig(ctx context.Context, client *plugin.Client, config map[string]string) error {

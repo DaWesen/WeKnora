@@ -110,6 +110,53 @@ func TestRestartRejectsExhaustedBudgetAndAudits(t *testing.T) {
 	require.Contains(t, requireEventMessage(t, events[0]), "restart budget exhausted")
 }
 
+func TestMarkRuntimeFailedSetsStatusAndAudits(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	manager.byID["com.example.files"] = &Plugin{Status: StatusRunning}
+
+	require.NoError(t, manager.MarkRuntimeFailed("com.example.files", context.DeadlineExceeded))
+	plugin, ok := manager.Get("com.example.files")
+	require.True(t, ok)
+	require.Equal(t, StatusFailed, plugin.Status)
+	require.Equal(t, context.DeadlineExceeded.Error(), plugin.LastError)
+
+	events := manager.AuditEvents(AuditQuery{PluginID: "com.example.files", Action: AuditActionPluginRuntimeFailed})
+	require.Len(t, events, 1)
+	require.Equal(t, "failed", events[0].Outcome)
+	require.Equal(t, context.DeadlineExceeded.Error(), events[0].Message)
+}
+
+func TestMarkRuntimeFailedRequiresCause(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	require.ErrorContains(t, manager.MarkRuntimeFailed("com.example.files", nil), "cause is required")
+}
+
+func TestRestartRejectsPluginOutsideFailedState(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	manifest := validRestartManifest()
+	manifest.Spec.RestartPolicy = &RestartPolicy{Enabled: true, MaxAttempts: 1, WindowSeconds: 60}
+	manager.byID["com.example.files"] = &Plugin{Manifest: manifest, Status: StatusRunning}
+
+	err := manager.Restart(context.Background(), "com.example.files", nil)
+	require.ErrorContains(t, err, "not in failed state")
+	events := manager.AuditEvents(AuditQuery{PluginID: "com.example.files", Action: AuditActionPluginRestartDenied})
+	require.Len(t, events, 1)
+}
+
+func TestRestartRejectsConcurrentAttempt(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	manifest := validRestartManifest()
+	manifest.Spec.RestartPolicy = &RestartPolicy{Enabled: true, MaxAttempts: 1, WindowSeconds: 60}
+	manager.byID["com.example.files"] = &Plugin{Manifest: manifest, Status: StatusFailed}
+
+	require.True(t, manager.beginRestart("com.example.files"))
+	t.Cleanup(func() { manager.endRestart("com.example.files") })
+	err := manager.Restart(context.Background(), "com.example.files", nil)
+	require.ErrorContains(t, err, "already in progress")
+	events := manager.AuditEvents(AuditQuery{PluginID: "com.example.files", Action: AuditActionPluginRestartDenied})
+	require.Len(t, events, 1)
+}
+
 func TestRestartBackoffUsesPolicyOrDefault(t *testing.T) {
 	require.Equal(t, defaultRestartBackoff, restartBackoff(RestartPolicy{}))
 	require.Equal(t, 123*time.Millisecond, restartBackoff(RestartPolicy{BackoffMillis: 123}))

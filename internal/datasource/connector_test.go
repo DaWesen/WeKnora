@@ -7,6 +7,9 @@ import (
 	"github.com/Tencent/WeKnora/internal/plugin"
 	pluginpb "github.com/Tencent/WeKnora/internal/plugin/proto"
 	"github.com/Tencent/WeKnora/internal/types"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestPluginConnectorSyncErrorSecurityPolicyDenied(t *testing.T) {
@@ -26,6 +29,17 @@ func TestPluginConnectorSyncErrorSecurityPolicyDenied(t *testing.T) {
 	if len(events) != 1 || events[0].Action != plugin.AuditActionPluginNetworkDenied || events[0].Target != "api.example.com:443" {
 		t.Fatalf("security denial audit was not recorded: %#v", events)
 	}
+}
+
+func TestPluginTransportFailuresAreEligibleForRecovery(t *testing.T) {
+	require.True(t, shouldMarkRuntimeFailed(context.Background(), status.Error(codes.Unavailable, "connection dropped")))
+	require.True(t, shouldMarkRuntimeFailed(context.Background(), status.Error(codes.Internal, "stream broke")))
+	require.False(t, shouldMarkRuntimeFailed(context.Background(), status.Error(codes.InvalidArgument, "bad config")))
+	require.False(t, shouldMarkRuntimeFailed(context.Background(), context.Canceled))
+
+	canceled, cancel := context.WithCancel(context.Background())
+	cancel()
+	require.False(t, shouldMarkRuntimeFailed(canceled, status.Error(codes.Unavailable, "host cancelled")))
 }
 
 func TestRegisterPluginConnectorMetadata(t *testing.T) {

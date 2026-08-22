@@ -27,6 +27,7 @@ const (
 	AuditActionPluginHealthFailed  = "plugin.health_failed"
 	AuditActionPluginIdentityFail  = "plugin.identity_failed"
 	AuditActionPluginNetworkDenied = "plugin.network_denied"
+	AuditActionPluginRuntimeFailed = "plugin.runtime_failed"
 	AuditActionPluginRestarted     = "plugin.restarted"
 	AuditActionPluginRestartDenied = "plugin.restart_denied"
 )

@@ -54,21 +54,23 @@ func (m *Manager) CheckHealth(ctx context.Context, id, address string, timeout t
 // Manager discovers manifests and maintains the plugin registry. Runtime launch
 // is intentionally deferred to the next phase, after the gRPC plugin protocol is added.
 type Manager struct {
-	root     string
-	runtime  *Runtime
-	audit    *AuditLog
-	mu       sync.RWMutex
-	byID     map[string]*Plugin
-	restarts map[string]*restartState
+	root       string
+	runtime    *Runtime
+	audit      *AuditLog
+	mu         sync.RWMutex
+	byID       map[string]*Plugin
+	restarts   map[string]*restartState
+	restarting map[string]bool
 }
 
 func NewManager(root string) *Manager {
 	return &Manager{
-		root:     root,
-		runtime:  NewRuntime(),
-		audit:    NewAuditLog(0),
-		byID:     make(map[string]*Plugin),
-		restarts: make(map[string]*restartState),
+		root:       root,
+		runtime:    NewRuntime(),
+		audit:      NewAuditLog(0),
+		byID:       make(map[string]*Plugin),
+		restarts:   make(map[string]*restartState),
+		restarting: make(map[string]bool),
 	}
 }
 
@@ -174,12 +176,24 @@ func (m *Manager) Restart(ctx context.Context, id string, config map[string]stri
 	if !ok {
 		return fs.ErrNotExist
 	}
+	if plugin.Status != StatusFailed {
+		err := fmt.Errorf("plugin %q is not in failed state", id)
+		m.recordAudit(id, AuditActionPluginRestartDenied, "denied", "", err.Error(), nil)
+		return err
+	}
 	policy := plugin.Manifest.Spec.RestartPolicy
 	if policy == nil || !policy.Enabled {
 		err := fmt.Errorf("automatic restart is disabled for plugin %q", id)
 		m.recordAudit(id, AuditActionPluginRestartDenied, "denied", "", err.Error(), nil)
 		return err
 	}
+	if !m.beginRestart(id) {
+		err := fmt.Errorf("plugin %q restart is already in progress", id)
+		m.recordAudit(id, AuditActionPluginRestartDenied, "denied", "", err.Error(), nil)
+		return err
+	}
+	defer m.endRestart(id)
+
 	attempt, err := m.reserveRestartAttempt(id, *policy, time.Now().UTC())
 	if err != nil {
 		m.recordAudit(id, AuditActionPluginRestartDenied, "denied", "", err.Error(), nil)
@@ -203,6 +217,35 @@ func (m *Manager) Restart(ctx context.Context, id string, config map[string]stri
 	}
 	m.recordAudit(id, AuditActionPluginRestarted, "success", "", "plugin restarted", map[string]string{"attempt": fmt.Sprintf("%d", attempt)})
 	return nil
+}
+
+// MarkRuntimeFailed transitions a running plugin to failed after a transport or
+// process failure and preserves the reason for restart policy decisions.
+func (m *Manager) MarkRuntimeFailed(id string, cause error) error {
+	if cause == nil {
+		return fmt.Errorf("plugin runtime failure cause is required")
+	}
+	if err := m.SetStatus(id, StatusFailed, cause); err != nil {
+		return err
+	}
+	m.recordAudit(id, AuditActionPluginRuntimeFailed, "failed", "", cause.Error(), nil)
+	return nil
+}
+
+func (m *Manager) beginRestart(id string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.restarting[id] {
+		return false
+	}
+	m.restarting[id] = true
+	return true
+}
+
+func (m *Manager) endRestart(id string) {
+	m.mu.Lock()
+	delete(m.restarting, id)
+	m.mu.Unlock()
 }
 
 func (m *Manager) reserveRestartAttempt(id string, policy RestartPolicy, now time.Time) (int, error) {
