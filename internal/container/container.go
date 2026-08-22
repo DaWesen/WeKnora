@@ -84,6 +84,7 @@ import (
 	"github.com/Tencent/WeKnora/internal/models/embedding"
 	"github.com/Tencent/WeKnora/internal/models/limiter"
 	"github.com/Tencent/WeKnora/internal/models/utils/ollama"
+	"github.com/Tencent/WeKnora/internal/plugin"
 	"github.com/Tencent/WeKnora/internal/router"
 	"github.com/Tencent/WeKnora/internal/storageallowlist"
 	"github.com/Tencent/WeKnora/internal/stream"
@@ -341,6 +342,10 @@ func BuildContainer(container *dig.Container) *dig.Container {
 
 	// Chat pipeline components for processing chat requests
 	logger.Debugf(ctx, "[Container] Registering chat pipeline plugins...")
+
+	// Plugin framework discovers external manifests. Runtime launch and gRPC
+	// dispatch are introduced after the plugin protocol is finalized.
+	must(container.Provide(initPluginManager))
 
 	// Data source sync framework
 	logger.Debugf(ctx, "[Container] Registering data source sync framework...")
@@ -1634,10 +1639,26 @@ func registerIMService(imService *imPkg.Service, cleaner interfaces.ResourceClea
 	})
 }
 
+// initPluginManager discovers plugin manifests from WEKNORA_PLUGIN_DIR. The
+// default keeps local development self-contained while a missing directory means
+// no external plugins are installed yet.
+func initPluginManager() (*plugin.Manager, error) {
+	root := os.Getenv("WEKNORA_PLUGIN_DIR")
+	if root == "" {
+		root = "plugins"
+	}
+	manager := plugin.NewManager(root)
+	if err := manager.Discover(); err != nil {
+		return nil, err
+	}
+	logger.Infof(context.Background(), "[Container] discovered %d external plugins", len(manager.List("")))
+	return manager, nil
+}
+
 // initConnectorRegistry creates and populates the connector registry with all available connectors.
 // Aggregates registration errors via errors.Join so a misconfigured or duplicated connector fails
 // container initialization loudly instead of silently disabling the feature at runtime.
-func initConnectorRegistry() (*datasource.ConnectorRegistry, error) {
+func initConnectorRegistry(pluginManager *plugin.Manager) (*datasource.ConnectorRegistry, error) {
 	registry := datasource.NewConnectorRegistry()
 
 	var errs error
@@ -1671,6 +1692,11 @@ func initConnectorRegistry() (*datasource.ConnectorRegistry, error) {
 	}
 	if err := registry.Register(gitlabConnector.NewConnector()); err != nil {
 		errs = errors.Join(errs, fmt.Errorf("register gitlab connector: %w", err))
+	}
+	for _, externalPlugin := range pluginManager.List(plugin.ExtensionTypeDataSource) {
+		if err := registry.Register(datasource.NewPluginConnector(pluginManager, externalPlugin.Manifest.Metadata.ID)); err != nil {
+			errs = errors.Join(errs, fmt.Errorf("register plugin connector %s: %w", externalPlugin.Manifest.Metadata.ID, err))
+		}
 	}
 
 	// Future connectors will be registered here:
