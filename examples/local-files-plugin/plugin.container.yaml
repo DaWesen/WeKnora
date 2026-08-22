@@ -13,6 +13,14 @@ spec:
     image: weknora/local-files-plugin:0.1.0
     grpcAddress: unix:///var/lib/weknora/plugins/local-files/plugin.sock
     containerGrpcAddress: unix:///run/weknora/plugin.sock
+  configSchema:
+    type: object
+    required: [rootPath]
+    properties:
+      rootPath:
+        type: string
+      networkProbeTarget:
+        type: string
   permissions:
     network:
       enabled: false

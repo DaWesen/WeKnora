@@ -12,9 +12,17 @@ spec:
     type: process
     command: ["./local-files-plugin"]
     grpcAddress: "127.0.0.1:50071"
+  configSchema:
+    type: object
+    required: [rootPath]
+    properties:
+      rootPath:
+        type: string
+      networkProbeTarget:
+        type: string
   permissions:
     network:
-      enabled: false
+      enabled: true
     filesystem:
       readOnly: []
   healthCheck:

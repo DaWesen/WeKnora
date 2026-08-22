@@ -50,12 +50,40 @@ func (m *Manager) CheckHealth(ctx context.Context, id, address string, timeout t
 type Manager struct {
 	root    string
 	runtime *Runtime
+	audit   *AuditLog
 	mu      sync.RWMutex
 	byID    map[string]*Plugin
 }
 
 func NewManager(root string) *Manager {
-	return &Manager{root: root, runtime: NewRuntime(), byID: make(map[string]*Plugin)}
+	return &Manager{
+		root:    root,
+		runtime: NewRuntime(),
+		audit:   NewAuditLog(0),
+		byID:    make(map[string]*Plugin),
+	}
+}
+
+// AuditEvents returns bounded, structured lifecycle and security events.
+func (m *Manager) AuditEvents(query AuditQuery) []AuditEvent {
+	return m.audit.List(query)
+}
+
+func (m *Manager) recordAudit(pluginID, action, outcome, target, message string, details map[string]string) {
+	m.audit.Record(AuditEvent{
+		PluginID: pluginID,
+		Action:   action,
+		Outcome:  outcome,
+		Target:   target,
+		Message:  message,
+		Details:  details,
+	})
+}
+
+// RecordNetworkDenied persists a security-policy rejection reported by a plugin.
+// The target is metadata only; callers must not include credentials or payloads.
+func (m *Manager) RecordNetworkDenied(pluginID, target, message string) {
+	m.recordAudit(pluginID, AuditActionPluginNetworkDenied, "denied", target, message, nil)
 }
 
 // Start launches a discovered plugin without runtime configuration.
@@ -70,22 +98,34 @@ func (m *Manager) StartWithConfig(ctx context.Context, id string, config map[str
 	if !ok {
 		return fs.ErrNotExist
 	}
+	if err := plugin.Manifest.ValidateConfig(config); err != nil {
+		_ = m.SetStatus(id, StatusFailed, err)
+		m.recordAudit(id, AuditActionPluginStartFailed, "denied", "", err.Error(), map[string]string{"stage": "manifest_config"})
+		return err
+	}
 	if err := m.runtime.Start(ctx, *plugin, config); err != nil {
 		_ = m.SetStatus(id, StatusFailed, err)
+		m.recordAudit(id, AuditActionPluginStartFailed, "failed", "", err.Error(), map[string]string{"stage": "runtime_start"})
 		logger.Errorf(ctx, "[Plugin] start failed id=%s error=%v", id, err)
 		return err
 	}
 	if err := m.CheckHealth(ctx, id, plugin.Manifest.Spec.Entrypoint.GRPCAddress, healthCheckTimeout(*plugin)); err != nil {
 		_ = m.runtime.Stop(context.Background(), id)
+		m.recordAudit(id, AuditActionPluginHealthFailed, "failed", "", err.Error(), nil)
 		logger.Errorf(ctx, "[Plugin] health check failed id=%s error=%v", id, err)
 		return err
 	}
 	if err := m.verifyIdentity(ctx, *plugin); err != nil {
 		_ = m.runtime.Stop(context.Background(), id)
 		_ = m.SetStatus(id, StatusFailed, err)
+		m.recordAudit(id, AuditActionPluginIdentityFail, "failed", "", err.Error(), nil)
 		logger.Errorf(ctx, "[Plugin] identity verification failed id=%s error=%v", id, err)
 		return err
 	}
+	m.recordAudit(id, AuditActionPluginStarted, "success", "", "plugin started", map[string]string{
+		"extension_type":  string(plugin.Manifest.Spec.ExtensionType),
+		"network_enabled": fmt.Sprintf("%t", plugin.Manifest.Spec.Permissions.Network.Enabled),
+	})
 	logger.Infof(ctx, "[Plugin] started id=%s type=%s network=%t", id, plugin.Manifest.Spec.ExtensionType, plugin.Manifest.Spec.Permissions.Network.Enabled)
 	return nil
 }
@@ -121,11 +161,16 @@ func validatePluginInfo(manifest Manifest, id, version string, extensionTypes []
 
 func (m *Manager) Stop(ctx context.Context, id string) error {
 	if err := m.runtime.Stop(ctx, id); err != nil {
+		m.recordAudit(id, AuditActionPluginStopFailed, "failed", "", err.Error(), nil)
 		logger.Errorf(ctx, "[Plugin] stop failed id=%s error=%v", id, err)
 		return err
 	}
+	if err := m.SetStatus(id, StatusDisabled, nil); err != nil {
+		return err
+	}
+	m.recordAudit(id, AuditActionPluginStopped, "success", "", "plugin stopped", nil)
 	logger.Infof(ctx, "[Plugin] stopped id=%s", id)
-	return m.SetStatus(id, StatusDisabled, nil)
+	return nil
 }
 
 func (m *Manager) StopAll(ctx context.Context) error {

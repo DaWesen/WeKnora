@@ -84,6 +84,44 @@ func ParseManifest(data []byte) (*Manifest, error) {
 }
 
 // Validate rejects manifests that cannot be loaded safely by the framework.
+// ValidateConfig checks the simple JSON-Schema subset used by plugin manifests
+// before the plugin is started. Plugins still validate their own domain-specific
+// configuration through gRPC after startup.
+func (m Manifest) ValidateConfig(config map[string]string) error {
+	if len(m.Spec.ConfigSchema) == 0 {
+		return nil
+	}
+	if required, ok := m.Spec.ConfigSchema["required"].([]any); ok {
+		for _, value := range required {
+			key, ok := value.(string)
+			if !ok || strings.TrimSpace(key) == "" {
+				return fmt.Errorf("plugin config schema contains an invalid required field")
+			}
+			if strings.TrimSpace(config[key]) == "" {
+				return fmt.Errorf("plugin configuration requires %q", key)
+			}
+		}
+	}
+	properties, ok := m.Spec.ConfigSchema["properties"].(map[string]any)
+	if !ok {
+		return nil
+	}
+	for key, rawProperty := range properties {
+		value, exists := config[key]
+		if !exists || strings.TrimSpace(value) == "" {
+			continue
+		}
+		property, ok := rawProperty.(map[string]any)
+		if !ok {
+			continue
+		}
+		if propertyType, ok := property["type"].(string); ok && propertyType != "string" {
+			return fmt.Errorf("plugin config schema property %q uses unsupported type %q", key, propertyType)
+		}
+	}
+	return nil
+}
+
 func (m Manifest) Validate() error {
 	if m.APIVersion != APIVersionV1 {
 		return fmt.Errorf("unsupported plugin apiVersion %q", m.APIVersion)
@@ -108,8 +146,14 @@ func (m Manifest) Validate() error {
 	if strings.TrimSpace(m.Spec.Entrypoint.GRPCAddress) == "" {
 		return fmt.Errorf("plugin gRPC address is required")
 	}
+	if !m.Spec.Permissions.Network.Enabled && len(m.Spec.Permissions.Network.Hosts) > 0 {
+		return fmt.Errorf("network hosts require network permission")
+	}
 	if m.Spec.Entrypoint.Type == "process" && (len(m.Spec.Entrypoint.Command) == 0 || strings.TrimSpace(m.Spec.Entrypoint.Command[0]) == "") {
 		return fmt.Errorf("process plugin entrypoint command is required")
+	}
+	if m.Spec.Entrypoint.Type == "process" && !m.Spec.Permissions.Network.Enabled {
+		return fmt.Errorf("network-disabled plugins require a container runtime for enforceable isolation")
 	}
 	if m.Spec.Entrypoint.Type == "container" && strings.TrimSpace(m.Spec.Entrypoint.Image) == "" {
 		return fmt.Errorf("container plugin entrypoint image is required")
@@ -117,8 +161,10 @@ func (m Manifest) Validate() error {
 	if m.Spec.Entrypoint.Type == "container" && strings.TrimSpace(m.Spec.Entrypoint.ContainerGRPCAddress) != "" && !strings.HasPrefix(m.Spec.Entrypoint.ContainerGRPCAddress, "unix://") {
 		return fmt.Errorf("container gRPC address must use unix://")
 	}
-	if !m.Spec.Permissions.Network.Enabled && len(m.Spec.Permissions.Network.Hosts) > 0 {
-		return fmt.Errorf("network hosts require network permission")
+	if m.Spec.Entrypoint.Type == "container" && !m.Spec.Permissions.Network.Enabled {
+		if !strings.HasPrefix(m.Spec.Entrypoint.GRPCAddress, "unix://") || !strings.HasPrefix(m.Spec.Entrypoint.ContainerGRPCAddress, "unix://") {
+			return fmt.Errorf("network-disabled container plugins require unix:// gRPC addresses")
+		}
 	}
 	return nil
 }

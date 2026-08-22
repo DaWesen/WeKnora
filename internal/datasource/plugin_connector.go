@@ -129,6 +129,7 @@ func (c *PluginConnector) Checkpoint(ctx context.Context, cursor *types.SyncCurs
 
 func (c *PluginConnector) syncError(ctx context.Context, syncErr *pluginpb.SyncError) error {
 	if syncErr.Code == pluginpb.SyncErrorCode_SYNC_ERROR_CODE_SECURITY_POLICY_DENIED {
+		c.manager.RecordNetworkDenied(c.pluginID, syncErr.Target, syncErr.Message)
 		logger.Warnf(ctx, "[Plugin] security policy denied id=%s target=%s message=%s", c.pluginID, syncErr.Target, syncErr.Message)
 		return fmt.Errorf("plugin security policy denied access to %s: %s", syncErr.Target, syncErr.Message)
 	}

@@ -15,7 +15,8 @@ func TestHealthCheckTimeout(t *testing.T) {
 }
 
 func TestResolveReadOnlyPath(t *testing.T) {
-	resolved, err := resolveReadOnlyPath("${config.rootPath}", map[string]string{"rootPath": t.TempDir()})
+	directory := t.TempDir()
+	resolved, err := resolveReadOnlyPath("${config.rootPath}", map[string]string{"rootPath": directory})
 	require.NoError(t, err)
 	require.True(t, filepath.IsAbs(resolved))
 
@@ -23,7 +24,31 @@ func TestResolveReadOnlyPath(t *testing.T) {
 	require.ErrorContains(t, err, "rootPath")
 
 	_, err = resolveReadOnlyPath("${config.rootPath}", map[string]string{"rootPath": "relative"})
-	require.ErrorContains(t, err, "absolute path")
+	require.ErrorContains(t, err, "must resolve to an absolute path")
+
+	_, err = resolveReadOnlyPath("relative", nil)
+	require.ErrorContains(t, err, "must resolve to an absolute path")
+
+	_, err = resolveReadOnlyPath(filepath.Join(directory, "missing"), nil)
+	require.ErrorContains(t, err, "resolve filesystem permission")
+}
+
+func TestPluginContainerResourceLimits(t *testing.T) {
+	require.Equal(t, "512m", pluginContainerMemoryLimit)
+	require.Equal(t, "1", pluginContainerCPULimit)
+	require.Equal(t, "128", pluginContainerPidsLimit)
+}
+
+func TestFilesystemPermissionKey(t *testing.T) {
+	first, err := filesystemPermissionKey([]string{"${config.second}", "${config.first}"}, map[string]string{
+		"first":  t.TempDir(),
+		"second": t.TempDir(),
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, first)
+
+	_, err = filesystemPermissionKey([]string{"${config.rootPath}"}, nil)
+	require.ErrorContains(t, err, "rootPath")
 }
 
 func TestSanitizeContainerName(t *testing.T) {

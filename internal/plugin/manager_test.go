@@ -29,7 +29,7 @@ spec:
     grpcAddress: "127.0.0.1:50051"
   permissions:
     network:
-      enabled: false
+      enabled: true
 `), 0o600))
 
 	manager := NewManager(root)
@@ -39,6 +39,23 @@ spec:
 	require.Len(t, plugins, 1)
 	require.Equal(t, "com.example.local-files", plugins[0].Manifest.Metadata.ID)
 	require.Equal(t, StatusDiscovered, plugins[0].Status)
+}
+
+func TestManifestValidateConfig(t *testing.T) {
+	manifest := Manifest{Spec: Spec{ConfigSchema: map[string]any{
+		"required": []any{"rootPath"},
+		"properties": map[string]any{
+			"rootPath": map[string]any{"type": "string"},
+		},
+	}}}
+
+	require.ErrorContains(t, manifest.ValidateConfig(nil), "rootPath")
+	require.NoError(t, manifest.ValidateConfig(map[string]string{"rootPath": t.TempDir()}))
+
+	manifest.Spec.ConfigSchema["properties"] = map[string]any{
+		"rootPath": map[string]any{"type": "object"},
+	}
+	require.ErrorContains(t, manifest.ValidateConfig(map[string]string{"rootPath": t.TempDir()}), "unsupported type")
 }
 
 func TestValidatePluginInfo(t *testing.T) {
@@ -71,6 +88,50 @@ func TestStopAllMarksRunningPluginsDisabled(t *testing.T) {
 	discovered, ok := manager.Get("discovered")
 	require.True(t, ok)
 	require.Equal(t, StatusDiscovered, discovered.Status)
+}
+
+func TestParseManifestRejectsNetworkDisabledProcess(t *testing.T) {
+	_, err := ParseManifest([]byte(`
+apiVersion: weknora.plugin/v1
+kind: Plugin
+metadata:
+  id: com.example.invalid
+  name: Invalid
+  version: 1.0.0
+spec:
+  extensionType: datasource
+  weknoraVersion: ">=0.1.0"
+  entrypoint:
+    type: process
+    command: ["./plugin"]
+    grpcAddress: "127.0.0.1:50051"
+  permissions:
+    network:
+      enabled: false
+`))
+	require.ErrorContains(t, err, "require a container runtime")
+}
+
+func TestParseManifestRejectsNetworkDisabledContainerTCPGRPC(t *testing.T) {
+	_, err := ParseManifest([]byte(`
+apiVersion: weknora.plugin/v1
+kind: Plugin
+metadata:
+  id: com.example.invalid
+  name: Invalid
+  version: 1.0.0
+spec:
+  extensionType: datasource
+  weknoraVersion: ">=0.1.0"
+  entrypoint:
+    type: container
+    image: example/plugin:1.0.0
+    grpcAddress: "127.0.0.1:50051"
+  permissions:
+    network:
+      enabled: false
+`))
+	require.ErrorContains(t, err, "require unix:// gRPC addresses")
 }
 
 func TestParseManifestRejectsNetworkHostsWithoutNetworkPermission(t *testing.T) {

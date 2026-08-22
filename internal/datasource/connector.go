@@ -2,6 +2,7 @@ package datasource
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Tencent/WeKnora/internal/types"
 )
@@ -287,8 +288,24 @@ var ConnectorMetadataRegistry = map[string]ConnectorMetadata{
 	},
 }
 
-// ListAvailableConnectors returns all available connector metadata
-// sorted by priority
+// RegisterPluginConnectorMetadata exposes a discovered external datasource plugin
+// through the existing connector types endpoint.
+func RegisterPluginConnectorMetadata(pluginID, name, description string) error {
+	if _, exists := ConnectorMetadataRegistry[pluginID]; exists {
+		return fmt.Errorf("connector metadata already registered for %q", pluginID)
+	}
+	ConnectorMetadataRegistry[pluginID] = ConnectorMetadata{
+		Type:         pluginID,
+		Name:         name,
+		Description:  description,
+		Priority:     100,
+		AuthType:     "none",
+		Capabilities: []string{"incremental", "deletion_sync"},
+	}
+	return nil
+}
+
+// ListAvailableConnectors returns all available connector metadata sorted by priority.
 func ListAvailableConnectors() []ConnectorMetadata {
 	metadata := make([]ConnectorMetadata, 0, len(ConnectorMetadataRegistry))
 	for _, meta := range ConnectorMetadataRegistry {

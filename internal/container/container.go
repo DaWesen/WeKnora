@@ -1701,8 +1701,13 @@ func initConnectorRegistry(pluginManager *plugin.Manager) (*datasource.Connector
 		errs = errors.Join(errs, fmt.Errorf("register gitlab connector: %w", err))
 	}
 	for _, externalPlugin := range pluginManager.List(plugin.ExtensionTypeDataSource) {
-		if err := registry.Register(datasource.NewPluginConnector(pluginManager, externalPlugin.Manifest.Metadata.ID)); err != nil {
-			errs = errors.Join(errs, fmt.Errorf("register plugin connector %s: %w", externalPlugin.Manifest.Metadata.ID, err))
+		pluginID := externalPlugin.Manifest.Metadata.ID
+		if err := registry.Register(datasource.NewPluginConnector(pluginManager, pluginID)); err != nil {
+			errs = errors.Join(errs, fmt.Errorf("register plugin connector %s: %w", pluginID, err))
+			continue
+		}
+		if err := datasource.RegisterPluginConnectorMetadata(pluginID, externalPlugin.Manifest.Metadata.Name, externalPlugin.Manifest.Metadata.Description); err != nil {
+			errs = errors.Join(errs, fmt.Errorf("register plugin connector metadata %s: %w", pluginID, err))
 		}
 	}
 

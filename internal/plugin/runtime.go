@@ -6,12 +6,18 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 )
 
-const defaultHealthCheckTimeout = 10 * time.Second
+const (
+	defaultHealthCheckTimeout  = 10 * time.Second
+	pluginContainerMemoryLimit = "512m"
+	pluginContainerCPULimit    = "1"
+	pluginContainerPidsLimit   = "128"
+)
 
 // Runtime starts plugin processes and containers. It owns only processes it has
 // launched, so external plugin endpoints are never terminated by Stop.
@@ -21,8 +27,9 @@ type Runtime struct {
 }
 
 type startedPlugin struct {
-	command       *exec.Cmd
-	containerName string
+	command                 *exec.Cmd
+	containerName           string
+	filesystemPermissionKey string
 }
 
 func NewRuntime() *Runtime {
@@ -30,29 +37,40 @@ func NewRuntime() *Runtime {
 }
 
 func (r *Runtime) Start(ctx context.Context, plugin Plugin, config map[string]string) error {
-	r.mu.Lock()
-	if _, exists := r.started[plugin.Manifest.Metadata.ID]; exists {
-		r.mu.Unlock()
-		return nil
+	filesystemPermissionKey, err := filesystemPermissionKey(plugin.Manifest.Spec.Permissions.Filesystem.ReadOnly, config)
+	if err != nil {
+		return fmt.Errorf("resolve plugin filesystem permission: %w", err)
 	}
-	r.mu.Unlock()
 
-	var started *startedPlugin
-	var err error
+	r.mu.Lock()
+	started, exists := r.started[plugin.Manifest.Metadata.ID]
+	r.mu.Unlock()
+	if exists {
+		if started.filesystemPermissionKey == filesystemPermissionKey {
+			return nil
+		}
+		if err := r.Stop(ctx, plugin.Manifest.Metadata.ID); err != nil {
+			return err
+		}
+	}
+
+	var startedPluginInstance *startedPlugin
+	var startErr error
 	switch plugin.Manifest.Spec.Entrypoint.Type {
 	case "process":
-		started, err = startProcess(ctx, plugin)
+		startedPluginInstance, startErr = startProcess(ctx, plugin)
 	case "container":
-		started, err = startContainer(ctx, plugin, config)
+		startedPluginInstance, startErr = startContainer(ctx, plugin, config)
 	default:
-		err = fmt.Errorf("unsupported plugin runtime %q", plugin.Manifest.Spec.Entrypoint.Type)
+		startErr = fmt.Errorf("unsupported plugin runtime %q", plugin.Manifest.Spec.Entrypoint.Type)
 	}
-	if err != nil {
-		return err
+	if startErr != nil {
+		return startErr
 	}
 
+	startedPluginInstance.filesystemPermissionKey = filesystemPermissionKey
 	r.mu.Lock()
-	r.started[plugin.Manifest.Metadata.ID] = started
+	r.started[plugin.Manifest.Metadata.ID] = startedPluginInstance
 	r.mu.Unlock()
 	return nil
 }
@@ -114,7 +132,16 @@ func startProcess(ctx context.Context, plugin Plugin) (*startedPlugin, error) {
 func startContainer(ctx context.Context, plugin Plugin, config map[string]string) (*startedPlugin, error) {
 	entrypoint := plugin.Manifest.Spec.Entrypoint
 	name := "weknora-plugin-" + sanitizeContainerName(plugin.Manifest.Metadata.ID)
-	args := []string{"run", "-d", "--rm", "--name", name, "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--read-only", "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m"}
+	args := []string{
+		"run", "-d", "--rm", "--name", name,
+		"--cap-drop", "ALL",
+		"--security-opt", "no-new-privileges",
+		"--read-only",
+		"--pids-limit", pluginContainerPidsLimit,
+		"--memory", pluginContainerMemoryLimit,
+		"--cpus", pluginContainerCPULimit,
+		"--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
+	}
 	if !plugin.Manifest.Spec.Permissions.Network.Enabled {
 		if !strings.HasPrefix(entrypoint.GRPCAddress, "unix://") {
 			return nil, fmt.Errorf("network-disabled container plugin requires a unix gRPC address")
@@ -149,19 +176,36 @@ func startContainer(ctx context.Context, plugin Plugin, config map[string]string
 	return &startedPlugin{containerName: name}, nil
 }
 
-func resolveReadOnlyPath(permission string, config map[string]string) (string, error) {
-	if !strings.HasPrefix(permission, "${config.") || !strings.HasSuffix(permission, "}") {
-		return permission, nil
+func filesystemPermissionKey(permissions []string, config map[string]string) (string, error) {
+	paths := make([]string, 0, len(permissions))
+	for _, permission := range permissions {
+		path, err := resolveReadOnlyPath(permission, config)
+		if err != nil {
+			return "", err
+		}
+		paths = append(paths, path)
 	}
-	key := strings.TrimSuffix(strings.TrimPrefix(permission, "${config."), "}")
-	path := strings.TrimSpace(config[key])
-	if path == "" {
-		return "", fmt.Errorf("required config value %q is empty", key)
+	sort.Strings(paths)
+	return strings.Join(paths, "\x00"), nil
+}
+
+func resolveReadOnlyPath(permission string, config map[string]string) (string, error) {
+	path := permission
+	if strings.HasPrefix(permission, "${config.") && strings.HasSuffix(permission, "}") {
+		key := strings.TrimSuffix(strings.TrimPrefix(permission, "${config."), "}")
+		path = strings.TrimSpace(config[key])
+		if path == "" {
+			return "", fmt.Errorf("required config value %q is empty", key)
+		}
 	}
 	if !filepath.IsAbs(path) {
-		return "", fmt.Errorf("config value %q must be an absolute path", key)
+		return "", fmt.Errorf("filesystem permission %q must resolve to an absolute path", permission)
 	}
-	return filepath.Clean(path), nil
+	resolvedPath, err := filepath.EvalSymlinks(filepath.Clean(path))
+	if err != nil {
+		return "", fmt.Errorf("resolve filesystem permission %q: %w", permission, err)
+	}
+	return resolvedPath, nil
 }
 
 func sanitizeContainerName(id string) string {
