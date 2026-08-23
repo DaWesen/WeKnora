@@ -565,6 +565,66 @@ export async function listSystemAuditLog(
   return (await get(url)) as unknown as ListAuditLogResponse
 }
 
+// ---- External plugin control plane ----
+
+export type PluginStatus = 'discovered' | 'disabled' | 'running' | 'failed'
+
+export interface PluginRestartPolicy {
+  enabled: boolean
+  max_attempts?: number
+  window_seconds?: number
+  backoff_millis?: number
+}
+
+export interface Plugin {
+  id: string
+  name: string
+  version: string
+  description?: string
+  extension_type: string
+  status: PluginStatus
+  last_error?: string
+  discovered_at: string
+  restart_policy?: PluginRestartPolicy
+}
+
+export interface PluginAuditEvent {
+  id: number
+  timestamp: string
+  plugin_id: string
+  action: string
+  outcome: string
+  details?: Record<string, string>
+}
+
+export async function listPlugins(): Promise<{ success: boolean; data?: Plugin[] }> {
+  return await get('/api/v1/system/admin/plugins') as unknown as { success: boolean; data?: Plugin[] }
+}
+
+export async function listPluginAudit(
+  id: string,
+  params: { action?: string; limit?: number } = {},
+): Promise<{ success: boolean; data?: PluginAuditEvent[] }> {
+  const query = new URLSearchParams()
+  if (params.action) query.set('action', params.action)
+  if (params.limit) query.set('limit', String(params.limit))
+  const suffix = query.toString() ? `?${query.toString()}` : ''
+  return await get(`/api/v1/system/admin/plugins/${encodeURIComponent(id)}/audit${suffix}`) as unknown as {
+    success: boolean
+    data?: PluginAuditEvent[]
+  }
+}
+
+export async function restartPlugin(
+  id: string,
+  config: Record<string, string> = {},
+): Promise<{ success: boolean; data?: Plugin }> {
+  return await post(`/api/v1/system/admin/plugins/${encodeURIComponent(id)}/restart`, { config }) as unknown as {
+    success: boolean
+    data?: Plugin
+  }
+}
+
 // ---- Runtime queue observability (system-scope) ----
 
 /**
