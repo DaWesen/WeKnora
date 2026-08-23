@@ -13,6 +13,9 @@ service PluginLifecycle {
 
 service DataSourcePlugin {
   rpc ValidateCredentials(ValidateCredentialsRequest) returns (ValidateCredentialsResponse);
+  rpc ListResources(ListResourcesRequest) returns (ListResourcesResponse);
+  rpc ResolveResourceAncestors(ResolveResourceAncestorsRequest) returns (ResolveResourceAncestorsResponse);
+  rpc FetchAll(FetchAllRequest) returns (FetchAllResponse);
   rpc Sync(SyncRequest) returns (stream SyncEvent);
 }
 
@@ -63,10 +66,63 @@ message ValidateCredentialsResponse {
   string message = 2;
 }
 
+message ListResourcesRequest {
+  map<string, string> config = 1;
+  string parent_id = 2;
+}
+
+message ListResourcesResponse {
+  repeated Resource resources = 1;
+}
+
+message ResolveResourceAncestorsRequest {
+  map<string, string> config = 1;
+  repeated string resource_ids = 2;
+}
+
+message ResolveResourceAncestorsResponse {
+  repeated string ancestor_ids = 1;
+}
+
+message FetchAllRequest {
+  string datasource_id = 1;
+  map<string, string> config = 2;
+  repeated string resource_ids = 3;
+}
+
+message FetchAllResponse {
+  repeated Document documents = 1;
+}
+
+message Resource {
+  string external_id = 1;
+  string name = 2;
+  string type = 3;
+  string description = 4;
+  string url = 5;
+  string modified_at = 6;
+  string parent_id = 7;
+  bool has_children = 8;
+  map<string, string> metadata = 9;
+}
+
+message Document {
+  string source_id = 1;
+  string source_resource_id = 2;
+  string name = 3;
+  bytes content = 4;
+  string content_type = 5;
+  string url = 6;
+  string updated_at = 7;
+  map<string, string> metadata = 8;
+  bool is_deleted = 9;
+}
+
 message SyncRequest {
   string datasource_id = 1;
   map<string, string> config = 2;
   string cursor = 3;
+  repeated string resource_ids = 4;
 }
 
 message SyncEvent {

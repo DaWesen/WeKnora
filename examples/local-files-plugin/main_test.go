@@ -48,6 +48,50 @@ func TestSyncReportsFailedNetworkProbe(t *testing.T) {
 	require.Equal(t, "127.0.0.1:1", syncErr.Target)
 }
 
+func TestListResourcesAndFetchAllRespectSelection(t *testing.T) {
+	root := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(root, "first.md"), []byte("first"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "second.txt"), []byte("second"), 0o644))
+
+	implementation := &server{}
+	resources, err := implementation.ListResources(context.Background(), &pluginpb.ListResourcesRequest{Config: map[string]string{"rootPath": root}})
+	require.NoError(t, err)
+	require.Len(t, resources.Resources, 2)
+	require.Equal(t, "first.md", resources.Resources[0].ExternalId)
+	require.Equal(t, "file", resources.Resources[0].Type)
+	require.False(t, resources.Resources[0].ModifiedAt == "")
+
+	children, err := implementation.ListResources(context.Background(), &pluginpb.ListResourcesRequest{Config: map[string]string{"rootPath": root}, ParentId: "first.md"})
+	require.NoError(t, err)
+	require.Empty(t, children.Resources)
+
+	fetched, err := implementation.FetchAll(context.Background(), &pluginpb.FetchAllRequest{
+		Config:      map[string]string{"rootPath": root},
+		ResourceIds: []string{"second.txt"},
+	})
+	require.NoError(t, err)
+	require.Len(t, fetched.Documents, 1)
+	require.Equal(t, "second.txt", fetched.Documents[0].SourceId)
+	require.Equal(t, "second.txt", fetched.Documents[0].SourceResourceId)
+	require.Equal(t, []byte("second"), fetched.Documents[0].Content)
+}
+
+func TestSyncRespectsSelectedResources(t *testing.T) {
+	root := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(root, "first.md"), []byte("first"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "second.txt"), []byte("second"), 0o644))
+
+	stream := &syncStream{}
+	require.NoError(t, (&server{}).Sync(&pluginpb.SyncRequest{
+		Config:      map[string]string{"rootPath": root},
+		ResourceIds: []string{"second.txt"},
+	}, stream))
+
+	documents := upserts(stream.events)
+	require.Len(t, documents, 1)
+	require.Equal(t, "second.txt", documents[0].SourceId)
+}
+
 func TestSyncOnlyEmitsChangedFiles(t *testing.T) {
 	root := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(root, "first.md"), []byte("first"), 0o644))

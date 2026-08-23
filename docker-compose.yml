@@ -40,6 +40,9 @@ services:
       - data-files:/data/files
       - docreader-tmp:/tmp/docreader:ro
       - ./config/config.yaml:/app/config/config.yaml
+      # External plugin manifests and process-plugin binaries. The directory is
+      # intentionally read-only; changes take effect after restarting app.
+      - ${WEKNORA_PLUGIN_HOST_DIR:-./plugins}:${WEKNORA_PLUGIN_DIR:-/var/lib/weknora/plugins}:ro
       # Optional: mount custom skills directory (allows adding skills without rebuilding image)
       - ./skills/preloaded:/app/skills/preloaded
       # Optional: declarative built-in models. Copy config/builtin_models.yaml.example
@@ -310,6 +313,8 @@ services:
       - WEKNORA_HOUSEKEEPING_ENABLED=${WEKNORA_HOUSEKEEPING_ENABLED:-}
       # 自定义 Skills 目录（挂载后指定，免重建镜像）
       - WEKNORA_SKILLS_DIR=${WEKNORA_SKILLS_DIR:-}
+      # 外部插件 manifest 的容器内根目录；对应宿主目录见 WEKNORA_PLUGIN_HOST_DIR。
+      - WEKNORA_PLUGIN_DIR=${WEKNORA_PLUGIN_DIR:-/var/lib/weknora/plugins}
       - WEKNORA_CHAT_ATTACHMENT_TTL_HOURS=${WEKNORA_CHAT_ATTACHMENT_TTL_HOURS:-24}
       - WEKNORA_CHAT_ATTACHMENT_WAIT_TIMEOUT_SEC=${WEKNORA_CHAT_ATTACHMENT_WAIT_TIMEOUT_SEC:-60}
       - WEKNORA_CHAT_ATTACHMENT_OCR_CONCURRENCY=${WEKNORA_CHAT_ATTACHMENT_OCR_CONCURRENCY:-8}

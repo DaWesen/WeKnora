@@ -40,6 +40,68 @@ func TestPluginContainerResourceLimits(t *testing.T) {
 	require.Equal(t, "128", pluginContainerPidsLimit)
 }
 
+func TestContainerRunArgsApplyIsolationAndReadOnlyMounts(t *testing.T) {
+	socketDir := t.TempDir()
+	rootPath := t.TempDir()
+	plugin := Plugin{Manifest: Manifest{
+		Metadata: Metadata{ID: "com.example.local-files"},
+		Spec: Spec{
+			Entrypoint: Entrypoint{
+				Type:                 "container",
+				Image:                "example/plugin:test",
+				GRPCAddress:          "unix://" + filepath.Join(socketDir, "plugin.sock"),
+				ContainerGRPCAddress: "unix:///run/weknora/plugin.sock",
+				Command:              []string{"--serve"},
+			},
+			Permissions: Permissions{
+				Network:    NetworkPermission{Enabled: false},
+				Filesystem: FilesystemPermission{ReadOnly: []string{"${config.rootPath}"}},
+			},
+		},
+	}}
+
+	name, args, err := containerRunArgs(plugin, map[string]string{"rootPath": rootPath})
+	require.NoError(t, err)
+	resolvedRootPath, err := filepath.EvalSymlinks(rootPath)
+	require.NoError(t, err)
+	require.Equal(t, "weknora-plugin-com-example-local-files", name)
+	require.Equal(t, []string{
+		"run", "-d", "--rm", "--name", name,
+		"--cap-drop", "ALL",
+		"--security-opt", "no-new-privileges",
+		"--read-only",
+		"--pids-limit", "128",
+		"--memory", "512m",
+		"--cpus", "1",
+		"--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
+		"--network", "none",
+		"--mount", "type=bind,src=" + socketDir + ",dst=/run/weknora",
+		"--mount", "type=bind,src=" + resolvedRootPath + ",dst=" + resolvedRootPath + ",readonly",
+		"-e", "WEKNORA_PLUGIN_GRPC_ADDRESS=unix:///run/weknora/plugin.sock",
+		"example/plugin:test", "--serve",
+	}, args)
+}
+
+func TestContainerRunArgsRejectInvalidReadOnlyPermission(t *testing.T) {
+	plugin := Plugin{Manifest: Manifest{
+		Metadata: Metadata{ID: "com.example.local-files"},
+		Spec: Spec{
+			Entrypoint: Entrypoint{
+				Type:        "container",
+				Image:       "example/plugin:test",
+				GRPCAddress: "unix:///tmp/plugin.sock",
+			},
+			Permissions: Permissions{
+				Network:    NetworkPermission{Enabled: false},
+				Filesystem: FilesystemPermission{ReadOnly: []string{"${config.rootPath}"}},
+			},
+		},
+	}}
+
+	_, _, err := containerRunArgs(plugin, nil)
+	require.ErrorContains(t, err, "rootPath")
+}
+
 func TestFilesystemPermissionKey(t *testing.T) {
 	first, err := filesystemPermissionKey([]string{"${config.second}", "${config.first}"}, map[string]string{
 		"first":  t.TempDir(),

@@ -63,6 +63,49 @@ func (s *server) ValidateCredentials(ctx context.Context, request *pluginpb.Vali
 	return &pluginpb.ValidateCredentialsResponse{Valid: result.Valid, Message: message}, nil
 }
 
+func (s *server) ListResources(_ context.Context, request *pluginpb.ListResourcesRequest) (*pluginpb.ListResourcesResponse, error) {
+	if request.ParentId != "" {
+		return &pluginpb.ListResourcesResponse{}, nil
+	}
+	paths, err := scanFiles(request.Config["rootPath"])
+	if err != nil {
+		return nil, err
+	}
+	root := request.Config["rootPath"]
+	resources := make([]*pluginpb.Resource, 0, len(paths))
+	for _, path := range paths {
+		resource, err := resourceFromPath(root, path)
+		if err != nil {
+			return nil, err
+		}
+		resources = append(resources, resource)
+	}
+	return &pluginpb.ListResourcesResponse{Resources: resources}, nil
+}
+
+func (s *server) ResolveResourceAncestors(context.Context, *pluginpb.ResolveResourceAncestorsRequest) (*pluginpb.ResolveResourceAncestorsResponse, error) {
+	return &pluginpb.ResolveResourceAncestorsResponse{}, nil
+}
+
+func (s *server) FetchAll(_ context.Context, request *pluginpb.FetchAllRequest) (*pluginpb.FetchAllResponse, error) {
+	paths, err := scanFiles(request.Config["rootPath"])
+	if err != nil {
+		return nil, err
+	}
+	root := request.Config["rootPath"]
+	documents := make([]*pluginpb.Document, 0, len(paths))
+	for _, path := range paths {
+		document, err := documentFromPath(root, path, request.ResourceIds)
+		if err != nil {
+			return nil, err
+		}
+		if document != nil {
+			documents = append(documents, document)
+		}
+	}
+	return &pluginpb.FetchAllResponse{Documents: documents}, nil
+}
+
 func (s *server) Sync(request *pluginpb.SyncRequest, stream pluginpb.DataSourcePlugin_SyncServer) error {
 	if err := probeNetwork(request.Config["networkProbeTarget"], stream); err != nil {
 		return err
@@ -85,6 +128,9 @@ func (s *server) Sync(request *pluginpb.SyncRequest, stream pluginpb.DataSourceP
 			return err
 		}
 		key := filepath.ToSlash(relative)
+		if !isSelectedResource(key, request.ResourceIds) {
+			continue
+		}
 		hash := contentHash(content)
 		current.Files[key] = fileState{Hash: hash}
 		if previous.Files[key].Hash != hash {
@@ -97,6 +143,9 @@ func (s *server) Sync(request *pluginpb.SyncRequest, stream pluginpb.DataSourceP
 		}
 	}
 	for key := range previous.Files {
+		if !isSelectedResource(key, request.ResourceIds) {
+			continue
+		}
 		if _, exists := current.Files[key]; !exists {
 			if err := stream.Send(&pluginpb.SyncEvent{Payload: &pluginpb.SyncEvent_DeleteDocument{DeleteDocument: &pluginpb.DeleteDocument{SourceId: key}}}); err != nil {
 				return err
@@ -121,6 +170,62 @@ func probeNetwork(target string, stream pluginpb.DataSourcePlugin_SyncServer) er
 		Target:  target,
 		Message: fmt.Sprintf("outbound network probe failed: %v", err),
 	}}})
+}
+
+func resourceFromPath(root, path string) (*pluginpb.Resource, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
+	relative, err := filepath.Rel(root, path)
+	if err != nil {
+		return nil, err
+	}
+	return &pluginpb.Resource{
+		ExternalId: filepath.ToSlash(relative),
+		Name:       filepath.Base(path),
+		Type:       "file",
+		ModifiedAt: info.ModTime().UTC().Format(time.RFC3339),
+	}, nil
+}
+
+func documentFromPath(root, path string, resourceIDs []string) (*pluginpb.Document, error) {
+	relative, err := filepath.Rel(root, path)
+	if err != nil {
+		return nil, err
+	}
+	sourceID := filepath.ToSlash(relative)
+	if !isSelectedResource(sourceID, resourceIDs) {
+		return nil, nil
+	}
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
+	return &pluginpb.Document{
+		SourceId:         sourceID,
+		SourceResourceId: sourceID,
+		Name:             filepath.Base(path),
+		Content:          content,
+		ContentType:      contentType(path),
+		UpdatedAt:        info.ModTime().UTC().Format(time.RFC3339),
+	}, nil
+}
+
+func isSelectedResource(sourceID string, resourceIDs []string) bool {
+	if len(resourceIDs) == 0 {
+		return true
+	}
+	for _, resourceID := range resourceIDs {
+		if sourceID == resourceID {
+			return true
+		}
+	}
+	return false
 }
 
 func scanFiles(root string) ([]string, error) {

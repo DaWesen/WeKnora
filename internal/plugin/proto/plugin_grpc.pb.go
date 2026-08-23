@@ -235,8 +235,11 @@ var PluginLifecycle_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	DataSourcePlugin_ValidateCredentials_FullMethodName = "/weknora.plugin.v1.DataSourcePlugin/ValidateCredentials"
-	DataSourcePlugin_Sync_FullMethodName                = "/weknora.plugin.v1.DataSourcePlugin/Sync"
+	DataSourcePlugin_ValidateCredentials_FullMethodName      = "/weknora.plugin.v1.DataSourcePlugin/ValidateCredentials"
+	DataSourcePlugin_ListResources_FullMethodName            = "/weknora.plugin.v1.DataSourcePlugin/ListResources"
+	DataSourcePlugin_ResolveResourceAncestors_FullMethodName = "/weknora.plugin.v1.DataSourcePlugin/ResolveResourceAncestors"
+	DataSourcePlugin_FetchAll_FullMethodName                 = "/weknora.plugin.v1.DataSourcePlugin/FetchAll"
+	DataSourcePlugin_Sync_FullMethodName                     = "/weknora.plugin.v1.DataSourcePlugin/Sync"
 )
 
 // DataSourcePluginClient is the client API for DataSourcePlugin service.
@@ -244,6 +247,9 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DataSourcePluginClient interface {
 	ValidateCredentials(ctx context.Context, in *ValidateCredentialsRequest, opts ...grpc.CallOption) (*ValidateCredentialsResponse, error)
+	ListResources(ctx context.Context, in *ListResourcesRequest, opts ...grpc.CallOption) (*ListResourcesResponse, error)
+	ResolveResourceAncestors(ctx context.Context, in *ResolveResourceAncestorsRequest, opts ...grpc.CallOption) (*ResolveResourceAncestorsResponse, error)
+	FetchAll(ctx context.Context, in *FetchAllRequest, opts ...grpc.CallOption) (*FetchAllResponse, error)
 	Sync(ctx context.Context, in *SyncRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SyncEvent], error)
 }
 
@@ -259,6 +265,36 @@ func (c *dataSourcePluginClient) ValidateCredentials(ctx context.Context, in *Va
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ValidateCredentialsResponse)
 	err := c.cc.Invoke(ctx, DataSourcePlugin_ValidateCredentials_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataSourcePluginClient) ListResources(ctx context.Context, in *ListResourcesRequest, opts ...grpc.CallOption) (*ListResourcesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListResourcesResponse)
+	err := c.cc.Invoke(ctx, DataSourcePlugin_ListResources_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataSourcePluginClient) ResolveResourceAncestors(ctx context.Context, in *ResolveResourceAncestorsRequest, opts ...grpc.CallOption) (*ResolveResourceAncestorsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResolveResourceAncestorsResponse)
+	err := c.cc.Invoke(ctx, DataSourcePlugin_ResolveResourceAncestors_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataSourcePluginClient) FetchAll(ctx context.Context, in *FetchAllRequest, opts ...grpc.CallOption) (*FetchAllResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FetchAllResponse)
+	err := c.cc.Invoke(ctx, DataSourcePlugin_FetchAll_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -289,6 +325,9 @@ type DataSourcePlugin_SyncClient = grpc.ServerStreamingClient[SyncEvent]
 // for forward compatibility.
 type DataSourcePluginServer interface {
 	ValidateCredentials(context.Context, *ValidateCredentialsRequest) (*ValidateCredentialsResponse, error)
+	ListResources(context.Context, *ListResourcesRequest) (*ListResourcesResponse, error)
+	ResolveResourceAncestors(context.Context, *ResolveResourceAncestorsRequest) (*ResolveResourceAncestorsResponse, error)
+	FetchAll(context.Context, *FetchAllRequest) (*FetchAllResponse, error)
 	Sync(*SyncRequest, grpc.ServerStreamingServer[SyncEvent]) error
 	mustEmbedUnimplementedDataSourcePluginServer()
 }
@@ -302,6 +341,15 @@ type UnimplementedDataSourcePluginServer struct{}
 
 func (UnimplementedDataSourcePluginServer) ValidateCredentials(context.Context, *ValidateCredentialsRequest) (*ValidateCredentialsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ValidateCredentials not implemented")
+}
+func (UnimplementedDataSourcePluginServer) ListResources(context.Context, *ListResourcesRequest) (*ListResourcesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListResources not implemented")
+}
+func (UnimplementedDataSourcePluginServer) ResolveResourceAncestors(context.Context, *ResolveResourceAncestorsRequest) (*ResolveResourceAncestorsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResolveResourceAncestors not implemented")
+}
+func (UnimplementedDataSourcePluginServer) FetchAll(context.Context, *FetchAllRequest) (*FetchAllResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method FetchAll not implemented")
 }
 func (UnimplementedDataSourcePluginServer) Sync(*SyncRequest, grpc.ServerStreamingServer[SyncEvent]) error {
 	return status.Error(codes.Unimplemented, "method Sync not implemented")
@@ -345,6 +393,60 @@ func _DataSourcePlugin_ValidateCredentials_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DataSourcePlugin_ListResources_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListResourcesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataSourcePluginServer).ListResources(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DataSourcePlugin_ListResources_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataSourcePluginServer).ListResources(ctx, req.(*ListResourcesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DataSourcePlugin_ResolveResourceAncestors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResolveResourceAncestorsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataSourcePluginServer).ResolveResourceAncestors(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DataSourcePlugin_ResolveResourceAncestors_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataSourcePluginServer).ResolveResourceAncestors(ctx, req.(*ResolveResourceAncestorsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DataSourcePlugin_FetchAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FetchAllRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataSourcePluginServer).FetchAll(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DataSourcePlugin_FetchAll_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataSourcePluginServer).FetchAll(ctx, req.(*FetchAllRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DataSourcePlugin_Sync_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(SyncRequest)
 	if err := stream.RecvMsg(m); err != nil {
@@ -366,6 +468,18 @@ var DataSourcePlugin_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ValidateCredentials",
 			Handler:    _DataSourcePlugin_ValidateCredentials_Handler,
+		},
+		{
+			MethodName: "ListResources",
+			Handler:    _DataSourcePlugin_ListResources_Handler,
+		},
+		{
+			MethodName: "ResolveResourceAncestors",
+			Handler:    _DataSourcePlugin_ResolveResourceAncestors_Handler,
+		},
+		{
+			MethodName: "FetchAll",
+			Handler:    _DataSourcePlugin_FetchAll_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

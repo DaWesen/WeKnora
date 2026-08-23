@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -180,6 +181,20 @@ func startProcess(ctx context.Context, plugin Plugin) (*startedPlugin, error) {
 }
 
 func startContainer(ctx context.Context, plugin Plugin, config map[string]string) (*startedPlugin, error) {
+	name, args, err := containerRunArgs(plugin, config)
+	if err != nil {
+		return nil, err
+	}
+	output, err := exec.CommandContext(ctx, "docker", args...).CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("start plugin container %q: %w: %s", plugin.Manifest.Metadata.ID, err, strings.TrimSpace(string(output)))
+	}
+	return &startedPlugin{containerName: name}, nil
+}
+
+// containerRunArgs builds the complete Docker invocation separately from command
+// execution so its isolation contract remains unit-testable without a daemon.
+func containerRunArgs(plugin Plugin, config map[string]string) (string, []string, error) {
 	entrypoint := plugin.Manifest.Spec.Entrypoint
 	name := "weknora-plugin-" + sanitizeContainerName(plugin.Manifest.Metadata.ID)
 	args := []string{
@@ -194,22 +209,22 @@ func startContainer(ctx context.Context, plugin Plugin, config map[string]string
 	}
 	if !plugin.Manifest.Spec.Permissions.Network.Enabled {
 		if !strings.HasPrefix(entrypoint.GRPCAddress, "unix://") {
-			return nil, fmt.Errorf("network-disabled container plugin requires a unix gRPC address")
+			return "", nil, fmt.Errorf("network-disabled container plugin requires a unix gRPC address")
 		}
 		socketDir := filepath.Dir(strings.TrimPrefix(entrypoint.GRPCAddress, "unix://"))
 		if err := os.MkdirAll(socketDir, 0o755); err != nil {
-			return nil, fmt.Errorf("create plugin socket directory: %w", err)
+			return "", nil, fmt.Errorf("create plugin socket directory: %w", err)
 		}
 		containerSocketDir := socketDir
 		if entrypoint.ContainerGRPCAddress != "" {
-			containerSocketDir = filepath.Dir(strings.TrimPrefix(entrypoint.ContainerGRPCAddress, "unix://"))
+			containerSocketDir = path.Dir(strings.TrimPrefix(entrypoint.ContainerGRPCAddress, "unix://"))
 		}
 		args = append(args, "--network", "none", "--mount", fmt.Sprintf("type=bind,src=%s,dst=%s", socketDir, containerSocketDir))
 	}
 	for _, path := range plugin.Manifest.Spec.Permissions.Filesystem.ReadOnly {
 		resolvedPath, err := resolveReadOnlyPath(path, config)
 		if err != nil {
-			return nil, fmt.Errorf("resolve plugin filesystem permission: %w", err)
+			return "", nil, fmt.Errorf("resolve plugin filesystem permission: %w", err)
 		}
 		args = append(args, "--mount", fmt.Sprintf("type=bind,src=%s,dst=%s,readonly", resolvedPath, resolvedPath))
 	}
@@ -219,11 +234,7 @@ func startContainer(ctx context.Context, plugin Plugin, config map[string]string
 	}
 	args = append(args, "-e", "WEKNORA_PLUGIN_GRPC_ADDRESS="+grpcAddress, entrypoint.Image)
 	args = append(args, entrypoint.Command...)
-	output, err := exec.CommandContext(ctx, "docker", args...).CombinedOutput()
-	if err != nil {
-		return nil, fmt.Errorf("start plugin container %q: %w: %s", plugin.Manifest.Metadata.ID, err, strings.TrimSpace(string(output)))
-	}
-	return &startedPlugin{containerName: name}, nil
+	return name, args, nil
 }
 
 func filesystemPermissionKey(permissions []string, config map[string]string) (string, error) {

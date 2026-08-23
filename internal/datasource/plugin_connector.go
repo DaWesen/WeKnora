@@ -59,16 +59,57 @@ func (c *PluginConnector) Validate(ctx context.Context, config *types.DataSource
 	return nil
 }
 
-func (c *PluginConnector) ListResources(context.Context, *types.DataSourceConfig, string) ([]types.Resource, error) {
-	return nil, nil
+func (c *PluginConnector) ListResources(ctx context.Context, config *types.DataSourceConfig, parentID string) ([]types.Resource, error) {
+	client, configValues, err := c.connect(ctx, config)
+	if err != nil {
+		return nil, err
+	}
+	defer client.Close()
+
+	response, err := client.ListResources(ctx, configValues, parentID)
+	if err != nil {
+		c.markTransportFailure(ctx, err)
+		return nil, err
+	}
+	resources := make([]types.Resource, 0, len(response.Resources))
+	for _, resource := range response.Resources {
+		resources = append(resources, resourceFromPlugin(resource))
+	}
+	return resources, nil
 }
 
-func (c *PluginConnector) ResolveResourceAncestors(context.Context, *types.DataSourceConfig, []string) ([]string, error) {
-	return nil, nil
+func (c *PluginConnector) ResolveResourceAncestors(ctx context.Context, config *types.DataSourceConfig, resourceIDs []string) ([]string, error) {
+	client, configValues, err := c.connect(ctx, config)
+	if err != nil {
+		return nil, err
+	}
+	defer client.Close()
+
+	response, err := client.ResolveResourceAncestors(ctx, configValues, resourceIDs)
+	if err != nil {
+		c.markTransportFailure(ctx, err)
+		return nil, err
+	}
+	return response.AncestorIds, nil
 }
 
-func (c *PluginConnector) FetchAll(context.Context, *types.DataSourceConfig, []string) ([]types.FetchedItem, error) {
-	return nil, fmt.Errorf("plugin connector requires streaming sync")
+func (c *PluginConnector) FetchAll(ctx context.Context, config *types.DataSourceConfig, resourceIDs []string) ([]types.FetchedItem, error) {
+	client, configValues, err := c.connect(ctx, config)
+	if err != nil {
+		return nil, err
+	}
+	defer client.Close()
+
+	response, err := client.FetchAll(ctx, "", configValues, resourceIDs)
+	if err != nil {
+		c.markTransportFailure(ctx, err)
+		return nil, err
+	}
+	items := make([]types.FetchedItem, 0, len(response.Documents))
+	for _, document := range response.Documents {
+		items = append(items, fetchedItemFromDocument(document))
+	}
+	return items, nil
 }
 
 func (c *PluginConnector) FetchIncremental(context.Context, *types.DataSourceConfig, *types.SyncCursor) ([]types.FetchedItem, *types.SyncCursor, error) {
@@ -91,7 +132,7 @@ func (c *PluginConnector) FetchStream(ctx context.Context, config *types.DataSou
 		c.markTransportFailure(ctx, err)
 		return nil, err
 	}
-	stream, err := client.Sync(ctx, "", configValues, readPluginCursor(cursor))
+	stream, err := client.Sync(ctx, "", configValues, readPluginCursor(cursor), config.ResourceIDs)
 	if err != nil {
 		c.markTransportFailure(ctx, err)
 		return nil, err
@@ -170,6 +211,24 @@ func shouldMarkRuntimeFailed(ctx context.Context, err error) bool {
 	}
 }
 
+func (c *PluginConnector) connect(ctx context.Context, config *types.DataSourceConfig) (*plugin.Client, map[string]string, error) {
+	configValues := pluginConfig(config)
+	if err := c.manager.StartOrRestart(ctx, c.pluginID, configValues); err != nil {
+		return nil, nil, err
+	}
+	client, err := c.manager.Connect(ctx, c.pluginID)
+	if err != nil {
+		c.markTransportFailure(ctx, err)
+		return nil, nil, err
+	}
+	if err := validatePluginConfig(ctx, client, configValues); err != nil {
+		_ = client.Close()
+		c.markTransportFailure(ctx, err)
+		return nil, nil, err
+	}
+	return client, configValues, nil
+}
+
 func validatePluginConfig(ctx context.Context, client *plugin.Client, config map[string]string) error {
 	response, err := client.ValidateConfig(ctx, config)
 	if err != nil {
@@ -226,15 +285,45 @@ func pluginSyncCursor(cursor string) *types.SyncCursor {
 	}
 }
 
+func resourceFromPlugin(resource *pluginpb.Resource) types.Resource {
+	modifiedAt, _ := time.Parse(time.RFC3339, resource.ModifiedAt)
+	metadata := make(map[string]interface{}, len(resource.Metadata))
+	for key, value := range resource.Metadata {
+		metadata[key] = value
+	}
+	return types.Resource{
+		ExternalID:  resource.ExternalId,
+		Name:        resource.Name,
+		Type:        resource.Type,
+		Description: resource.Description,
+		URL:         resource.Url,
+		ModifiedAt:  modifiedAt,
+		ParentID:    resource.ParentId,
+		HasChildren: resource.HasChildren,
+		Metadata:    metadata,
+	}
+}
+
 func fetchedItemFromUpsert(document *pluginpb.UpsertDocument) types.FetchedItem {
-	updatedAt, _ := time.Parse(time.RFC3339, document.UpdatedAt)
+	return fetchedItem(document.SourceId, "", document.Name, document.Content, document.ContentType, "", document.UpdatedAt, document.Metadata, false)
+}
+
+func fetchedItemFromDocument(document *pluginpb.Document) types.FetchedItem {
+	return fetchedItem(document.SourceId, document.SourceResourceId, document.Name, document.Content, document.ContentType, document.Url, document.UpdatedAt, document.Metadata, document.IsDeleted)
+}
+
+func fetchedItem(sourceID, sourceResourceID, name string, content []byte, contentType, url, updatedAtRaw string, metadata map[string]string, isDeleted bool) types.FetchedItem {
+	updatedAt, _ := time.Parse(time.RFC3339, updatedAtRaw)
 	return types.FetchedItem{
-		ExternalID:  document.SourceId,
-		Title:       document.Name,
-		Content:     document.Content,
-		ContentType: document.ContentType,
-		FileName:    document.Name,
-		UpdatedAt:   updatedAt,
-		Metadata:    document.Metadata,
+		ExternalID:       sourceID,
+		SourceResourceID: sourceResourceID,
+		Title:            name,
+		Content:          content,
+		ContentType:      contentType,
+		FileName:         name,
+		URL:              url,
+		UpdatedAt:        updatedAt,
+		Metadata:         metadata,
+		IsDeleted:        isDeleted,
 	}
 }

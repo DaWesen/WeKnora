@@ -61,11 +61,34 @@ func (c *Client) ValidateCredentials(ctx context.Context, config map[string]stri
 	return c.datasource.ValidateCredentials(ctx, &pluginpb.ValidateCredentialsRequest{Config: config})
 }
 
-func (c *Client) Sync(ctx context.Context, datasourceID string, config map[string]string, cursor string) (pluginpb.DataSourcePlugin_SyncClient, error) {
+func (c *Client) ListResources(ctx context.Context, config map[string]string, parentID string) (*pluginpb.ListResourcesResponse, error) {
+	return c.datasource.ListResources(ctx, &pluginpb.ListResourcesRequest{
+		Config:   config,
+		ParentId: parentID,
+	})
+}
+
+func (c *Client) ResolveResourceAncestors(ctx context.Context, config map[string]string, resourceIDs []string) (*pluginpb.ResolveResourceAncestorsResponse, error) {
+	return c.datasource.ResolveResourceAncestors(ctx, &pluginpb.ResolveResourceAncestorsRequest{
+		Config:      config,
+		ResourceIds: resourceIDs,
+	})
+}
+
+func (c *Client) FetchAll(ctx context.Context, datasourceID string, config map[string]string, resourceIDs []string) (*pluginpb.FetchAllResponse, error) {
+	return c.datasource.FetchAll(ctx, &pluginpb.FetchAllRequest{
+		DatasourceId: datasourceID,
+		Config:       config,
+		ResourceIds:  resourceIDs,
+	})
+}
+
+func (c *Client) Sync(ctx context.Context, datasourceID string, config map[string]string, cursor string, resourceIDs []string) (pluginpb.DataSourcePlugin_SyncClient, error) {
 	return c.datasource.Sync(ctx, &pluginpb.SyncRequest{
 		DatasourceId: datasourceID,
 		Config:       config,
 		Cursor:       cursor,
+		ResourceIds:  resourceIDs,
 	})
 }
 

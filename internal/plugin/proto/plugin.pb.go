@@ -616,18 +616,531 @@ func (x *ValidateCredentialsResponse) GetMessage() string {
 	return ""
 }
 
+type ListResourcesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Config        map[string]string      `protobuf:"bytes,1,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	ParentId      string                 `protobuf:"bytes,2,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListResourcesRequest) Reset() {
+	*x = ListResourcesRequest{}
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListResourcesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListResourcesRequest) ProtoMessage() {}
+
+func (x *ListResourcesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListResourcesRequest.ProtoReflect.Descriptor instead.
+func (*ListResourcesRequest) Descriptor() ([]byte, []int) {
+	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ListResourcesRequest) GetConfig() map[string]string {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+func (x *ListResourcesRequest) GetParentId() string {
+	if x != nil {
+		return x.ParentId
+	}
+	return ""
+}
+
+type ListResourcesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Resources     []*Resource            `protobuf:"bytes,1,rep,name=resources,proto3" json:"resources,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListResourcesResponse) Reset() {
+	*x = ListResourcesResponse{}
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListResourcesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListResourcesResponse) ProtoMessage() {}
+
+func (x *ListResourcesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListResourcesResponse.ProtoReflect.Descriptor instead.
+func (*ListResourcesResponse) Descriptor() ([]byte, []int) {
+	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ListResourcesResponse) GetResources() []*Resource {
+	if x != nil {
+		return x.Resources
+	}
+	return nil
+}
+
+type ResolveResourceAncestorsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Config        map[string]string      `protobuf:"bytes,1,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	ResourceIds   []string               `protobuf:"bytes,2,rep,name=resource_ids,json=resourceIds,proto3" json:"resource_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResolveResourceAncestorsRequest) Reset() {
+	*x = ResolveResourceAncestorsRequest{}
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResolveResourceAncestorsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResolveResourceAncestorsRequest) ProtoMessage() {}
+
+func (x *ResolveResourceAncestorsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResolveResourceAncestorsRequest.ProtoReflect.Descriptor instead.
+func (*ResolveResourceAncestorsRequest) Descriptor() ([]byte, []int) {
+	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ResolveResourceAncestorsRequest) GetConfig() map[string]string {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+func (x *ResolveResourceAncestorsRequest) GetResourceIds() []string {
+	if x != nil {
+		return x.ResourceIds
+	}
+	return nil
+}
+
+type ResolveResourceAncestorsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AncestorIds   []string               `protobuf:"bytes,1,rep,name=ancestor_ids,json=ancestorIds,proto3" json:"ancestor_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResolveResourceAncestorsResponse) Reset() {
+	*x = ResolveResourceAncestorsResponse{}
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResolveResourceAncestorsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResolveResourceAncestorsResponse) ProtoMessage() {}
+
+func (x *ResolveResourceAncestorsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResolveResourceAncestorsResponse.ProtoReflect.Descriptor instead.
+func (*ResolveResourceAncestorsResponse) Descriptor() ([]byte, []int) {
+	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *ResolveResourceAncestorsResponse) GetAncestorIds() []string {
+	if x != nil {
+		return x.AncestorIds
+	}
+	return nil
+}
+
+type FetchAllRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DatasourceId  string                 `protobuf:"bytes,1,opt,name=datasource_id,json=datasourceId,proto3" json:"datasource_id,omitempty"`
+	Config        map[string]string      `protobuf:"bytes,2,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	ResourceIds   []string               `protobuf:"bytes,3,rep,name=resource_ids,json=resourceIds,proto3" json:"resource_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FetchAllRequest) Reset() {
+	*x = FetchAllRequest{}
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FetchAllRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FetchAllRequest) ProtoMessage() {}
+
+func (x *FetchAllRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FetchAllRequest.ProtoReflect.Descriptor instead.
+func (*FetchAllRequest) Descriptor() ([]byte, []int) {
+	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *FetchAllRequest) GetDatasourceId() string {
+	if x != nil {
+		return x.DatasourceId
+	}
+	return ""
+}
+
+func (x *FetchAllRequest) GetConfig() map[string]string {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+func (x *FetchAllRequest) GetResourceIds() []string {
+	if x != nil {
+		return x.ResourceIds
+	}
+	return nil
+}
+
+type FetchAllResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Documents     []*Document            `protobuf:"bytes,1,rep,name=documents,proto3" json:"documents,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FetchAllResponse) Reset() {
+	*x = FetchAllResponse{}
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FetchAllResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FetchAllResponse) ProtoMessage() {}
+
+func (x *FetchAllResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FetchAllResponse.ProtoReflect.Descriptor instead.
+func (*FetchAllResponse) Descriptor() ([]byte, []int) {
+	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *FetchAllResponse) GetDocuments() []*Document {
+	if x != nil {
+		return x.Documents
+	}
+	return nil
+}
+
+type Resource struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ExternalId    string                 `protobuf:"bytes,1,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Type          string                 `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
+	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	Url           string                 `protobuf:"bytes,5,opt,name=url,proto3" json:"url,omitempty"`
+	ModifiedAt    string                 `protobuf:"bytes,6,opt,name=modified_at,json=modifiedAt,proto3" json:"modified_at,omitempty"`
+	ParentId      string                 `protobuf:"bytes,7,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
+	HasChildren   bool                   `protobuf:"varint,8,opt,name=has_children,json=hasChildren,proto3" json:"has_children,omitempty"`
+	Metadata      map[string]string      `protobuf:"bytes,9,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Resource) Reset() {
+	*x = Resource{}
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Resource) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Resource) ProtoMessage() {}
+
+func (x *Resource) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Resource.ProtoReflect.Descriptor instead.
+func (*Resource) Descriptor() ([]byte, []int) {
+	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *Resource) GetExternalId() string {
+	if x != nil {
+		return x.ExternalId
+	}
+	return ""
+}
+
+func (x *Resource) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Resource) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *Resource) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *Resource) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *Resource) GetModifiedAt() string {
+	if x != nil {
+		return x.ModifiedAt
+	}
+	return ""
+}
+
+func (x *Resource) GetParentId() string {
+	if x != nil {
+		return x.ParentId
+	}
+	return ""
+}
+
+func (x *Resource) GetHasChildren() bool {
+	if x != nil {
+		return x.HasChildren
+	}
+	return false
+}
+
+func (x *Resource) GetMetadata() map[string]string {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+type Document struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	SourceId         string                 `protobuf:"bytes,1,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
+	SourceResourceId string                 `protobuf:"bytes,2,opt,name=source_resource_id,json=sourceResourceId,proto3" json:"source_resource_id,omitempty"`
+	Name             string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Content          []byte                 `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
+	ContentType      string                 `protobuf:"bytes,5,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	Url              string                 `protobuf:"bytes,6,opt,name=url,proto3" json:"url,omitempty"`
+	UpdatedAt        string                 `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	Metadata         map[string]string      `protobuf:"bytes,8,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	IsDeleted        bool                   `protobuf:"varint,9,opt,name=is_deleted,json=isDeleted,proto3" json:"is_deleted,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *Document) Reset() {
+	*x = Document{}
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Document) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Document) ProtoMessage() {}
+
+func (x *Document) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Document.ProtoReflect.Descriptor instead.
+func (*Document) Descriptor() ([]byte, []int) {
+	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *Document) GetSourceId() string {
+	if x != nil {
+		return x.SourceId
+	}
+	return ""
+}
+
+func (x *Document) GetSourceResourceId() string {
+	if x != nil {
+		return x.SourceResourceId
+	}
+	return ""
+}
+
+func (x *Document) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Document) GetContent() []byte {
+	if x != nil {
+		return x.Content
+	}
+	return nil
+}
+
+func (x *Document) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+func (x *Document) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *Document) GetUpdatedAt() string {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return ""
+}
+
+func (x *Document) GetMetadata() map[string]string {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+func (x *Document) GetIsDeleted() bool {
+	if x != nil {
+		return x.IsDeleted
+	}
+	return false
+}
+
 type SyncRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	DatasourceId  string                 `protobuf:"bytes,1,opt,name=datasource_id,json=datasourceId,proto3" json:"datasource_id,omitempty"`
 	Config        map[string]string      `protobuf:"bytes,2,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Cursor        string                 `protobuf:"bytes,3,opt,name=cursor,proto3" json:"cursor,omitempty"`
+	ResourceIds   []string               `protobuf:"bytes,4,rep,name=resource_ids,json=resourceIds,proto3" json:"resource_ids,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SyncRequest) Reset() {
 	*x = SyncRequest{}
-	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[11]
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -639,7 +1152,7 @@ func (x *SyncRequest) String() string {
 func (*SyncRequest) ProtoMessage() {}
 
 func (x *SyncRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[11]
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -652,7 +1165,7 @@ func (x *SyncRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncRequest.ProtoReflect.Descriptor instead.
 func (*SyncRequest) Descriptor() ([]byte, []int) {
-	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{11}
+	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *SyncRequest) GetDatasourceId() string {
@@ -676,6 +1189,13 @@ func (x *SyncRequest) GetCursor() string {
 	return ""
 }
 
+func (x *SyncRequest) GetResourceIds() []string {
+	if x != nil {
+		return x.ResourceIds
+	}
+	return nil
+}
+
 type SyncEvent struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Payload:
@@ -693,7 +1213,7 @@ type SyncEvent struct {
 
 func (x *SyncEvent) Reset() {
 	*x = SyncEvent{}
-	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[12]
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -705,7 +1225,7 @@ func (x *SyncEvent) String() string {
 func (*SyncEvent) ProtoMessage() {}
 
 func (x *SyncEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[12]
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -718,7 +1238,7 @@ func (x *SyncEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncEvent.ProtoReflect.Descriptor instead.
 func (*SyncEvent) Descriptor() ([]byte, []int) {
-	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{12}
+	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *SyncEvent) GetPayload() isSyncEvent_Payload {
@@ -836,7 +1356,7 @@ type UpsertDocument struct {
 
 func (x *UpsertDocument) Reset() {
 	*x = UpsertDocument{}
-	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[13]
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -848,7 +1368,7 @@ func (x *UpsertDocument) String() string {
 func (*UpsertDocument) ProtoMessage() {}
 
 func (x *UpsertDocument) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[13]
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -861,7 +1381,7 @@ func (x *UpsertDocument) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpsertDocument.ProtoReflect.Descriptor instead.
 func (*UpsertDocument) Descriptor() ([]byte, []int) {
-	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{13}
+	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *UpsertDocument) GetSourceId() string {
@@ -915,7 +1435,7 @@ type DeleteDocument struct {
 
 func (x *DeleteDocument) Reset() {
 	*x = DeleteDocument{}
-	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[14]
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -927,7 +1447,7 @@ func (x *DeleteDocument) String() string {
 func (*DeleteDocument) ProtoMessage() {}
 
 func (x *DeleteDocument) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[14]
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -940,7 +1460,7 @@ func (x *DeleteDocument) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteDocument.ProtoReflect.Descriptor instead.
 func (*DeleteDocument) Descriptor() ([]byte, []int) {
-	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{14}
+	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *DeleteDocument) GetSourceId() string {
@@ -961,7 +1481,7 @@ type Progress struct {
 
 func (x *Progress) Reset() {
 	*x = Progress{}
-	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[15]
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -973,7 +1493,7 @@ func (x *Progress) String() string {
 func (*Progress) ProtoMessage() {}
 
 func (x *Progress) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[15]
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -986,7 +1506,7 @@ func (x *Progress) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Progress.ProtoReflect.Descriptor instead.
 func (*Progress) Descriptor() ([]byte, []int) {
-	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{15}
+	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *Progress) GetCompleted() uint64 {
@@ -1019,7 +1539,7 @@ type Checkpoint struct {
 
 func (x *Checkpoint) Reset() {
 	*x = Checkpoint{}
-	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[16]
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1031,7 +1551,7 @@ func (x *Checkpoint) String() string {
 func (*Checkpoint) ProtoMessage() {}
 
 func (x *Checkpoint) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[16]
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1044,7 +1564,7 @@ func (x *Checkpoint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Checkpoint.ProtoReflect.Descriptor instead.
 func (*Checkpoint) Descriptor() ([]byte, []int) {
-	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{16}
+	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *Checkpoint) GetCursor() string {
@@ -1067,7 +1587,7 @@ type SyncError struct {
 
 func (x *SyncError) Reset() {
 	*x = SyncError{}
-	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[17]
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1079,7 +1599,7 @@ func (x *SyncError) String() string {
 func (*SyncError) ProtoMessage() {}
 
 func (x *SyncError) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[17]
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1092,7 +1612,7 @@ func (x *SyncError) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncError.ProtoReflect.Descriptor instead.
 func (*SyncError) Descriptor() ([]byte, []int) {
-	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{17}
+	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *SyncError) GetSourceId() string {
@@ -1139,7 +1659,7 @@ type Completed struct {
 
 func (x *Completed) Reset() {
 	*x = Completed{}
-	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[18]
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1151,7 +1671,7 @@ func (x *Completed) String() string {
 func (*Completed) ProtoMessage() {}
 
 func (x *Completed) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[18]
+	mi := &file_internal_plugin_proto_plugin_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1164,7 +1684,7 @@ func (x *Completed) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Completed.ProtoReflect.Descriptor instead.
 func (*Completed) Descriptor() ([]byte, []int) {
-	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{18}
+	return file_internal_plugin_proto_plugin_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *Completed) GetCursor() string {
@@ -1214,11 +1734,67 @@ const file_internal_plugin_proto_plugin_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"M\n" +
 	"\x1bValidateCredentialsResponse\x12\x14\n" +
 	"\x05valid\x18\x01 \x01(\bR\x05valid\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\xc9\x01\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"\xbb\x01\n" +
+	"\x14ListResourcesRequest\x12K\n" +
+	"\x06config\x18\x01 \x03(\v23.weknora.plugin.v1.ListResourcesRequest.ConfigEntryR\x06config\x12\x1b\n" +
+	"\tparent_id\x18\x02 \x01(\tR\bparentId\x1a9\n" +
+	"\vConfigEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"R\n" +
+	"\x15ListResourcesResponse\x129\n" +
+	"\tresources\x18\x01 \x03(\v2\x1b.weknora.plugin.v1.ResourceR\tresources\"\xd7\x01\n" +
+	"\x1fResolveResourceAncestorsRequest\x12V\n" +
+	"\x06config\x18\x01 \x03(\v2>.weknora.plugin.v1.ResolveResourceAncestorsRequest.ConfigEntryR\x06config\x12!\n" +
+	"\fresource_ids\x18\x02 \x03(\tR\vresourceIds\x1a9\n" +
+	"\vConfigEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"E\n" +
+	" ResolveResourceAncestorsResponse\x12!\n" +
+	"\fancestor_ids\x18\x01 \x03(\tR\vancestorIds\"\xdc\x01\n" +
+	"\x0fFetchAllRequest\x12#\n" +
+	"\rdatasource_id\x18\x01 \x01(\tR\fdatasourceId\x12F\n" +
+	"\x06config\x18\x02 \x03(\v2..weknora.plugin.v1.FetchAllRequest.ConfigEntryR\x06config\x12!\n" +
+	"\fresource_ids\x18\x03 \x03(\tR\vresourceIds\x1a9\n" +
+	"\vConfigEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"M\n" +
+	"\x10FetchAllResponse\x129\n" +
+	"\tdocuments\x18\x01 \x03(\v2\x1b.weknora.plugin.v1.DocumentR\tdocuments\"\xec\x02\n" +
+	"\bResource\x12\x1f\n" +
+	"\vexternal_id\x18\x01 \x01(\tR\n" +
+	"externalId\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
+	"\x04type\x18\x03 \x01(\tR\x04type\x12 \n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\x12\x10\n" +
+	"\x03url\x18\x05 \x01(\tR\x03url\x12\x1f\n" +
+	"\vmodified_at\x18\x06 \x01(\tR\n" +
+	"modifiedAt\x12\x1b\n" +
+	"\tparent_id\x18\a \x01(\tR\bparentId\x12!\n" +
+	"\fhas_children\x18\b \x01(\bR\vhasChildren\x12E\n" +
+	"\bmetadata\x18\t \x03(\v2).weknora.plugin.v1.Resource.MetadataEntryR\bmetadata\x1a;\n" +
+	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xfa\x02\n" +
+	"\bDocument\x12\x1b\n" +
+	"\tsource_id\x18\x01 \x01(\tR\bsourceId\x12,\n" +
+	"\x12source_resource_id\x18\x02 \x01(\tR\x10sourceResourceId\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12\x18\n" +
+	"\acontent\x18\x04 \x01(\fR\acontent\x12!\n" +
+	"\fcontent_type\x18\x05 \x01(\tR\vcontentType\x12\x10\n" +
+	"\x03url\x18\x06 \x01(\tR\x03url\x12\x1d\n" +
+	"\n" +
+	"updated_at\x18\a \x01(\tR\tupdatedAt\x12E\n" +
+	"\bmetadata\x18\b \x03(\v2).weknora.plugin.v1.Document.MetadataEntryR\bmetadata\x12\x1d\n" +
+	"\n" +
+	"is_deleted\x18\t \x01(\bR\tisDeleted\x1a;\n" +
+	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xec\x01\n" +
 	"\vSyncRequest\x12#\n" +
 	"\rdatasource_id\x18\x01 \x01(\tR\fdatasourceId\x12B\n" +
 	"\x06config\x18\x02 \x03(\v2*.weknora.plugin.v1.SyncRequest.ConfigEntryR\x06config\x12\x16\n" +
-	"\x06cursor\x18\x03 \x01(\tR\x06cursor\x1a9\n" +
+	"\x06cursor\x18\x03 \x01(\tR\x06cursor\x12!\n" +
+	"\fresource_ids\x18\x04 \x03(\tR\vresourceIds\x1a9\n" +
 	"\vConfigEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa2\x03\n" +
@@ -1267,9 +1843,12 @@ const file_internal_plugin_proto_plugin_proto_rawDesc = "" +
 	"\aGetInfo\x12!.weknora.plugin.v1.GetInfoRequest\x1a\x1d.weknora.plugin.v1.PluginInfo\x12\\\n" +
 	"\vHealthCheck\x12%.weknora.plugin.v1.HealthCheckRequest\x1a&.weknora.plugin.v1.HealthCheckResponse\x12e\n" +
 	"\x0eValidateConfig\x12(.weknora.plugin.v1.ValidateConfigRequest\x1a).weknora.plugin.v1.ValidateConfigResponse\x12S\n" +
-	"\bShutdown\x12\".weknora.plugin.v1.ShutdownRequest\x1a#.weknora.plugin.v1.ShutdownResponse2\xd0\x01\n" +
+	"\bShutdown\x12\".weknora.plugin.v1.ShutdownRequest\x1a#.weknora.plugin.v1.ShutdownResponse2\x8f\x04\n" +
 	"\x10DataSourcePlugin\x12t\n" +
-	"\x13ValidateCredentials\x12-.weknora.plugin.v1.ValidateCredentialsRequest\x1a..weknora.plugin.v1.ValidateCredentialsResponse\x12F\n" +
+	"\x13ValidateCredentials\x12-.weknora.plugin.v1.ValidateCredentialsRequest\x1a..weknora.plugin.v1.ValidateCredentialsResponse\x12b\n" +
+	"\rListResources\x12'.weknora.plugin.v1.ListResourcesRequest\x1a(.weknora.plugin.v1.ListResourcesResponse\x12\x83\x01\n" +
+	"\x18ResolveResourceAncestors\x122.weknora.plugin.v1.ResolveResourceAncestorsRequest\x1a3.weknora.plugin.v1.ResolveResourceAncestorsResponse\x12S\n" +
+	"\bFetchAll\x12\".weknora.plugin.v1.FetchAllRequest\x1a#.weknora.plugin.v1.FetchAllResponse\x12F\n" +
 	"\x04Sync\x12\x1e.weknora.plugin.v1.SyncRequest\x1a\x1c.weknora.plugin.v1.SyncEvent0\x01B2Z0github.com/Tencent/WeKnora/internal/plugin/protob\x06proto3"
 
 var (
@@ -1285,65 +1864,91 @@ func file_internal_plugin_proto_plugin_proto_rawDescGZIP() []byte {
 }
 
 var file_internal_plugin_proto_plugin_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_internal_plugin_proto_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_internal_plugin_proto_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
 var file_internal_plugin_proto_plugin_proto_goTypes = []any{
-	(SyncErrorCode)(0),                  // 0: weknora.plugin.v1.SyncErrorCode
-	(HealthCheckResponse_Status)(0),     // 1: weknora.plugin.v1.HealthCheckResponse.Status
-	(*GetInfoRequest)(nil),              // 2: weknora.plugin.v1.GetInfoRequest
-	(*PluginInfo)(nil),                  // 3: weknora.plugin.v1.PluginInfo
-	(*HealthCheckRequest)(nil),          // 4: weknora.plugin.v1.HealthCheckRequest
-	(*HealthCheckResponse)(nil),         // 5: weknora.plugin.v1.HealthCheckResponse
-	(*ValidateConfigRequest)(nil),       // 6: weknora.plugin.v1.ValidateConfigRequest
-	(*ValidateConfigResponse)(nil),      // 7: weknora.plugin.v1.ValidateConfigResponse
-	(*FieldError)(nil),                  // 8: weknora.plugin.v1.FieldError
-	(*ShutdownRequest)(nil),             // 9: weknora.plugin.v1.ShutdownRequest
-	(*ShutdownResponse)(nil),            // 10: weknora.plugin.v1.ShutdownResponse
-	(*ValidateCredentialsRequest)(nil),  // 11: weknora.plugin.v1.ValidateCredentialsRequest
-	(*ValidateCredentialsResponse)(nil), // 12: weknora.plugin.v1.ValidateCredentialsResponse
-	(*SyncRequest)(nil),                 // 13: weknora.plugin.v1.SyncRequest
-	(*SyncEvent)(nil),                   // 14: weknora.plugin.v1.SyncEvent
-	(*UpsertDocument)(nil),              // 15: weknora.plugin.v1.UpsertDocument
-	(*DeleteDocument)(nil),              // 16: weknora.plugin.v1.DeleteDocument
-	(*Progress)(nil),                    // 17: weknora.plugin.v1.Progress
-	(*Checkpoint)(nil),                  // 18: weknora.plugin.v1.Checkpoint
-	(*SyncError)(nil),                   // 19: weknora.plugin.v1.SyncError
-	(*Completed)(nil),                   // 20: weknora.plugin.v1.Completed
-	nil,                                 // 21: weknora.plugin.v1.ValidateConfigRequest.ConfigEntry
-	nil,                                 // 22: weknora.plugin.v1.ValidateCredentialsRequest.ConfigEntry
-	nil,                                 // 23: weknora.plugin.v1.SyncRequest.ConfigEntry
-	nil,                                 // 24: weknora.plugin.v1.UpsertDocument.MetadataEntry
+	(SyncErrorCode)(0),                       // 0: weknora.plugin.v1.SyncErrorCode
+	(HealthCheckResponse_Status)(0),          // 1: weknora.plugin.v1.HealthCheckResponse.Status
+	(*GetInfoRequest)(nil),                   // 2: weknora.plugin.v1.GetInfoRequest
+	(*PluginInfo)(nil),                       // 3: weknora.plugin.v1.PluginInfo
+	(*HealthCheckRequest)(nil),               // 4: weknora.plugin.v1.HealthCheckRequest
+	(*HealthCheckResponse)(nil),              // 5: weknora.plugin.v1.HealthCheckResponse
+	(*ValidateConfigRequest)(nil),            // 6: weknora.plugin.v1.ValidateConfigRequest
+	(*ValidateConfigResponse)(nil),           // 7: weknora.plugin.v1.ValidateConfigResponse
+	(*FieldError)(nil),                       // 8: weknora.plugin.v1.FieldError
+	(*ShutdownRequest)(nil),                  // 9: weknora.plugin.v1.ShutdownRequest
+	(*ShutdownResponse)(nil),                 // 10: weknora.plugin.v1.ShutdownResponse
+	(*ValidateCredentialsRequest)(nil),       // 11: weknora.plugin.v1.ValidateCredentialsRequest
+	(*ValidateCredentialsResponse)(nil),      // 12: weknora.plugin.v1.ValidateCredentialsResponse
+	(*ListResourcesRequest)(nil),             // 13: weknora.plugin.v1.ListResourcesRequest
+	(*ListResourcesResponse)(nil),            // 14: weknora.plugin.v1.ListResourcesResponse
+	(*ResolveResourceAncestorsRequest)(nil),  // 15: weknora.plugin.v1.ResolveResourceAncestorsRequest
+	(*ResolveResourceAncestorsResponse)(nil), // 16: weknora.plugin.v1.ResolveResourceAncestorsResponse
+	(*FetchAllRequest)(nil),                  // 17: weknora.plugin.v1.FetchAllRequest
+	(*FetchAllResponse)(nil),                 // 18: weknora.plugin.v1.FetchAllResponse
+	(*Resource)(nil),                         // 19: weknora.plugin.v1.Resource
+	(*Document)(nil),                         // 20: weknora.plugin.v1.Document
+	(*SyncRequest)(nil),                      // 21: weknora.plugin.v1.SyncRequest
+	(*SyncEvent)(nil),                        // 22: weknora.plugin.v1.SyncEvent
+	(*UpsertDocument)(nil),                   // 23: weknora.plugin.v1.UpsertDocument
+	(*DeleteDocument)(nil),                   // 24: weknora.plugin.v1.DeleteDocument
+	(*Progress)(nil),                         // 25: weknora.plugin.v1.Progress
+	(*Checkpoint)(nil),                       // 26: weknora.plugin.v1.Checkpoint
+	(*SyncError)(nil),                        // 27: weknora.plugin.v1.SyncError
+	(*Completed)(nil),                        // 28: weknora.plugin.v1.Completed
+	nil,                                      // 29: weknora.plugin.v1.ValidateConfigRequest.ConfigEntry
+	nil,                                      // 30: weknora.plugin.v1.ValidateCredentialsRequest.ConfigEntry
+	nil,                                      // 31: weknora.plugin.v1.ListResourcesRequest.ConfigEntry
+	nil,                                      // 32: weknora.plugin.v1.ResolveResourceAncestorsRequest.ConfigEntry
+	nil,                                      // 33: weknora.plugin.v1.FetchAllRequest.ConfigEntry
+	nil,                                      // 34: weknora.plugin.v1.Resource.MetadataEntry
+	nil,                                      // 35: weknora.plugin.v1.Document.MetadataEntry
+	nil,                                      // 36: weknora.plugin.v1.SyncRequest.ConfigEntry
+	nil,                                      // 37: weknora.plugin.v1.UpsertDocument.MetadataEntry
 }
 var file_internal_plugin_proto_plugin_proto_depIdxs = []int32{
 	1,  // 0: weknora.plugin.v1.HealthCheckResponse.status:type_name -> weknora.plugin.v1.HealthCheckResponse.Status
-	21, // 1: weknora.plugin.v1.ValidateConfigRequest.config:type_name -> weknora.plugin.v1.ValidateConfigRequest.ConfigEntry
+	29, // 1: weknora.plugin.v1.ValidateConfigRequest.config:type_name -> weknora.plugin.v1.ValidateConfigRequest.ConfigEntry
 	8,  // 2: weknora.plugin.v1.ValidateConfigResponse.errors:type_name -> weknora.plugin.v1.FieldError
-	22, // 3: weknora.plugin.v1.ValidateCredentialsRequest.config:type_name -> weknora.plugin.v1.ValidateCredentialsRequest.ConfigEntry
-	23, // 4: weknora.plugin.v1.SyncRequest.config:type_name -> weknora.plugin.v1.SyncRequest.ConfigEntry
-	15, // 5: weknora.plugin.v1.SyncEvent.upsert_document:type_name -> weknora.plugin.v1.UpsertDocument
-	16, // 6: weknora.plugin.v1.SyncEvent.delete_document:type_name -> weknora.plugin.v1.DeleteDocument
-	17, // 7: weknora.plugin.v1.SyncEvent.progress:type_name -> weknora.plugin.v1.Progress
-	18, // 8: weknora.plugin.v1.SyncEvent.checkpoint:type_name -> weknora.plugin.v1.Checkpoint
-	19, // 9: weknora.plugin.v1.SyncEvent.error:type_name -> weknora.plugin.v1.SyncError
-	20, // 10: weknora.plugin.v1.SyncEvent.completed:type_name -> weknora.plugin.v1.Completed
-	24, // 11: weknora.plugin.v1.UpsertDocument.metadata:type_name -> weknora.plugin.v1.UpsertDocument.MetadataEntry
-	0,  // 12: weknora.plugin.v1.SyncError.code:type_name -> weknora.plugin.v1.SyncErrorCode
-	2,  // 13: weknora.plugin.v1.PluginLifecycle.GetInfo:input_type -> weknora.plugin.v1.GetInfoRequest
-	4,  // 14: weknora.plugin.v1.PluginLifecycle.HealthCheck:input_type -> weknora.plugin.v1.HealthCheckRequest
-	6,  // 15: weknora.plugin.v1.PluginLifecycle.ValidateConfig:input_type -> weknora.plugin.v1.ValidateConfigRequest
-	9,  // 16: weknora.plugin.v1.PluginLifecycle.Shutdown:input_type -> weknora.plugin.v1.ShutdownRequest
-	11, // 17: weknora.plugin.v1.DataSourcePlugin.ValidateCredentials:input_type -> weknora.plugin.v1.ValidateCredentialsRequest
-	13, // 18: weknora.plugin.v1.DataSourcePlugin.Sync:input_type -> weknora.plugin.v1.SyncRequest
-	3,  // 19: weknora.plugin.v1.PluginLifecycle.GetInfo:output_type -> weknora.plugin.v1.PluginInfo
-	5,  // 20: weknora.plugin.v1.PluginLifecycle.HealthCheck:output_type -> weknora.plugin.v1.HealthCheckResponse
-	7,  // 21: weknora.plugin.v1.PluginLifecycle.ValidateConfig:output_type -> weknora.plugin.v1.ValidateConfigResponse
-	10, // 22: weknora.plugin.v1.PluginLifecycle.Shutdown:output_type -> weknora.plugin.v1.ShutdownResponse
-	12, // 23: weknora.plugin.v1.DataSourcePlugin.ValidateCredentials:output_type -> weknora.plugin.v1.ValidateCredentialsResponse
-	14, // 24: weknora.plugin.v1.DataSourcePlugin.Sync:output_type -> weknora.plugin.v1.SyncEvent
-	19, // [19:25] is the sub-list for method output_type
-	13, // [13:19] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	30, // 3: weknora.plugin.v1.ValidateCredentialsRequest.config:type_name -> weknora.plugin.v1.ValidateCredentialsRequest.ConfigEntry
+	31, // 4: weknora.plugin.v1.ListResourcesRequest.config:type_name -> weknora.plugin.v1.ListResourcesRequest.ConfigEntry
+	19, // 5: weknora.plugin.v1.ListResourcesResponse.resources:type_name -> weknora.plugin.v1.Resource
+	32, // 6: weknora.plugin.v1.ResolveResourceAncestorsRequest.config:type_name -> weknora.plugin.v1.ResolveResourceAncestorsRequest.ConfigEntry
+	33, // 7: weknora.plugin.v1.FetchAllRequest.config:type_name -> weknora.plugin.v1.FetchAllRequest.ConfigEntry
+	20, // 8: weknora.plugin.v1.FetchAllResponse.documents:type_name -> weknora.plugin.v1.Document
+	34, // 9: weknora.plugin.v1.Resource.metadata:type_name -> weknora.plugin.v1.Resource.MetadataEntry
+	35, // 10: weknora.plugin.v1.Document.metadata:type_name -> weknora.plugin.v1.Document.MetadataEntry
+	36, // 11: weknora.plugin.v1.SyncRequest.config:type_name -> weknora.plugin.v1.SyncRequest.ConfigEntry
+	23, // 12: weknora.plugin.v1.SyncEvent.upsert_document:type_name -> weknora.plugin.v1.UpsertDocument
+	24, // 13: weknora.plugin.v1.SyncEvent.delete_document:type_name -> weknora.plugin.v1.DeleteDocument
+	25, // 14: weknora.plugin.v1.SyncEvent.progress:type_name -> weknora.plugin.v1.Progress
+	26, // 15: weknora.plugin.v1.SyncEvent.checkpoint:type_name -> weknora.plugin.v1.Checkpoint
+	27, // 16: weknora.plugin.v1.SyncEvent.error:type_name -> weknora.plugin.v1.SyncError
+	28, // 17: weknora.plugin.v1.SyncEvent.completed:type_name -> weknora.plugin.v1.Completed
+	37, // 18: weknora.plugin.v1.UpsertDocument.metadata:type_name -> weknora.plugin.v1.UpsertDocument.MetadataEntry
+	0,  // 19: weknora.plugin.v1.SyncError.code:type_name -> weknora.plugin.v1.SyncErrorCode
+	2,  // 20: weknora.plugin.v1.PluginLifecycle.GetInfo:input_type -> weknora.plugin.v1.GetInfoRequest
+	4,  // 21: weknora.plugin.v1.PluginLifecycle.HealthCheck:input_type -> weknora.plugin.v1.HealthCheckRequest
+	6,  // 22: weknora.plugin.v1.PluginLifecycle.ValidateConfig:input_type -> weknora.plugin.v1.ValidateConfigRequest
+	9,  // 23: weknora.plugin.v1.PluginLifecycle.Shutdown:input_type -> weknora.plugin.v1.ShutdownRequest
+	11, // 24: weknora.plugin.v1.DataSourcePlugin.ValidateCredentials:input_type -> weknora.plugin.v1.ValidateCredentialsRequest
+	13, // 25: weknora.plugin.v1.DataSourcePlugin.ListResources:input_type -> weknora.plugin.v1.ListResourcesRequest
+	15, // 26: weknora.plugin.v1.DataSourcePlugin.ResolveResourceAncestors:input_type -> weknora.plugin.v1.ResolveResourceAncestorsRequest
+	17, // 27: weknora.plugin.v1.DataSourcePlugin.FetchAll:input_type -> weknora.plugin.v1.FetchAllRequest
+	21, // 28: weknora.plugin.v1.DataSourcePlugin.Sync:input_type -> weknora.plugin.v1.SyncRequest
+	3,  // 29: weknora.plugin.v1.PluginLifecycle.GetInfo:output_type -> weknora.plugin.v1.PluginInfo
+	5,  // 30: weknora.plugin.v1.PluginLifecycle.HealthCheck:output_type -> weknora.plugin.v1.HealthCheckResponse
+	7,  // 31: weknora.plugin.v1.PluginLifecycle.ValidateConfig:output_type -> weknora.plugin.v1.ValidateConfigResponse
+	10, // 32: weknora.plugin.v1.PluginLifecycle.Shutdown:output_type -> weknora.plugin.v1.ShutdownResponse
+	12, // 33: weknora.plugin.v1.DataSourcePlugin.ValidateCredentials:output_type -> weknora.plugin.v1.ValidateCredentialsResponse
+	14, // 34: weknora.plugin.v1.DataSourcePlugin.ListResources:output_type -> weknora.plugin.v1.ListResourcesResponse
+	16, // 35: weknora.plugin.v1.DataSourcePlugin.ResolveResourceAncestors:output_type -> weknora.plugin.v1.ResolveResourceAncestorsResponse
+	18, // 36: weknora.plugin.v1.DataSourcePlugin.FetchAll:output_type -> weknora.plugin.v1.FetchAllResponse
+	22, // 37: weknora.plugin.v1.DataSourcePlugin.Sync:output_type -> weknora.plugin.v1.SyncEvent
+	29, // [29:38] is the sub-list for method output_type
+	20, // [20:29] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_internal_plugin_proto_plugin_proto_init() }
@@ -1351,7 +1956,7 @@ func file_internal_plugin_proto_plugin_proto_init() {
 	if File_internal_plugin_proto_plugin_proto != nil {
 		return
 	}
-	file_internal_plugin_proto_plugin_proto_msgTypes[12].OneofWrappers = []any{
+	file_internal_plugin_proto_plugin_proto_msgTypes[20].OneofWrappers = []any{
 		(*SyncEvent_UpsertDocument)(nil),
 		(*SyncEvent_DeleteDocument)(nil),
 		(*SyncEvent_Progress)(nil),
@@ -1365,7 +1970,7 @@ func file_internal_plugin_proto_plugin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_internal_plugin_proto_plugin_proto_rawDesc), len(file_internal_plugin_proto_plugin_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   23,
+			NumMessages:   36,
 			NumExtensions: 0,
 			NumServices:   2,
 		},
