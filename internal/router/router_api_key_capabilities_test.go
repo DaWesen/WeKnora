@@ -78,6 +78,32 @@ func TestPlatformControlPlaneRoutesDeclarePlatformCapabilities(t *testing.T) {
 	}
 }
 
+func TestPluginControlPlaneRoutesDeclareRuntimeCapabilities(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	g := &rbacGuards{}
+	v1 := gin.New().Group("/api/v1")
+	RegisterPluginRoutes(v1, &handler.PluginHandler{}, g)
+
+	readPaths := []string{
+		"/api/v1/system/admin/plugins",
+		"/api/v1/system/admin/plugins/:id",
+		"/api/v1/system/admin/plugins/:id/audit",
+	}
+	for _, routePath := range readPaths {
+		policy := mustLookupAPIKeyPolicy(t, g, http.MethodGet, routePath)
+		if !policy.PlatformOnly || !policyHasCapability(policy, types.APIKeyCapabilitySystemRuntimeRead) || !policyHasCapability(policy, types.APIKeyCapabilitySystemRuntimeManage) {
+			t.Fatalf("GET %s must accept platform runtime read or manage: %#v", routePath, policy)
+		}
+	}
+	restartPolicy := mustLookupAPIKeyPolicy(t, g, http.MethodPost, "/api/v1/system/admin/plugins/:id/restart")
+	if !restartPolicy.PlatformOnly || !policyHasCapability(restartPolicy, types.APIKeyCapabilitySystemRuntimeManage) {
+		t.Fatalf("restart must require platform runtime manage: %#v", restartPolicy)
+	}
+	if policyHasCapability(restartPolicy, types.APIKeyCapabilitySystemRuntimeRead) {
+		t.Fatalf("restart must not be granted by runtime read: %#v", restartPolicy)
+	}
+}
+
 func TestPlatformTenantLifecycleRoutesDeclarePlatformCapabilities(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	g := &rbacGuards{}
