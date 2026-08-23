@@ -10,7 +10,7 @@ import (
 
 	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/plugin"
-	pluginpb "github.com/Tencent/WeKnora/internal/plugin/proto"
+	pluginpb "github.com/Tencent/WeKnora/sdk/plugin/proto"
 	"github.com/Tencent/WeKnora/internal/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

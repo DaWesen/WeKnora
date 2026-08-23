@@ -70,7 +70,10 @@ export default {
     restartFailed: 'Не удалось перезапустить плагин.',
     loadFailed: 'Не удалось загрузить плагины.',
     auditTitle: 'Аудит плагина: {name}',
-    auditDescription: 'Показаны только очищенные записи аудита в памяти процесса.',
+    auditDescription: 'Показаны только очищенные записи аудита, сохраняемые после перезапуска.',
+    auditFilter: 'Фильтр действий',
+    auditAllActions: 'Все действия',
+    auditRefresh: 'Обновить аудит',
     auditEmpty: 'Записей аудита нет.',
     auditLoadFailed: 'Не удалось загрузить записи аудита плагина.',
     statuses: {

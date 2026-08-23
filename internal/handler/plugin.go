@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
 	"io/fs"
 	"net/http"
@@ -10,18 +11,21 @@ import (
 
 	apperrors "github.com/Tencent/WeKnora/internal/errors"
 	"github.com/Tencent/WeKnora/internal/plugin"
+	"github.com/Tencent/WeKnora/internal/types"
+	"github.com/Tencent/WeKnora/internal/types/interfaces"
 	"github.com/gin-gonic/gin"
 )
 
-const maxPluginAuditLimit = 512
+const maxPluginAuditLimit = 100
 
 // PluginHandler exposes the deployment-level external plugin control plane.
 type PluginHandler struct {
-	manager *plugin.Manager
+	manager      *plugin.Manager
+	auditService interfaces.AuditLogService
 }
 
-func NewPluginHandler(manager *plugin.Manager) *PluginHandler {
-	return &PluginHandler{manager: manager}
+func NewPluginHandler(manager *plugin.Manager, auditService interfaces.AuditLogService) *PluginHandler {
+	return &PluginHandler{manager: manager, auditService: auditService}
 }
 
 type pluginRestartPolicyResponse struct {
@@ -80,15 +84,18 @@ func pluginForResponse(value plugin.Plugin) pluginResponse {
 	return response
 }
 
-func pluginAuditForResponse(event plugin.AuditEvent) pluginAuditEventResponse {
-	return pluginAuditEventResponse{
-		ID:        event.ID,
-		Timestamp: event.Timestamp,
-		PluginID:  event.PluginID,
-		Action:    event.Action,
-		Outcome:   event.Outcome,
-		Details:   event.Details,
+func pluginAuditForResponse(entry *types.AuditLog) pluginAuditEventResponse {
+	response := pluginAuditEventResponse{
+		ID:        entry.ID,
+		Timestamp: entry.CreatedAt,
+		PluginID:  entry.ScopeID,
+		Action:    string(entry.Action),
+		Outcome:   string(entry.Outcome),
 	}
+	// Details are written by the plugin runtime from a bounded, redacted map.
+	// Invalid historical payloads remain readable without failing the whole feed.
+	_ = json.Unmarshal(entry.Details, &response.Details)
+	return response
 }
 
 // List returns all manifests discovered by this application instance.
@@ -111,9 +118,9 @@ func (h *PluginHandler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": pluginForResponse(*value)})
 }
 
-// ListAudit returns the bounded in-process audit history. Target and Message
-// are intentionally omitted because they can contain runtime addresses or
-// downstream error text.
+// ListAudit returns durable system-scope plugin events. Target and Message are
+// never persisted, so runtime addresses and downstream error text stay out of
+// this control-plane response even after an application restart.
 func (h *PluginHandler) ListAudit(c *gin.Context) {
 	id := c.Param("id")
 	if _, ok := h.manager.Get(id); !ok {
@@ -126,14 +133,19 @@ func (h *PluginHandler) ListAudit(c *gin.Context) {
 		c.Error(apperrors.NewValidationError(err.Error()))
 		return
 	}
-	events := h.manager.AuditEvents(plugin.AuditQuery{
-		PluginID: id,
-		Action:   c.Query("action"),
-		Limit:    limit,
+	entries, err := h.auditService.List(c.Request.Context(), 0, &interfaces.AuditLogQuery{
+		Limit:     limit,
+		Action:    types.AuditAction(c.Query("action")),
+		ScopeType: "plugin",
+		ScopeID:   id,
 	})
-	response := make([]pluginAuditEventResponse, 0, len(events))
-	for _, event := range events {
-		response = append(response, pluginAuditForResponse(event))
+	if err != nil {
+		c.Error(apperrors.NewInternalServerError("list plugin audit history"))
+		return
+	}
+	response := make([]pluginAuditEventResponse, 0, len(entries))
+	for _, entry := range entries {
+		response = append(response, pluginAuditForResponse(entry))
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": response})
 }
@@ -144,7 +156,7 @@ func parsePluginAuditLimit(raw string) (int, error) {
 	}
 	limit, err := strconv.Atoi(raw)
 	if err != nil || limit <= 0 || limit > maxPluginAuditLimit {
-		return 0, errors.New("limit must be between 1 and 512")
+		return 0, errors.New("limit must be between 1 and 100")
 	}
 	return limit, nil
 }

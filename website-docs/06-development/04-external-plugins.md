@@ -147,7 +147,7 @@ permissions:
 
 ## 插件协议与生命周期
 
-协议定义在 `internal/plugin/proto/plugin.proto`。插件需实现 `PluginLifecycle`；datasource 插件还需实现 `DataSourcePlugin`。
+公开协议定义在 `sdk/plugin/proto/plugin.proto`。插件需实现 `PluginLifecycle`；datasource 插件还需实现 `DataSourcePlugin`。Go 插件可复用 `sdk/plugin/server` 提供的监听与默认 lifecycle 实现。
 
 ```text
 Discover

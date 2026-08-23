@@ -37,7 +37,10 @@ type restartState struct {
 	attempts []time.Time
 }
 
-const defaultRestartBackoff = 250 * time.Millisecond
+const (
+	defaultRestartBackoff  = 250 * time.Millisecond
+	defaultShutdownTimeout = 5 * time.Second
+)
 
 // CheckHealth invokes the lifecycle health check of a plugin already started by
 // its runtime. Process and container startup is deliberately kept separate from
@@ -229,7 +232,7 @@ func (m *Manager) Restart(ctx context.Context, id string, config map[string]stri
 		return err
 	}
 
-	if err := m.runtime.Stop(ctx, id); err != nil {
+	if err := m.stopRuntime(ctx, *plugin); err != nil {
 		m.recordAudit(id, AuditActionPluginStopFailed, "failed", "", err.Error(), map[string]string{"stage": "restart"})
 		return err
 	}
@@ -309,7 +312,11 @@ func restartBackoff(policy RestartPolicy) time.Duration {
 }
 
 func (m *Manager) Stop(ctx context.Context, id string) error {
-	if err := m.runtime.Stop(ctx, id); err != nil {
+	plugin, ok := m.Get(id)
+	if !ok {
+		return fs.ErrNotExist
+	}
+	if err := m.stopRuntime(ctx, *plugin); err != nil {
 		m.recordAudit(id, AuditActionPluginStopFailed, "failed", "", err.Error(), nil)
 		logger.Errorf(ctx, "[Plugin] stop failed id=%s error=%v", id, err)
 		return err
@@ -323,6 +330,15 @@ func (m *Manager) Stop(ctx context.Context, id string) error {
 }
 
 func (m *Manager) StopAll(ctx context.Context) error {
+	for _, plugin := range m.List("") {
+		if plugin.Status != StatusRunning && plugin.Status != StatusFailed {
+			continue
+		}
+		if err := m.stopRuntime(ctx, plugin); err != nil {
+			logger.Errorf(ctx, "[Plugin] stop all failed id=%s error=%v", plugin.Manifest.Metadata.ID, err)
+			return err
+		}
+	}
 	if err := m.runtime.StopAll(ctx); err != nil {
 		logger.Errorf(ctx, "[Plugin] stop all failed error=%v", err)
 		return err
@@ -337,6 +353,25 @@ func (m *Manager) StopAll(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (m *Manager) stopRuntime(ctx context.Context, plugin Plugin) error {
+	if m.runtime.IsStarted(plugin.Manifest.Metadata.ID) {
+		shutdownCtx, cancel := context.WithTimeout(ctx, defaultShutdownTimeout)
+		client, err := Dial(shutdownCtx, plugin.Manifest.Spec.Entrypoint.GRPCAddress)
+		if err == nil {
+			err = client.Shutdown(shutdownCtx)
+			closeErr := client.Close()
+			if err == nil {
+				err = closeErr
+			}
+		}
+		cancel()
+		if err != nil {
+			logger.Warnf(ctx, "[Plugin] graceful shutdown failed id=%s error=%v; forcing runtime stop", plugin.Manifest.Metadata.ID, err)
+		}
+	}
+	return m.runtime.Stop(ctx, plugin.Manifest.Metadata.ID)
 }
 
 // Connect dials a discovered plugin's declared gRPC endpoint. Callers should

@@ -70,7 +70,10 @@ export default {
     restartFailed: '플러그인을 다시 시작하지 못했습니다.',
     loadFailed: '플러그인 목록을 불러오지 못했습니다.',
     auditTitle: '플러그인 감사: {name}',
-    auditDescription: '정제된 프로세스 내 감사 기록만 표시됩니다.',
+    auditDescription: '재시작 후에도 유지되는 정제된 감사 기록만 표시됩니다.',
+    auditFilter: '작업 필터',
+    auditAllActions: '모든 작업',
+    auditRefresh: '감사 새로 고침',
     auditEmpty: '감사 기록이 없습니다.',
     auditLoadFailed: '플러그인 감사 기록을 불러오지 못했습니다.',
     statuses: {

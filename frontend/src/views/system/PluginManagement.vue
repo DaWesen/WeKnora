@@ -71,6 +71,20 @@
       storage-key="setting-drawer:width:plugin-audit"
       hide-footer
     >
+      <div class="plugin-audit-toolbar">
+        <t-select
+          v-model="auditAction"
+          :aria-label="t('pluginManagement.auditFilter')"
+          :options="auditActionOptions"
+          clearable
+          :placeholder="t('pluginManagement.auditAllActions')"
+          @change="loadAudit"
+        />
+        <t-button variant="outline" size="small" :loading="auditLoading" @click="loadAudit">
+          <template #icon><t-icon name="refresh" /></template>
+          {{ t('pluginManagement.auditRefresh') }}
+        </t-button>
+      </div>
       <div v-if="auditLoading" class="plugin-state"><t-loading size="small" /></div>
       <div v-else-if="auditError" class="plugin-state plugin-state--error" role="alert">
         <span>{{ auditError }}</span>
@@ -119,6 +133,20 @@ const selectedPlugin = ref<Plugin | null>(null)
 const auditEvents = ref<PluginAuditEvent[]>([])
 const auditLoading = ref(false)
 const auditError = ref('')
+const auditAction = ref<string | undefined>()
+
+const auditActionOptions = computed(() => [
+  'plugin.started',
+  'plugin.start_failed',
+  'plugin.stopped',
+  'plugin.stop_failed',
+  'plugin.health_failed',
+  'plugin.identity_failed',
+  'plugin.network_denied',
+  'plugin.runtime_failed',
+  'plugin.restarted',
+  'plugin.restart_denied',
+].map(value => ({ label: value, value })))
 
 const columns = computed(() => [
   { colKey: 'name', title: t('pluginManagement.name'), minWidth: 180 },
@@ -157,6 +185,7 @@ async function restartPlugin(plugin: Plugin) {
 
 async function openAudit(plugin: Plugin) {
   selectedPlugin.value = plugin
+  auditAction.value = undefined
   auditVisible.value = true
   await loadAudit()
 }
@@ -166,7 +195,10 @@ async function loadAudit() {
   auditLoading.value = true
   auditError.value = ''
   try {
-    auditEvents.value = (await listPluginAudit(selectedPlugin.value.id)).data || []
+    auditEvents.value = (await listPluginAudit(selectedPlugin.value.id, {
+      action: auditAction.value,
+      limit: 100,
+    })).data || []
   } catch (err: any) {
     auditError.value = err?.message || t('pluginManagement.auditLoadFailed')
   } finally {
@@ -206,6 +238,8 @@ onMounted(() => {
 .plugin-name-cell span { color: var(--td-text-color-placeholder); font-family: ui-monospace, monospace; font-size: 12px; }
 .plugin-error { display: block; overflow: hidden; max-width: 280px; color: var(--td-error-color); text-overflow: ellipsis; white-space: nowrap; }
 .plugin-actions { display: flex; justify-content: flex-end; gap: 4px; }
+.plugin-audit-toolbar { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.plugin-audit-toolbar :deep(.t-select) { flex: 1; }
 .plugin-audit-list { overflow: hidden; border: 1px solid var(--td-component-stroke); border-radius: 8px; }
 .plugin-audit-event { padding: 14px 16px; border-bottom: 1px solid var(--td-component-stroke); }
 .plugin-audit-event:last-child { border-bottom: 0; }
@@ -214,4 +248,8 @@ onMounted(() => {
 .plugin-audit-details { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 5px 10px; margin: 10px 0 0; font-size: 12px; }
 .plugin-audit-details dt { color: var(--td-text-color-placeholder); }
 .plugin-audit-details dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .plugin-header, .plugin-audit-toolbar { flex-direction: column; }
+  .plugin-audit-toolbar :deep(.t-select) { width: 100%; }
+}
 </style>

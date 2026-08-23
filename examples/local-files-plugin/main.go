@@ -9,17 +9,16 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 	"time"
 
-	pluginpb "github.com/Tencent/WeKnora/internal/plugin/proto"
-	"google.golang.org/grpc"
+	pluginpb "github.com/Tencent/WeKnora/sdk/plugin/proto"
+	pluginsdk "github.com/Tencent/WeKnora/sdk/plugin/server"
 )
 
 type server struct {
-	pluginpb.UnimplementedPluginLifecycleServer
+	pluginsdk.Lifecycle
 	pluginpb.UnimplementedDataSourcePluginServer
 }
 
@@ -31,24 +30,12 @@ type cursor struct {
 	Files map[string]fileState `json:"files"`
 }
 
-func (s *server) GetInfo(context.Context, *pluginpb.GetInfoRequest) (*pluginpb.PluginInfo, error) {
-	return &pluginpb.PluginInfo{Id: "com.weknora.local-files", Version: "0.1.0", ExtensionTypes: []string{"datasource"}}, nil
-}
-
-func (s *server) HealthCheck(context.Context, *pluginpb.HealthCheckRequest) (*pluginpb.HealthCheckResponse, error) {
-	return &pluginpb.HealthCheckResponse{Status: pluginpb.HealthCheckResponse_STATUS_SERVING}, nil
-}
-
 func (s *server) ValidateConfig(_ context.Context, request *pluginpb.ValidateConfigRequest) (*pluginpb.ValidateConfigResponse, error) {
 	root := request.Config["rootPath"]
 	if info, err := os.Stat(root); err != nil || !info.IsDir() {
 		return &pluginpb.ValidateConfigResponse{Valid: false, Errors: []*pluginpb.FieldError{{Field: "rootPath", Message: "must be an existing directory"}}}, nil
 	}
 	return &pluginpb.ValidateConfigResponse{Valid: true}, nil
-}
-
-func (s *server) Shutdown(context.Context, *pluginpb.ShutdownRequest) (*pluginpb.ShutdownResponse, error) {
-	return &pluginpb.ShutdownResponse{}, nil
 }
 
 func (s *server) ValidateCredentials(ctx context.Context, request *pluginpb.ValidateCredentialsRequest) (*pluginpb.ValidateCredentialsResponse, error) {
@@ -260,37 +247,17 @@ func contentType(path string) string {
 	return "text/plain"
 }
 
-func listen(address string) (net.Listener, error) {
-	if !strings.HasPrefix(address, "unix://") {
-		return net.Listen("tcp", address)
-	}
-	if runtime.GOOS == "windows" {
-		return nil, fmt.Errorf("unix socket plugin endpoints are not supported on Windows")
-	}
-	socketPath := strings.TrimPrefix(address, "unix://")
-	if err := os.MkdirAll(filepath.Dir(socketPath), 0o755); err != nil {
-		return nil, err
-	}
-	if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
-		return nil, err
-	}
-	return net.Listen("unix", socketPath)
-}
-
 func main() {
-	address := os.Getenv("WEKNORA_PLUGIN_GRPC_ADDRESS")
-	if address == "" {
-		address = "127.0.0.1:50071"
+	implementation := &server{
+		Lifecycle: pluginsdk.Lifecycle{
+			Metadata: pluginsdk.Metadata{
+				ID:             "com.weknora.local-files",
+				Version:        "0.1.0",
+				ExtensionTypes: []string{"datasource"},
+			},
+		},
 	}
-	listener, err := listen(address)
-	if err != nil {
-		panic(fmt.Errorf("listen plugin gRPC: %w", err))
-	}
-	grpcServer := grpc.NewServer()
-	implementation := &server{}
-	pluginpb.RegisterPluginLifecycleServer(grpcServer, implementation)
-	pluginpb.RegisterDataSourcePluginServer(grpcServer, implementation)
-	if err := grpcServer.Serve(listener); err != nil {
-		panic(err)
+	if err := pluginsdk.Serve(implementation, implementation, pluginsdk.Options{}); err != nil {
+		panic(fmt.Errorf("serve plugin gRPC: %w", err))
 	}
 }

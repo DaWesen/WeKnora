@@ -1,29 +1,55 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Tencent/WeKnora/internal/middleware"
 	"github.com/Tencent/WeKnora/internal/plugin"
+	"github.com/Tencent/WeKnora/internal/types"
+	"github.com/Tencent/WeKnora/internal/types/interfaces"
 	"github.com/gin-gonic/gin"
 )
 
-func newPluginHandlerTestRouter(manager *plugin.Manager) *gin.Engine {
+type pluginAuditService struct {
+	interfaces.AuditLogService
+	list func(q *interfaces.AuditLogQuery) ([]*types.AuditLog, error)
+}
+
+func (s *pluginAuditService) List(_ context.Context, tenantID uint64, q *interfaces.AuditLogQuery) ([]*types.AuditLog, error) {
+	if tenantID != 0 {
+		return nil, fmt.Errorf("expected system tenant, got %d", tenantID)
+	}
+	return s.list(q)
+}
+
+func newPluginHandlerTestRouter(manager *plugin.Manager, auditService interfaces.AuditLogService) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	router.Use(middleware.ErrorHandler())
-	handler := NewPluginHandler(manager)
+	handler := NewPluginHandler(manager, auditService)
 	router.GET("/plugins", handler.List)
 	router.GET("/plugins/:id", handler.Get)
 	router.GET("/plugins/:id/audit", handler.ListAudit)
 	router.POST("/plugins/:id/restart", handler.Restart)
 	return router
+}
+
+func newPluginAuditService(entries []*types.AuditLog) interfaces.AuditLogService {
+	return &pluginAuditService{list: func(q *interfaces.AuditLogQuery) ([]*types.AuditLog, error) {
+		if q.ScopeType != "plugin" || q.ScopeID != "files" {
+			return nil, fmt.Errorf("unexpected plugin scope: %#v", q)
+		}
+		return entries, nil
+	}}
 }
 
 func newPluginHandlerTestManager(t *testing.T) *plugin.Manager {
@@ -64,7 +90,7 @@ spec:
 }
 
 func TestPluginHandlerListAndGetRedactDeploymentDetails(t *testing.T) {
-	router := newPluginHandlerTestRouter(newPluginHandlerTestManager(t))
+	router := newPluginHandlerTestRouter(newPluginHandlerTestManager(t), newPluginAuditService(nil))
 	for _, requestPath := range []string{"/plugins", "/plugins/files"} {
 		writer := httptest.NewRecorder()
 		router.ServeHTTP(writer, httptest.NewRequest(http.MethodGet, requestPath, nil))
@@ -84,7 +110,7 @@ func TestPluginHandlerListAndGetRedactDeploymentDetails(t *testing.T) {
 }
 
 func TestPluginHandlerGetAndAuditRejectUnknownPlugin(t *testing.T) {
-	router := newPluginHandlerTestRouter(newPluginHandlerTestManager(t))
+	router := newPluginHandlerTestRouter(newPluginHandlerTestManager(t), newPluginAuditService(nil))
 	for _, requestPath := range []string{"/plugins/missing", "/plugins/missing/audit"} {
 		writer := httptest.NewRecorder()
 		router.ServeHTTP(writer, httptest.NewRequest(http.MethodGet, requestPath, nil))
@@ -101,7 +127,15 @@ func TestPluginHandlerAuditFiltersAndRedactsSensitiveFields(t *testing.T) {
 
 	writer := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/plugins/files/audit?action=plugin.network_denied&limit=1", nil)
-	newPluginHandlerTestRouter(manager).ServeHTTP(writer, req)
+	newPluginHandlerTestRouter(manager, newPluginAuditService([]*types.AuditLog{{
+		ID:        42,
+		CreatedAt: time.Now().UTC(),
+		Action:    types.AuditActionPluginNetworkDenied,
+		ScopeType: "plugin",
+		ScopeID:   "files",
+		Outcome:   types.AuditOutcomeDenied,
+		Details:   types.JSON(`{"stage":"network_policy"}`),
+	}})).ServeHTTP(writer, req)
 	if writer.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d body=%s", writer.Code, writer.Body.String())
 	}
@@ -125,17 +159,34 @@ func TestPluginHandlerAuditFiltersAndRedactsSensitiveFields(t *testing.T) {
 
 func TestPluginHandlerAuditRejectsInvalidLimit(t *testing.T) {
 	writer := httptest.NewRecorder()
-	newPluginHandlerTestRouter(newPluginHandlerTestManager(t)).ServeHTTP(
+	newPluginHandlerTestRouter(newPluginHandlerTestManager(t), newPluginAuditService(nil)).ServeHTTP(
 		writer,
-		httptest.NewRequest(http.MethodGet, "/plugins/files/audit?limit=513", nil),
+		httptest.NewRequest(http.MethodGet, "/plugins/files/audit?limit=101", nil),
 	)
 	if writer.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400, got %d body=%s", writer.Code, writer.Body.String())
 	}
 }
 
+func TestPluginHandlerAuditPassesDurableQueryFilters(t *testing.T) {
+	manager := newPluginHandlerTestManager(t)
+	auditService := &pluginAuditService{list: func(q *interfaces.AuditLogQuery) ([]*types.AuditLog, error) {
+		if q.Limit != 25 || q.Action != types.AuditActionPluginStarted || q.ScopeType != "plugin" || q.ScopeID != "files" {
+			t.Fatalf("unexpected durable audit query: %#v", q)
+		}
+		return nil, nil
+	}}
+	writer := httptest.NewRecorder()
+	newPluginHandlerTestRouter(manager, auditService).ServeHTTP(writer, httptest.NewRequest(
+		http.MethodGet, "/plugins/files/audit?action=plugin.started&limit=25", nil,
+	))
+	if writer.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d body=%s", writer.Code, writer.Body.String())
+	}
+}
+
 func TestPluginHandlerRestartMapsUnknownAndNonFailedErrors(t *testing.T) {
-	router := newPluginHandlerTestRouter(newPluginHandlerTestManager(t))
+	router := newPluginHandlerTestRouter(newPluginHandlerTestManager(t), newPluginAuditService(nil))
 	for _, testCase := range []struct {
 		path string
 		code int

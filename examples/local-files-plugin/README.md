@@ -21,7 +21,7 @@
 - 使用容器模式：Linux Docker Engine，并能构建或拉取插件镜像。
 - WeKnora 主程序已启用外部插件框架，且插件目录由 `WEKNORA_PLUGIN_DIR` 指向。
 
-> 此 Dockerfile 会复制仓库内的 `internal/plugin/proto`，因此本示例当前是 WeKnora 仓库内示例，而不是独立发布的 SDK 模板。
+> 示例使用公开的 `sdk/plugin` 协议与服务辅助包。独立 Go 插件可仅依赖 `github.com/Tencent/WeKnora/sdk/plugin/proto` 和 `github.com/Tencent/WeKnora/sdk/plugin/server`，无需引用宿主内部包。
 
 ## 运行模式
 

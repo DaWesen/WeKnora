@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	pluginpb "github.com/Tencent/WeKnora/internal/plugin/proto"
+	pluginpb "github.com/Tencent/WeKnora/sdk/plugin/proto"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"

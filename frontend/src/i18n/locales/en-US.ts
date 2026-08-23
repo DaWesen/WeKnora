@@ -47,7 +47,10 @@ export default {
     restartFailed: 'Failed to restart plugin.',
     loadFailed: 'Failed to load plugins.',
     auditTitle: 'Plugin audit: {name}',
-    auditDescription: 'Only sanitized in-process audit records are shown.',
+    auditDescription: 'Only sanitized audit records retained across restarts are shown.',
+    auditFilter: 'Action filter',
+    auditAllActions: 'All actions',
+    auditRefresh: 'Refresh audit',
     auditEmpty: 'No audit records.',
     auditLoadFailed: 'Failed to load plugin audit records.',
     statuses: {

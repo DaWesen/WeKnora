@@ -126,6 +126,13 @@ func (r *Runtime) handleProcessExit(id string, started *startedPlugin, exitErr e
 	handler(id, exitErr)
 }
 
+func (r *Runtime) IsStarted(id string) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	_, exists := r.started[id]
+	return exists
+}
+
 func (r *Runtime) Stop(ctx context.Context, id string) error {
 	r.mu.Lock()
 	started, exists := r.started[id]

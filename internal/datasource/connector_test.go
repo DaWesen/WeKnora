@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/Tencent/WeKnora/internal/plugin"
-	pluginpb "github.com/Tencent/WeKnora/internal/plugin/proto"
+	pluginpb "github.com/Tencent/WeKnora/sdk/plugin/proto"
 	"github.com/Tencent/WeKnora/internal/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"

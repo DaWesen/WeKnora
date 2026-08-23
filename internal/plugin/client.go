@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	pluginpb "github.com/Tencent/WeKnora/internal/plugin/proto"
+	pluginpb "github.com/Tencent/WeKnora/sdk/plugin/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -55,6 +55,12 @@ func (c *Client) GetInfo(ctx context.Context) (*pluginpb.PluginInfo, error) {
 
 func (c *Client) ValidateConfig(ctx context.Context, config map[string]string) (*pluginpb.ValidateConfigResponse, error) {
 	return c.lifecycle.ValidateConfig(ctx, &pluginpb.ValidateConfigRequest{Config: config})
+}
+
+// Shutdown asks a running plugin to release work before its runtime is stopped.
+func (c *Client) Shutdown(ctx context.Context) error {
+	_, err := c.lifecycle.Shutdown(ctx, &pluginpb.ShutdownRequest{})
+	return err
 }
 
 func (c *Client) ValidateCredentials(ctx context.Context, config map[string]string) (*pluginpb.ValidateCredentialsResponse, error) {

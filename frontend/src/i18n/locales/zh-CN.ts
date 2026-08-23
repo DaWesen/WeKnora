@@ -70,7 +70,10 @@ export default {
     restartFailed: '重启插件失败。',
     loadFailed: '加载插件列表失败。',
     auditTitle: '插件审计：{name}',
-    auditDescription: '仅展示经过脱敏处理的进程内审计记录。',
+    auditDescription: '仅展示经过脱敏处理且可跨重启保留的审计记录。',
+    auditFilter: '动作筛选',
+    auditAllActions: '全部动作',
+    auditRefresh: '刷新审计',
     auditEmpty: '暂无审计记录。',
     auditLoadFailed: '加载插件审计失败。',
     statuses: {
