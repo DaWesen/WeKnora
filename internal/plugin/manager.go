@@ -54,23 +54,31 @@ func (m *Manager) CheckHealth(ctx context.Context, id, address string, timeout t
 // Manager discovers manifests and maintains the plugin registry. Runtime launch
 // is intentionally deferred to the next phase, after the gRPC plugin protocol is added.
 type Manager struct {
-	root       string
-	runtime    *Runtime
-	audit      *AuditLog
-	mu         sync.RWMutex
-	byID       map[string]*Plugin
-	restarts   map[string]*restartState
-	restarting map[string]bool
+	root            string
+	runtime         *Runtime
+	audit           *AuditLog
+	persistentAudit auditSink
+	mu              sync.RWMutex
+	byID            map[string]*Plugin
+	restarts        map[string]*restartState
+	restarting      map[string]bool
 }
 
 func NewManager(root string) *Manager {
+	return NewManagerWithAudit(root, nil)
+}
+
+// NewManagerWithAudit also writes lifecycle events to the application audit
+// store. Durable audit failures are intentionally non-fatal to plugin work.
+func NewManagerWithAudit(root string, persistentAudit auditSink) *Manager {
 	manager := &Manager{
-		root:       root,
-		runtime:    NewRuntime(),
-		audit:      NewAuditLog(0),
-		byID:       make(map[string]*Plugin),
-		restarts:   make(map[string]*restartState),
-		restarting: make(map[string]bool),
+		root:            root,
+		runtime:         NewRuntime(),
+		audit:           NewAuditLog(0),
+		persistentAudit: persistentAudit,
+		byID:            make(map[string]*Plugin),
+		restarts:        make(map[string]*restartState),
+		restarting:      make(map[string]bool),
 	}
 	manager.runtime.SetProcessExitHandler(func(id string, cause error) {
 		_ = manager.MarkRuntimeFailed(id, cause)
@@ -84,14 +92,17 @@ func (m *Manager) AuditEvents(query AuditQuery) []AuditEvent {
 }
 
 func (m *Manager) recordAudit(pluginID, action, outcome, target, message string, details map[string]string) {
-	m.audit.Record(AuditEvent{
-		PluginID: pluginID,
-		Action:   action,
-		Outcome:  outcome,
-		Target:   target,
-		Message:  message,
-		Details:  details,
-	})
+	event := AuditEvent{
+		Timestamp: time.Now().UTC(),
+		PluginID:  pluginID,
+		Action:    action,
+		Outcome:   outcome,
+		Target:    target,
+		Message:   message,
+		Details:   details,
+	}
+	m.audit.Record(event)
+	persistAuditEvent(m.persistentAudit, event)
 }
 
 // RecordNetworkDenied persists a security-policy rejection reported by a plugin.
@@ -105,6 +116,21 @@ func (m *Manager) Start(ctx context.Context, id string) error {
 	return m.StartWithConfig(ctx, id, nil)
 }
 
+// StartOrRestart starts a discovered plugin or, after a runtime failure,
+// recovers it through the manifest restart policy. Callers that invoke a
+// plugin repeatedly must use this entry point so a failed runtime cannot
+// silently bypass its restart budget on the next request.
+func (m *Manager) StartOrRestart(ctx context.Context, id string, config map[string]string) error {
+	plugin, ok := m.Get(id)
+	if !ok {
+		return fs.ErrNotExist
+	}
+	if plugin.Status == StatusFailed {
+		return m.Restart(ctx, id, config)
+	}
+	return m.StartWithConfig(ctx, id, config)
+}
+
 // StartWithConfig launches a discovered plugin and resolves configuration-backed
 // filesystem permissions before verifying its gRPC lifecycle endpoint.
 func (m *Manager) StartWithConfig(ctx context.Context, id string, config map[string]string) error {
@@ -113,7 +139,6 @@ func (m *Manager) StartWithConfig(ctx context.Context, id string, config map[str
 		return fs.ErrNotExist
 	}
 	if err := plugin.Manifest.ValidateConfig(config); err != nil {
-		_ = m.SetStatus(id, StatusFailed, err)
 		m.recordAudit(id, AuditActionPluginStartFailed, "denied", "", err.Error(), map[string]string{"stage": "manifest_config"})
 		return err
 	}

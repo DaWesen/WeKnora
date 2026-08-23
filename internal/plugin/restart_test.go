@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"context"
+	"io/fs"
 	"testing"
 	"time"
 
@@ -86,6 +87,65 @@ func TestRestartRejectsDisabledPolicyAndAudits(t *testing.T) {
 	require.Len(t, events, 1)
 	require.Equal(t, AuditActionPluginRestartDenied, events[0].Action)
 	require.Equal(t, "denied", events[0].Outcome)
+}
+
+func TestStartOrRestartDoesNotBypassFailedRuntimePolicy(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	manager.byID["com.example.files"] = &Plugin{
+		Manifest:  validRestartManifest(),
+		Status:    StatusFailed,
+		LastError: "plugin process exited",
+	}
+
+	err := manager.StartOrRestart(context.Background(), "com.example.files", nil)
+	require.ErrorContains(t, err, "automatic restart is disabled")
+
+	current, ok := manager.Get("com.example.files")
+	require.True(t, ok)
+	require.Equal(t, StatusFailed, current.Status)
+	require.Equal(t, "plugin process exited", current.LastError)
+	events := manager.AuditEvents(AuditQuery{
+		PluginID: "com.example.files",
+		Action:   AuditActionPluginRestartDenied,
+	})
+	require.Len(t, events, 1)
+}
+
+func TestStartOrRestartRejectsUnknownPlugin(t *testing.T) {
+	manager := NewManager(t.TempDir())
+
+	err := manager.StartOrRestart(context.Background(), "missing", nil)
+	require.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+func TestStartOrRestartDoesNotMarkInvalidConfigurationAsRuntimeFailure(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	manifest := validRestartManifest()
+	manifest.Spec.ConfigSchema = map[string]any{
+		"required": []any{"rootPath"},
+		"properties": map[string]any{
+			"rootPath": map[string]any{"type": "string"},
+		},
+	}
+	manager.byID["com.example.files"] = &Plugin{
+		Manifest: manifest,
+		Status:   StatusDiscovered,
+	}
+
+	err := manager.StartOrRestart(context.Background(), "com.example.files", nil)
+	require.ErrorContains(t, err, "rootPath")
+
+	current, ok := manager.Get("com.example.files")
+	require.True(t, ok)
+	require.Equal(t, StatusDiscovered, current.Status)
+	require.Empty(t, current.LastError)
+	events := manager.AuditEvents(AuditQuery{
+		PluginID: "com.example.files",
+		Action:   AuditActionPluginStartFailed,
+	})
+	require.Len(t, events, 1)
+	require.Equal(t, "denied", events[0].Outcome)
+	require.Equal(t, "manifest_config", events[0].Details["stage"])
 }
 
 func TestRestartRejectsExhaustedBudgetAndAudits(t *testing.T) {

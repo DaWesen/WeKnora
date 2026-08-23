@@ -1643,12 +1643,12 @@ func registerIMService(imService *imPkg.Service, cleaner interfaces.ResourceClea
 // initPluginManager discovers plugin manifests from WEKNORA_PLUGIN_DIR. The
 // default keeps local development self-contained while a missing directory means
 // no external plugins are installed yet.
-func initPluginManager() (*plugin.Manager, error) {
+func initPluginManager(auditSvc interfaces.AuditLogService) (*plugin.Manager, error) {
 	root := os.Getenv("WEKNORA_PLUGIN_DIR")
 	if root == "" {
 		root = "plugins"
 	}
-	manager := plugin.NewManager(root)
+	manager := plugin.NewManagerWithAudit(root, auditSvc)
 	if err := manager.Discover(); err != nil {
 		return nil, err
 	}

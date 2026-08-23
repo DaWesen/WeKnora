@@ -1,9 +1,14 @@
 package plugin
 
 import (
+	"context"
+	"encoding/json"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/Tencent/WeKnora/internal/logger"
+	"github.com/Tencent/WeKnora/internal/types"
 )
 
 // AuditEvent describes a security-relevant plugin lifecycle event. It keeps
@@ -43,13 +48,43 @@ type AuditQuery struct {
 }
 
 // AuditLog keeps a bounded local history. The manager deliberately never lets
-// audit recording interrupt plugin work: callers can still use the normal
-// application audit service to persist these events in a later integration.
+// audit recording interrupt plugin work, including when durable audit storage
+// is temporarily unavailable.
 type AuditLog struct {
 	mu     sync.RWMutex
 	limit  int
 	nextID uint64
 	events []AuditEvent
+}
+
+// auditSink is deliberately small so the plugin runtime depends only on the
+// append operation it needs. Production injects AuditLogService; tests can use
+// a focused in-memory sink.
+type auditSink interface {
+	Log(context.Context, *types.AuditLog) error
+}
+
+func persistAuditEvent(sink auditSink, event AuditEvent) {
+	if sink == nil {
+		return
+	}
+	details, err := json.Marshal(event.Details)
+	if err != nil {
+		logger.Errorf(context.Background(), "[Plugin] encode audit details id=%s error=%v", event.PluginID, err)
+		return
+	}
+	if err := sink.Log(context.Background(), &types.AuditLog{
+		Action:     types.AuditAction(event.Action),
+		ScopeType:  "plugin",
+		ScopeID:    event.PluginID,
+		TargetType: "plugin",
+		TargetID:   event.PluginID,
+		Outcome:    types.AuditOutcome(event.Outcome),
+		Details:    types.JSON(details),
+		CreatedAt:  event.Timestamp,
+	}); err != nil {
+		logger.Errorf(context.Background(), "[Plugin] persist audit event id=%s action=%s error=%v", event.PluginID, event.Action, err)
+	}
 }
 
 func NewAuditLog(limit int) *AuditLog {
@@ -65,7 +100,9 @@ func (l *AuditLog) Record(event AuditEvent) {
 
 	l.nextID++
 	event.ID = l.nextID
-	event.Timestamp = time.Now().UTC()
+	if event.Timestamp.IsZero() {
+		event.Timestamp = time.Now().UTC()
+	}
 	event.Details = cloneAuditDetails(event.Details)
 	l.events = append(l.events, event)
 	if len(l.events) > l.limit {

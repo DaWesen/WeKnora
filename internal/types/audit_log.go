@@ -186,6 +186,19 @@ const (
 	AuditActionFAQImportStarted   AuditAction = "faq.import_started"
 	AuditActionFAQImportCompleted AuditAction = "faq.import_completed"
 	AuditActionFAQImportFailed    AuditAction = "faq.import_failed"
+
+	// External plugin lifecycle and security actions. Plugin events are
+	// system-scoped (tenant_id=0) and target the plugin manifest ID.
+	AuditActionPluginStarted        AuditAction = "plugin.started"
+	AuditActionPluginStartFailed    AuditAction = "plugin.start_failed"
+	AuditActionPluginStopped        AuditAction = "plugin.stopped"
+	AuditActionPluginStopFailed     AuditAction = "plugin.stop_failed"
+	AuditActionPluginHealthFailed   AuditAction = "plugin.health_failed"
+	AuditActionPluginIdentityFailed AuditAction = "plugin.identity_failed"
+	AuditActionPluginNetworkDenied  AuditAction = "plugin.network_denied"
+	AuditActionPluginRuntimeFailed  AuditAction = "plugin.runtime_failed"
+	AuditActionPluginRestarted      AuditAction = "plugin.restarted"
+	AuditActionPluginRestartDenied  AuditAction = "plugin.restart_denied"
 )
 
 // AuditOutcome separates asynchronous acceptance from terminal business
