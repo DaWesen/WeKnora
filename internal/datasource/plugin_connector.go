@@ -39,15 +39,18 @@ func (c *PluginConnector) Validate(ctx context.Context, config *types.DataSource
 	}
 	client, err := c.manager.Connect(ctx, c.pluginID)
 	if err != nil {
+		c.markTransportFailure(ctx, err)
 		return err
 	}
 	defer client.Close()
 
 	if err := validatePluginConfig(ctx, client, configValues); err != nil {
+		c.markTransportFailure(ctx, err)
 		return err
 	}
 	response, err := client.ValidateCredentials(ctx, configValues)
 	if err != nil {
+		c.markTransportFailure(ctx, err)
 		return err
 	}
 	if !response.Valid {
@@ -85,6 +88,7 @@ func (c *PluginConnector) FetchStream(ctx context.Context, config *types.DataSou
 	defer client.Close()
 
 	if err := validatePluginConfig(ctx, client, configValues); err != nil {
+		c.markTransportFailure(ctx, err)
 		return nil, err
 	}
 	stream, err := client.Sync(ctx, "", configValues, readPluginCursor(cursor))

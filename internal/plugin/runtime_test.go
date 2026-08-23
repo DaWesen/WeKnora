@@ -56,6 +56,19 @@ func TestSanitizeContainerName(t *testing.T) {
 	require.Equal(t, "com-example-local-files", sanitizeContainerName("com.example_local/files"))
 }
 
+func TestContainerExitError(t *testing.T) {
+	require.EqualError(
+		t,
+		containerExitError([]byte("137\n"), nil),
+		"plugin container exited with status 137",
+	)
+	require.EqualError(
+		t,
+		containerExitError([]byte("daemon unavailable\n"), errors.New("exit status 1")),
+		"wait for plugin container: exit status 1: daemon unavailable",
+	)
+}
+
 func TestUnexpectedProcessExitNotifiesHandler(t *testing.T) {
 	runtime := NewRuntime()
 	type exitEvent struct {

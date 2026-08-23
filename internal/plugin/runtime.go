@@ -84,11 +84,26 @@ func (r *Runtime) Start(ctx context.Context, plugin Plugin, config map[string]st
 	if startedPluginInstance.command != nil {
 		go r.waitForProcess(plugin.Manifest.Metadata.ID, startedPluginInstance)
 	}
+	if startedPluginInstance.containerName != "" {
+		go r.waitForContainer(plugin.Manifest.Metadata.ID, startedPluginInstance)
+	}
 	return nil
 }
 
 func (r *Runtime) waitForProcess(id string, started *startedPlugin) {
 	r.handleProcessExit(id, started, started.command.Wait())
+}
+
+func (r *Runtime) waitForContainer(id string, started *startedPlugin) {
+	output, err := exec.Command("docker", "wait", started.containerName).CombinedOutput()
+	r.handleProcessExit(id, started, containerExitError(output, err))
+}
+
+func containerExitError(output []byte, err error) error {
+	if err != nil {
+		return fmt.Errorf("wait for plugin container: %w: %s", err, strings.TrimSpace(string(output)))
+	}
+	return fmt.Errorf("plugin container exited with status %s", strings.TrimSpace(string(output)))
 }
 
 func (r *Runtime) handleProcessExit(id string, started *startedPlugin, exitErr error) {

@@ -2,6 +2,7 @@ package datasource
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/Tencent/WeKnora/internal/plugin"
@@ -32,14 +33,88 @@ func TestPluginConnectorSyncErrorSecurityPolicyDenied(t *testing.T) {
 }
 
 func TestPluginTransportFailuresAreEligibleForRecovery(t *testing.T) {
-	require.True(t, shouldMarkRuntimeFailed(context.Background(), status.Error(codes.Unavailable, "connection dropped")))
-	require.True(t, shouldMarkRuntimeFailed(context.Background(), status.Error(codes.Internal, "stream broke")))
-	require.False(t, shouldMarkRuntimeFailed(context.Background(), status.Error(codes.InvalidArgument, "bad config")))
-	require.False(t, shouldMarkRuntimeFailed(context.Background(), context.Canceled))
+	tests := []struct {
+		name     string
+		err      error
+		eligible bool
+	}{
+		{
+			name:     "unavailable",
+			err:      status.Error(codes.Unavailable, "connection dropped"),
+			eligible: true,
+		},
+		{
+			name:     "unknown",
+			err:      status.Error(codes.Unknown, "plugin process crashed"),
+			eligible: true,
+		},
+		{
+			name:     "internal",
+			err:      status.Error(codes.Internal, "stream broke"),
+			eligible: true,
+		},
+		{
+			name:     "data loss",
+			err:      status.Error(codes.DataLoss, "connection corrupted"),
+			eligible: true,
+		},
+		{
+			name:     "wrapped unavailable",
+			err:      fmt.Errorf("validate plugin configuration: %w", status.Error(codes.Unavailable, "connection dropped")),
+			eligible: true,
+		},
+		{
+			name: "invalid configuration",
+			err:  status.Error(codes.InvalidArgument, "bad config"),
+		},
+		{
+			name: "invalid credentials",
+			err:  status.Error(codes.Unauthenticated, "credentials rejected"),
+		},
+		{
+			name: "plugin business error",
+			err:  status.Error(codes.FailedPrecondition, "remote folder is unavailable"),
+		},
+		{
+			name: "host cancellation",
+			err:  context.Canceled,
+		},
+		{
+			name: "host deadline",
+			err:  context.DeadlineExceeded,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			require.Equal(t, test.eligible, shouldMarkRuntimeFailed(context.Background(), test.err))
+		})
+	}
 
 	canceled, cancel := context.WithCancel(context.Background())
 	cancel()
 	require.False(t, shouldMarkRuntimeFailed(canceled, status.Error(codes.Unavailable, "host cancelled")))
+}
+
+func TestPluginSyncErrorsDoNotBecomeRuntimeFailures(t *testing.T) {
+	manager := plugin.NewManager(t.TempDir())
+	connector := &PluginConnector{manager: manager, pluginID: "com.example.local-files"}
+
+	err := connector.syncError(context.Background(), &pluginpb.SyncError{
+		SourceId:  "document-1",
+		Message:   "source API rate limit reached",
+		Retryable: true,
+	})
+
+	require.EqualError(t, err, "plugin sync error for document-1: source API rate limit reached")
+	require.Empty(t, manager.AuditEvents(plugin.AuditQuery{
+		PluginID: "com.example.local-files",
+		Action:   plugin.AuditActionPluginRuntimeFailed,
+	}))
+	require.Empty(t, manager.AuditEvents(plugin.AuditQuery{
+		PluginID: "com.example.local-files",
+		Action:   plugin.AuditActionPluginNetworkDenied,
+	}))
 }
 
 func TestRegisterPluginConnectorMetadata(t *testing.T) {
