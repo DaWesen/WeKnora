@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -53,4 +54,60 @@ func TestFilesystemPermissionKey(t *testing.T) {
 
 func TestSanitizeContainerName(t *testing.T) {
 	require.Equal(t, "com-example-local-files", sanitizeContainerName("com.example_local/files"))
+}
+
+func TestUnexpectedProcessExitNotifiesHandler(t *testing.T) {
+	runtime := NewRuntime()
+	type exitEvent struct {
+		id  string
+		err error
+	}
+	exited := make(chan exitEvent, 1)
+	runtime.SetProcessExitHandler(func(id string, err error) {
+		exited <- exitEvent{id: id, err: err}
+	})
+	started := &startedPlugin{}
+	runtime.started["com.example.files"] = started
+
+	runtime.handleProcessExit("com.example.files", started, errors.New("plugin crashed"))
+	event := <-exited
+	require.Equal(t, "com.example.files", event.id)
+	require.EqualError(t, event.err, "plugin crashed")
+	_, running := runtime.started["com.example.files"]
+	require.False(t, running)
+}
+
+func TestStoppedOrReplacedProcessExitIsIgnored(t *testing.T) {
+	runtime := NewRuntime()
+	exited := make(chan struct{}, 1)
+	runtime.SetProcessExitHandler(func(string, error) { exited <- struct{}{} })
+	old := &startedPlugin{}
+	runtime.started["com.example.files"] = &startedPlugin{}
+
+	runtime.handleProcessExit("com.example.files", old, errors.New("old process exited"))
+	select {
+	case <-exited:
+		t.Fatal("unexpected process exit notification")
+	default:
+	}
+}
+
+func TestManagerReceivesUnexpectedProcessExit(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	manager.byID["com.example.files"] = &Plugin{Status: StatusRunning}
+	started := &startedPlugin{}
+	manager.runtime.started["com.example.files"] = started
+
+	manager.runtime.handleProcessExit("com.example.files", started, errors.New("plugin crashed"))
+	plugin, ok := manager.Get("com.example.files")
+	require.True(t, ok)
+	require.Equal(t, StatusFailed, plugin.Status)
+	require.Equal(t, "plugin crashed", plugin.LastError)
+
+	events := manager.AuditEvents(AuditQuery{
+		PluginID: "com.example.files",
+		Action:   AuditActionPluginRuntimeFailed,
+	})
+	require.Len(t, events, 1)
+	require.Equal(t, "plugin crashed", events[0].Message)
 }

@@ -22,8 +22,9 @@ const (
 // Runtime starts plugin processes and containers. It owns only processes it has
 // launched, so external plugin endpoints are never terminated by Stop.
 type Runtime struct {
-	mu      sync.Mutex
-	started map[string]*startedPlugin
+	mu            sync.Mutex
+	started       map[string]*startedPlugin
+	onProcessExit func(string, error)
 }
 
 type startedPlugin struct {
@@ -34,6 +35,14 @@ type startedPlugin struct {
 
 func NewRuntime() *Runtime {
 	return &Runtime{started: make(map[string]*startedPlugin)}
+}
+
+// SetProcessExitHandler registers a notification for a hosted process that
+// exits outside an explicit Runtime.Stop call.
+func (r *Runtime) SetProcessExitHandler(handler func(string, error)) {
+	r.mu.Lock()
+	r.onProcessExit = handler
+	r.mu.Unlock()
 }
 
 func (r *Runtime) Start(ctx context.Context, plugin Plugin, config map[string]string) error {
@@ -72,7 +81,33 @@ func (r *Runtime) Start(ctx context.Context, plugin Plugin, config map[string]st
 	r.mu.Lock()
 	r.started[plugin.Manifest.Metadata.ID] = startedPluginInstance
 	r.mu.Unlock()
+	if startedPluginInstance.command != nil {
+		go r.waitForProcess(plugin.Manifest.Metadata.ID, startedPluginInstance)
+	}
 	return nil
+}
+
+func (r *Runtime) waitForProcess(id string, started *startedPlugin) {
+	r.handleProcessExit(id, started, started.command.Wait())
+}
+
+func (r *Runtime) handleProcessExit(id string, started *startedPlugin, exitErr error) {
+	r.mu.Lock()
+	if r.started[id] != started {
+		r.mu.Unlock()
+		return
+	}
+	delete(r.started, id)
+	handler := r.onProcessExit
+	r.mu.Unlock()
+
+	if handler == nil {
+		return
+	}
+	if exitErr == nil {
+		exitErr = fmt.Errorf("plugin process exited")
+	}
+	handler(id, exitErr)
 }
 
 func (r *Runtime) Stop(ctx context.Context, id string) error {

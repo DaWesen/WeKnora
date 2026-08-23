@@ -64,7 +64,7 @@ type Manager struct {
 }
 
 func NewManager(root string) *Manager {
-	return &Manager{
+	manager := &Manager{
 		root:       root,
 		runtime:    NewRuntime(),
 		audit:      NewAuditLog(0),
@@ -72,6 +72,10 @@ func NewManager(root string) *Manager {
 		restarts:   make(map[string]*restartState),
 		restarting: make(map[string]bool),
 	}
+	manager.runtime.SetProcessExitHandler(func(id string, cause error) {
+		_ = manager.MarkRuntimeFailed(id, cause)
+	})
+	return manager
 }
 
 // AuditEvents returns bounded, structured lifecycle and security events.
