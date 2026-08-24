@@ -73,6 +73,11 @@ spec:
     type: process
     command: ["/private/plugin-binary"]
     grpcAddress: unix:///private/plugin.sock
+  restartPolicy:
+    enabled: true
+    maxAttempts: 3
+    windowSeconds: 60
+    backoffMillis: 100
   permissions:
     network:
       enabled: true
@@ -106,6 +111,35 @@ func TestPluginHandlerListAndGetRedactDeploymentDetails(t *testing.T) {
 		if !strings.Contains(body, `"status":"discovered"`) || !strings.Contains(body, `"extension_type":"datasource"`) {
 			t.Fatalf("GET %s missing safe status projection: %s", requestPath, body)
 		}
+	}
+}
+
+func TestPluginHandlerListExposesSafeRestartBudget(t *testing.T) {
+	router := newPluginHandlerTestRouter(newPluginHandlerTestManager(t), newPluginAuditService(nil))
+	writer := httptest.NewRecorder()
+	router.ServeHTTP(writer, httptest.NewRequest(http.MethodGet, "/plugins", nil))
+	if writer.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d body=%s", writer.Code, writer.Body.String())
+	}
+
+	var response struct {
+		Success bool `json:"success"`
+		Data    []struct {
+			RestartState *pluginRestartStateResponse `json:"restart_state"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(writer.Body.Bytes(), &response); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+	if !response.Success || len(response.Data) != 1 || response.Data[0].RestartState == nil {
+		t.Fatalf("missing restart state: %#v", response)
+	}
+	state := response.Data[0].RestartState
+	if !state.Enabled || state.Attempts != 0 || state.Remaining != 3 || state.MaxAttempts != 3 || state.BackoffMillis != 100 {
+		t.Fatalf("unexpected restart state: %#v", state)
+	}
+	if strings.Contains(writer.Body.String(), "attempted_at") || strings.Contains(writer.Body.String(), "plugin.sock") {
+		t.Fatalf("restart response leaked internal attempt or runtime details: %s", writer.Body.String())
 	}
 }
 

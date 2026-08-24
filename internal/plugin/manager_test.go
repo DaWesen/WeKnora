@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -68,6 +69,35 @@ func TestValidatePluginInfo(t *testing.T) {
 	require.ErrorContains(t, validatePluginInfo(manifest, "other", "1.0.0", []string{"datasource"}), "id mismatch")
 	require.ErrorContains(t, validatePluginInfo(manifest, "com.example.local-files", "2.0.0", []string{"datasource"}), "version mismatch")
 	require.ErrorContains(t, validatePluginInfo(manifest, "com.example.local-files", "1.0.0", []string{"retriever"}), "does not provide")
+}
+
+func TestManagerRestartStatusPrunesExpiredAttempts(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	manager.byID["files"] = &Plugin{Manifest: Manifest{Metadata: Metadata{ID: "files"}, Spec: Spec{
+		RestartPolicy: &RestartPolicy{Enabled: true, MaxAttempts: 3, WindowSeconds: 60, BackoffMillis: 100},
+	}}}
+	manager.restarts["files"] = &restartState{attempts: []time.Time{
+		time.Now().UTC().Add(-2 * time.Hour),
+		time.Now().UTC().Add(-time.Minute),
+	}}
+
+	status, ok := manager.RestartStatus("files")
+	require.True(t, ok)
+	require.Equal(t, 1, status.Attempts)
+	require.Equal(t, 2, status.Remaining)
+	require.False(t, status.Restarting)
+	require.Len(t, manager.restarts["files"].attempts, 1)
+}
+
+func TestManagerRestartStatusWithoutPolicy(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	manager.byID["files"] = &Plugin{Manifest: Manifest{Metadata: Metadata{ID: "files"}}}
+	status, ok := manager.RestartStatus("files")
+	require.True(t, ok)
+	require.False(t, status.Enabled)
+	require.Equal(t, 0, status.Remaining)
+	_, ok = manager.RestartStatus("missing")
+	require.False(t, ok)
 }
 
 func TestStopAllMarksRunningPluginsDisabled(t *testing.T) {

@@ -576,6 +576,16 @@ export interface PluginRestartPolicy {
   backoff_millis?: number
 }
 
+export interface PluginRestartState {
+  enabled: boolean
+  max_attempts?: number
+  window_seconds?: number
+  backoff_millis?: number
+  attempts: number
+  remaining: number
+  restarting: boolean
+}
+
 export interface Plugin {
   id: string
   name: string
@@ -586,6 +596,7 @@ export interface Plugin {
   last_error?: string
   discovered_at: string
   restart_policy?: PluginRestartPolicy
+  restart_state?: PluginRestartState
 }
 
 export interface PluginAuditEvent {

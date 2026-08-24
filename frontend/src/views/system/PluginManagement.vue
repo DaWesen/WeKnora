@@ -41,13 +41,24 @@
           <span v-if="row.last_error" class="plugin-error" :title="row.last_error">{{ row.last_error }}</span>
           <span v-else>—</span>
         </template>
+        <template #restart_budget="{ row }">
+          <div v-if="row.restart_state" class="plugin-restart-budget">
+            <strong>{{ t('pluginManagement.restartBudgetUsage', {
+              attempts: row.restart_state.attempts,
+              maxAttempts: row.restart_state.max_attempts ?? 0,
+              remaining: row.restart_state.remaining,
+            }) }}</strong>
+            <span v-if="row.restart_state.backoff_millis">{{ t('pluginManagement.restartBackoff', { milliseconds: row.restart_state.backoff_millis }) }}</span>
+          </div>
+          <span v-else>—</span>
+        </template>
         <template #actions="{ row }">
           <div class="plugin-actions">
             <t-button size="small" variant="text" @click="openAudit(row)">
               {{ t('pluginManagement.audit') }}
             </t-button>
             <t-popconfirm
-              v-if="row.status === 'failed' && row.restart_policy?.enabled"
+              v-if="canRestart(row)"
               :content="t('pluginManagement.restartConfirm', { name: row.name })"
               @confirm="restartPlugin(row)"
             >
@@ -55,6 +66,20 @@
                 {{ t('pluginManagement.restart') }}
               </t-button>
             </t-popconfirm>
+            <t-tag
+              v-else-if="row.status === 'failed' && row.restart_policy?.enabled && row.restart_state?.restarting"
+              theme="warning"
+              variant="light"
+            >
+              {{ t('pluginManagement.restartInProgress') }}
+            </t-tag>
+            <t-tag
+              v-else-if="row.status === 'failed' && row.restart_policy?.enabled && row.restart_state?.remaining === 0"
+              theme="danger"
+              variant="light"
+            >
+              {{ t('pluginManagement.restartBudgetExhausted') }}
+            </t-tag>
           </div>
         </template>
       </t-table>
@@ -144,6 +169,8 @@ const auditActionOptions = computed(() => [
   'plugin.identity_failed',
   'plugin.network_denied',
   'plugin.runtime_failed',
+  'plugin.config_failed',
+  'plugin.credentials_denied',
   'plugin.restarted',
   'plugin.restart_denied',
 ].map(value => ({ label: value, value })))
@@ -154,7 +181,8 @@ const columns = computed(() => [
   { colKey: 'extension_type', title: t('pluginManagement.type'), width: 118 },
   { colKey: 'status', title: t('pluginManagement.status'), width: 112 },
   { colKey: 'last_error', title: t('pluginManagement.lastError'), minWidth: 180 },
-  { colKey: 'actions', title: t('pluginManagement.actions'), width: 142, align: 'right' as const },
+  { colKey: 'restart_budget', title: t('pluginManagement.restartBudget'), minWidth: 180 },
+  { colKey: 'actions', title: t('pluginManagement.actions'), width: 168, align: 'right' as const },
 ])
 
 async function loadPlugins() {
@@ -168,6 +196,11 @@ async function loadPlugins() {
   } finally {
     loading.value = false
   }
+}
+
+function canRestart(plugin: Plugin) {
+  if (plugin.status !== 'failed' || !plugin.restart_policy?.enabled) return false
+  return !plugin.restart_state || (!plugin.restart_state.restarting && plugin.restart_state.remaining > 0)
 }
 
 async function restartPlugin(plugin: Plugin) {
@@ -237,6 +270,9 @@ onMounted(() => {
 .plugin-name-cell { display: flex; flex-direction: column; gap: 3px; }
 .plugin-name-cell span { color: var(--td-text-color-placeholder); font-family: ui-monospace, monospace; font-size: 12px; }
 .plugin-error { display: block; overflow: hidden; max-width: 280px; color: var(--td-error-color); text-overflow: ellipsis; white-space: nowrap; }
+.plugin-restart-budget { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
+.plugin-restart-budget strong { color: var(--td-text-color-secondary); font-weight: 500; }
+.plugin-restart-budget span { color: var(--td-text-color-placeholder); }
 .plugin-actions { display: flex; justify-content: flex-end; gap: 4px; }
 .plugin-audit-toolbar { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .plugin-audit-toolbar :deep(.t-select) { flex: 1; }

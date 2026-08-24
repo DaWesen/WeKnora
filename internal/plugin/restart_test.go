@@ -191,6 +191,167 @@ func TestMarkRuntimeFailedRequiresCause(t *testing.T) {
 	require.ErrorContains(t, manager.MarkRuntimeFailed("com.example.files", nil), "cause is required")
 }
 
+func TestRestartConfigIsCopiedAtBothBoundaries(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	config := map[string]string{"token": "initial", "rootPath": "C:/files"}
+	manager.rememberRestartConfig("com.example.files", config)
+	config["token"] = "changed-by-caller"
+
+	retained, ok := manager.restartConfig("com.example.files")
+	require.True(t, ok)
+	require.Equal(t, "initial", retained["token"])
+	retained["token"] = "changed-by-reader"
+
+	again, ok := manager.restartConfig("com.example.files")
+	require.True(t, ok)
+	require.Equal(t, "initial", again["token"])
+}
+
+func TestHandleRuntimeFailureWithoutRetainedConfigStaysFailed(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	manifest := validRestartManifest()
+	manifest.Spec.RestartPolicy = &RestartPolicy{
+		Enabled:       true,
+		MaxAttempts:   2,
+		WindowSeconds: 60,
+	}
+	manager.byID["com.example.files"] = &Plugin{Manifest: manifest, Status: StatusRunning}
+
+	manager.handleRuntimeFailure("com.example.files", context.DeadlineExceeded)
+
+	current, ok := manager.Get("com.example.files")
+	require.True(t, ok)
+	require.Equal(t, StatusFailed, current.Status)
+	require.Equal(t, context.DeadlineExceeded.Error(), current.LastError)
+	require.False(t, manager.runtime.IsStarted("com.example.files"))
+
+	events := manager.AuditEvents(AuditQuery{PluginID: "com.example.files"})
+	require.Len(t, events, 2)
+	require.Equal(t, AuditActionPluginRestartDenied, events[0].Action)
+	require.Equal(t, "denied", events[0].Outcome)
+	require.NotContains(t, events[0].Message, "token")
+	require.Equal(t, AuditActionPluginRuntimeFailed, events[1].Action)
+}
+
+func TestHandleRuntimeFailureDoesNotRestartWhenPolicyDisabled(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	manager.byID["com.example.files"] = &Plugin{
+		Manifest: validRestartManifest(),
+		Status:   StatusRunning,
+	}
+	manager.rememberRestartConfig("com.example.files", map[string]string{"token": "secret"})
+
+	manager.handleRuntimeFailure("com.example.files", context.DeadlineExceeded)
+
+	current, ok := manager.Get("com.example.files")
+	require.True(t, ok)
+	require.Equal(t, StatusFailed, current.Status)
+	require.False(t, manager.runtime.IsStarted("com.example.files"))
+	events := manager.AuditEvents(AuditQuery{PluginID: "com.example.files"})
+	require.Len(t, events, 1)
+	require.Equal(t, AuditActionPluginRuntimeFailed, events[0].Action)
+}
+
+func TestStopForgetsRetainedRestartConfig(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	manager.byID["com.example.files"] = &Plugin{
+		Manifest: validRestartManifest(),
+		Status:   StatusRunning,
+	}
+	manager.rememberRestartConfig("com.example.files", map[string]string{"token": "secret"})
+
+	require.NoError(t, manager.Stop(context.Background(), "com.example.files"))
+	_, ok := manager.restartConfig("com.example.files")
+	require.False(t, ok)
+}
+
+func TestStopCancelsAutomaticRecovery(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	manager.byID["com.example.files"] = &Plugin{
+		Manifest: validRestartManifest(),
+		Status:   StatusFailed,
+	}
+	ctx, recovery := manager.beginAutomaticRecovery("com.example.files")
+	go func() {
+		<-ctx.Done()
+		manager.endAutomaticRecovery("com.example.files", recovery)
+	}()
+
+	stopCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	require.NoError(t, manager.Stop(stopCtx, "com.example.files"))
+	select {
+	case <-ctx.Done():
+	case <-time.After(time.Second):
+		t.Fatal("automatic recovery was not cancelled")
+	}
+}
+
+func TestStopAllForgetsAllRetainedRestartConfigs(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	first := validRestartManifest()
+	second := validRestartManifest()
+	second.Metadata.ID = "com.example.second"
+	manager.byID[first.Metadata.ID] = &Plugin{Manifest: first, Status: StatusRunning}
+	manager.byID[second.Metadata.ID] = &Plugin{Manifest: second, Status: StatusFailed}
+	manager.rememberRestartConfig(first.Metadata.ID, map[string]string{"token": "first"})
+	manager.rememberRestartConfig(second.Metadata.ID, map[string]string{"token": "second"})
+
+	require.NoError(t, manager.StopAll(context.Background()))
+	_, firstOK := manager.restartConfig(first.Metadata.ID)
+	_, secondOK := manager.restartConfig(second.Metadata.ID)
+	require.False(t, firstOK)
+	require.False(t, secondOK)
+}
+
+func TestStopAllCancelsAutomaticRecoveries(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	first := validRestartManifest()
+	second := validRestartManifest()
+	second.Metadata.ID = "com.example.second"
+	manager.byID[first.Metadata.ID] = &Plugin{Manifest: first, Status: StatusFailed}
+	manager.byID[second.Metadata.ID] = &Plugin{Manifest: second, Status: StatusFailed}
+	firstContext, firstRecovery := manager.beginAutomaticRecovery(first.Metadata.ID)
+	secondContext, secondRecovery := manager.beginAutomaticRecovery(second.Metadata.ID)
+	for _, recovery := range []struct {
+		id       string
+		ctx      context.Context
+		recovery *automaticRecovery
+	}{
+		{id: first.Metadata.ID, ctx: firstContext, recovery: firstRecovery},
+		{id: second.Metadata.ID, ctx: secondContext, recovery: secondRecovery},
+	} {
+		go func() {
+			<-recovery.ctx.Done()
+			manager.endAutomaticRecovery(recovery.id, recovery.recovery)
+		}()
+	}
+
+	stopCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	require.NoError(t, manager.StopAll(stopCtx))
+	for _, recoveryContext := range []context.Context{firstContext, secondContext} {
+		select {
+		case <-recoveryContext.Done():
+		case <-time.After(time.Second):
+			t.Fatal("automatic recovery was not cancelled")
+		}
+	}
+}
+
+func TestStopReturnsWhenAutomaticRecoveryDoesNotExit(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	manager.byID["com.example.files"] = &Plugin{
+		Manifest: validRestartManifest(),
+		Status:   StatusFailed,
+	}
+	_, _ = manager.beginAutomaticRecovery("com.example.files")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+	require.ErrorIs(t, manager.Stop(ctx, "com.example.files"), context.DeadlineExceeded)
+}
+
 func TestRestartRejectsPluginOutsideFailedState(t *testing.T) {
 	manager := NewManager(t.TempDir())
 	manifest := validRestartManifest()

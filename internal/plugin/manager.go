@@ -38,6 +38,24 @@ type restartState struct {
 	attempts []time.Time
 }
 
+type automaticRecovery struct {
+	cancel context.CancelFunc
+	done   chan struct{}
+}
+
+// RestartStatus is a safe snapshot of the manifest restart policy and its
+// current in-memory budget consumption. It intentionally excludes timestamps
+// of individual attempts and all runtime endpoint details.
+type RestartStatus struct {
+	Enabled       bool
+	MaxAttempts   int
+	WindowSeconds int
+	BackoffMillis int
+	Attempts      int
+	Remaining     int
+	Restarting    bool
+}
+
 const (
 	defaultRestartBackoff  = 250 * time.Millisecond
 	defaultShutdownTimeout = 5 * time.Second
@@ -66,6 +84,8 @@ type Manager struct {
 	byID            map[string]*Plugin
 	restarts        map[string]*restartState
 	restarting      map[string]bool
+	restartConfigs  map[string]map[string]string
+	recoveries      map[string]*automaticRecovery
 }
 
 func NewManager(root string) *Manager {
@@ -83,10 +103,10 @@ func NewManagerWithAudit(root string, persistentAudit auditSink) *Manager {
 		byID:            make(map[string]*Plugin),
 		restarts:        make(map[string]*restartState),
 		restarting:      make(map[string]bool),
+		restartConfigs:  make(map[string]map[string]string),
+		recoveries:      make(map[string]*automaticRecovery),
 	}
-	manager.runtime.SetProcessExitHandler(func(id string, cause error) {
-		_ = manager.MarkRuntimeFailed(id, cause)
-	})
+	manager.runtime.SetProcessExitHandler(manager.handleRuntimeFailure)
 	return manager
 }
 
@@ -178,6 +198,7 @@ func (m *Manager) StartWithConfig(ctx context.Context, id string, config map[str
 		logger.Errorf(ctx, "[Plugin] identity verification failed id=%s error=%v", id, err)
 		return err
 	}
+	m.rememberRestartConfig(id, config)
 	m.recordAudit(id, AuditActionPluginStarted, "success", "", "plugin started", map[string]string{
 		"extension_type":  string(plugin.Manifest.Spec.ExtensionType),
 		"network_enabled": fmt.Sprintf("%t", plugin.Manifest.Spec.Permissions.Network.Enabled),
@@ -250,6 +271,9 @@ func validatePluginInfo(manifest Manifest, id, version string, extensionTypes []
 // Restart restarts a failed plugin while enforcing its manifest recovery budget.
 // The caller supplies the same configuration used to launch the failing runtime.
 func (m *Manager) Restart(ctx context.Context, id string, config map[string]string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	plugin, ok := m.Get(id)
 	if !ok {
 		return fs.ErrNotExist
@@ -282,6 +306,9 @@ func (m *Manager) Restart(ctx context.Context, id string, config map[string]stri
 		m.recordAudit(id, AuditActionPluginStopFailed, "failed", "", err.Error(), map[string]string{"stage": "restart"})
 		return err
 	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	backoff := restartBackoff(*policy)
 	if backoff > 0 {
 		select {
@@ -289,6 +316,9 @@ func (m *Manager) Restart(ctx context.Context, id string, config map[string]stri
 			return ctx.Err()
 		case <-time.After(backoff):
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 	if err := m.StartWithConfig(ctx, id, config); err != nil {
 		return err
@@ -310,6 +340,94 @@ func (m *Manager) MarkRuntimeFailed(id string, cause error) error {
 	return nil
 }
 
+// handleRuntimeFailure 在宿主进程或容器异常退出后异步恢复插件。配置仅保留
+// 在内存中，避免将凭据写入审计记录或磁盘。Restart 仍是预算的唯一执行点。
+func (m *Manager) handleRuntimeFailure(id string, cause error) {
+	if err := m.MarkRuntimeFailed(id, cause); err != nil {
+		logger.Errorf(context.Background(), "[Plugin] record runtime failure id=%s error=%v", id, err)
+		return
+	}
+
+	config, ok := m.restartConfig(id)
+	if !ok {
+		m.recordAudit(id, AuditActionPluginRestartDenied, "denied", "", "automatic recovery requires retained runtime configuration", nil)
+		return
+	}
+	plugin, ok := m.Get(id)
+	if !ok || plugin.Manifest.Spec.RestartPolicy == nil || !plugin.Manifest.Spec.RestartPolicy.Enabled {
+		return
+	}
+
+	ctx, recovery := m.beginAutomaticRecovery(id)
+	go func() {
+		defer m.endAutomaticRecovery(id, recovery)
+		if err := m.Restart(ctx, id, config); err != nil && ctx.Err() == nil {
+			logger.Errorf(context.Background(), "[Plugin] automatic recovery failed id=%s error=%v", id, err)
+		}
+	}()
+}
+
+func (m *Manager) beginAutomaticRecovery(id string) (context.Context, *automaticRecovery) {
+	ctx, cancel := context.WithCancel(context.Background())
+	recovery := &automaticRecovery{cancel: cancel, done: make(chan struct{})}
+	m.mu.Lock()
+	if previous := m.recoveries[id]; previous != nil {
+		previous.cancel()
+	}
+	m.recoveries[id] = recovery
+	m.mu.Unlock()
+	return ctx, recovery
+}
+
+func (m *Manager) endAutomaticRecovery(id string, recovery *automaticRecovery) {
+	m.mu.Lock()
+	if m.recoveries[id] == recovery {
+		delete(m.recoveries, id)
+	}
+	m.mu.Unlock()
+	close(recovery.done)
+}
+
+func (m *Manager) cancelAutomaticRecovery(ctx context.Context, id string) error {
+	m.mu.RLock()
+	recovery := m.recoveries[id]
+	m.mu.RUnlock()
+	if recovery == nil {
+		return nil
+	}
+	recovery.cancel()
+	select {
+	case <-recovery.done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func (m *Manager) rememberRestartConfig(id string, config map[string]string) {
+	m.mu.Lock()
+	m.restartConfigs[id] = clonePluginConfig(config)
+	m.mu.Unlock()
+}
+
+func (m *Manager) restartConfig(id string) (map[string]string, bool) {
+	m.mu.RLock()
+	config, ok := m.restartConfigs[id]
+	m.mu.RUnlock()
+	return clonePluginConfig(config), ok
+}
+
+func clonePluginConfig(config map[string]string) map[string]string {
+	if config == nil {
+		return nil
+	}
+	clone := make(map[string]string, len(config))
+	for key, value := range config {
+		clone[key] = value
+	}
+	return clone
+}
+
 func (m *Manager) beginRestart(id string) bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -326,28 +444,70 @@ func (m *Manager) endRestart(id string) {
 	m.mu.Unlock()
 }
 
-func (m *Manager) reserveRestartAttempt(id string, policy RestartPolicy, now time.Time) (int, error) {
-	windowStart := now.Add(-time.Duration(policy.WindowSeconds) * time.Second)
+// RestartStatus returns the current restart budget for a discovered plugin.
+// It is intended for operators to understand why a failed plugin can or cannot
+// be retried; enforcement remains exclusively in Restart.
+func (m *Manager) RestartStatus(id string) (RestartStatus, bool) {
+	plugin, ok := m.Get(id)
+	if !ok {
+		return RestartStatus{}, false
+	}
+	policy := plugin.Manifest.Spec.RestartPolicy
+	if policy == nil {
+		return RestartStatus{}, true
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	state := m.restarts[id]
+	attempts := 0
+	if policy.Enabled {
+		attempts = len(m.pruneRestartAttemptsLocked(id, *policy, time.Now().UTC(), state))
+	}
+	remaining := policy.MaxAttempts - attempts
+	if remaining < 0 {
+		remaining = 0
+	}
+	return RestartStatus{
+		Enabled:       policy.Enabled,
+		MaxAttempts:   policy.MaxAttempts,
+		WindowSeconds: policy.WindowSeconds,
+		BackoffMillis: policy.BackoffMillis,
+		Attempts:      attempts,
+		Remaining:     remaining,
+		Restarting:    m.restarting[id],
+	}, true
+}
 
+func (m *Manager) reserveRestartAttempt(id string, policy RestartPolicy, now time.Time) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	state := m.restarts[id]
 	if state == nil {
 		state = &restartState{}
 		m.restarts[id] = state
 	}
+	active := m.pruneRestartAttemptsLocked(id, policy, now, state)
+	if len(active) >= policy.MaxAttempts {
+		return 0, fmt.Errorf("restart budget exhausted: %d attempts within %ds", policy.MaxAttempts, policy.WindowSeconds)
+	}
+	state.attempts = append(active, now)
+	return len(state.attempts), nil
+}
+
+func (m *Manager) pruneRestartAttemptsLocked(id string, policy RestartPolicy, now time.Time, state *restartState) []time.Time {
+	if state == nil {
+		return nil
+	}
+	windowStart := now.Add(-time.Duration(policy.WindowSeconds) * time.Second)
 	active := state.attempts[:0]
 	for _, attemptedAt := range state.attempts {
 		if !attemptedAt.Before(windowStart) {
 			active = append(active, attemptedAt)
 		}
 	}
-	if len(active) >= policy.MaxAttempts {
-		state.attempts = active
-		return 0, fmt.Errorf("restart budget exhausted: %d attempts within %ds", policy.MaxAttempts, policy.WindowSeconds)
-	}
-	state.attempts = append(active, now)
-	return len(state.attempts), nil
+	state.attempts = active
+	return active
 }
 
 func restartBackoff(policy RestartPolicy) time.Duration {
@@ -362,6 +522,9 @@ func (m *Manager) Stop(ctx context.Context, id string) error {
 	if !ok {
 		return fs.ErrNotExist
 	}
+	if err := m.cancelAutomaticRecovery(ctx, id); err != nil {
+		return err
+	}
 	if err := m.stopRuntime(ctx, *plugin); err != nil {
 		m.recordAudit(id, AuditActionPluginStopFailed, "failed", "", err.Error(), nil)
 		logger.Errorf(ctx, "[Plugin] stop failed id=%s error=%v", id, err)
@@ -370,12 +533,16 @@ func (m *Manager) Stop(ctx context.Context, id string) error {
 	if err := m.SetStatus(id, StatusDisabled, nil); err != nil {
 		return err
 	}
+	m.forgetRestartConfig(id)
 	m.recordAudit(id, AuditActionPluginStopped, "success", "", "plugin stopped", nil)
 	logger.Infof(ctx, "[Plugin] stopped id=%s", id)
 	return nil
 }
 
 func (m *Manager) StopAll(ctx context.Context) error {
+	if err := m.cancelAllAutomaticRecoveries(ctx); err != nil {
+		return err
+	}
 	for _, plugin := range m.List("") {
 		if plugin.Status != StatusRunning && plugin.Status != StatusFailed {
 			continue
@@ -399,8 +566,35 @@ func (m *Manager) StopAll(ctx context.Context) error {
 			plugin.LastError = ""
 		}
 	}
+	m.restartConfigs = make(map[string]map[string]string)
 	m.mu.Unlock()
 	return nil
+}
+
+func (m *Manager) cancelAllAutomaticRecoveries(ctx context.Context) error {
+	m.mu.RLock()
+	recoveries := make([]*automaticRecovery, 0, len(m.recoveries))
+	for _, recovery := range m.recoveries {
+		recoveries = append(recoveries, recovery)
+	}
+	m.mu.RUnlock()
+	for _, recovery := range recoveries {
+		recovery.cancel()
+	}
+	for _, recovery := range recoveries {
+		select {
+		case <-recovery.done:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	return nil
+}
+
+func (m *Manager) forgetRestartConfig(id string) {
+	m.mu.Lock()
+	delete(m.restartConfigs, id)
+	m.mu.Unlock()
 }
 
 func (m *Manager) stopRuntime(ctx context.Context, plugin Plugin) error {

@@ -1,12 +1,18 @@
 package plugin
 
 import (
+	"context"
 	"errors"
+	"net"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
+	pluginpb "github.com/Tencent/WeKnora/sdk/plugin/proto"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 )
 
 func TestHealthCheckTimeout(t *testing.T) {
@@ -185,4 +191,86 @@ func TestManagerReceivesUnexpectedProcessExit(t *testing.T) {
 	})
 	require.Len(t, events, 1)
 	require.Equal(t, "plugin crashed", events[0].Message)
+}
+
+type recoveryTestServer struct {
+	pluginpb.UnimplementedPluginLifecycleServer
+}
+
+func (s *recoveryTestServer) GetInfo(context.Context, *pluginpb.GetInfoRequest) (*pluginpb.PluginInfo, error) {
+	return &pluginpb.PluginInfo{
+		Id:             "com.example.recovery",
+		Version:        "1.0.0",
+		ExtensionTypes: []string{"datasource"},
+	}, nil
+}
+
+func (s *recoveryTestServer) HealthCheck(context.Context, *pluginpb.HealthCheckRequest) (*pluginpb.HealthCheckResponse, error) {
+	return &pluginpb.HealthCheckResponse{Status: pluginpb.HealthCheckResponse_STATUS_SERVING}, nil
+}
+
+func (s *recoveryTestServer) ValidateConfig(context.Context, *pluginpb.ValidateConfigRequest) (*pluginpb.ValidateConfigResponse, error) {
+	return &pluginpb.ValidateConfigResponse{Valid: true}, nil
+}
+
+func TestUnexpectedProcessExitAutomaticallyRestartsPlugin(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer listener.Close()
+
+	grpcServer := grpc.NewServer()
+	pluginpb.RegisterPluginLifecycleServer(grpcServer, &recoveryTestServer{})
+	go grpcServer.Serve(listener)
+	defer grpcServer.Stop()
+
+	manager := NewManager(t.TempDir())
+	defer manager.runtime.Stop(context.Background(), "com.example.recovery")
+	plugin := Plugin{
+		Directory: t.TempDir(),
+		Status:    StatusRunning,
+		Manifest: Manifest{
+			Metadata: Metadata{ID: "com.example.recovery", Version: "1.0.0"},
+			Spec: Spec{
+				ExtensionType: ExtensionTypeDataSource,
+				Entrypoint: Entrypoint{
+					Type:        "process",
+					Command:     []string{os.Args[0], "-test.run=TestPluginRecoveryHelperProcess", "--"},
+					GRPCAddress: listener.Addr().String(),
+				},
+				RestartPolicy: &RestartPolicy{Enabled: true, MaxAttempts: 1, WindowSeconds: 60, BackoffMillis: 1},
+			},
+		},
+	}
+	manager.byID[plugin.Manifest.Metadata.ID] = &plugin
+	manager.rememberRestartConfig(plugin.Manifest.Metadata.ID, map[string]string{"token": "secret"})
+	crashed := &startedPlugin{}
+	manager.runtime.started[plugin.Manifest.Metadata.ID] = crashed
+
+	manager.runtime.handleProcessExit(plugin.Manifest.Metadata.ID, crashed, errors.New("plugin crashed"))
+
+	require.Eventually(t, func() bool {
+		current, ok := manager.Get(plugin.Manifest.Metadata.ID)
+		return ok && current.Status == StatusRunning && manager.runtime.IsStarted(plugin.Manifest.Metadata.ID)
+	}, time.Second, 10*time.Millisecond)
+	status, ok := manager.RestartStatus(plugin.Manifest.Metadata.ID)
+	require.True(t, ok)
+	require.Equal(t, 1, status.Attempts)
+	require.Equal(t, 0, status.Remaining)
+
+	require.Eventually(t, func() bool {
+		events := manager.AuditEvents(AuditQuery{PluginID: plugin.Manifest.Metadata.ID})
+		return len(events) == 3 && events[0].Action == AuditActionPluginRestarted
+	}, time.Second, 10*time.Millisecond)
+	events := manager.AuditEvents(AuditQuery{PluginID: plugin.Manifest.Metadata.ID})
+	require.Equal(t, AuditActionPluginStarted, events[1].Action)
+	require.Equal(t, AuditActionPluginRuntimeFailed, events[2].Action)
+	require.NotContains(t, strings.Join([]string{events[0].Message, events[1].Message, events[2].Message}, " "), "secret")
+	require.NoError(t, manager.Stop(context.Background(), plugin.Manifest.Metadata.ID))
+}
+
+func TestPluginRecoveryHelperProcess(t *testing.T) {
+	if !strings.HasSuffix(os.Args[len(os.Args)-1], "--") {
+		return
+	}
+	select {}
 }

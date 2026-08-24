@@ -35,6 +35,16 @@ type pluginRestartPolicyResponse struct {
 	BackoffMillis int  `json:"backoff_millis,omitempty"`
 }
 
+type pluginRestartStateResponse struct {
+	Enabled       bool `json:"enabled"`
+	MaxAttempts   int  `json:"max_attempts,omitempty"`
+	WindowSeconds int  `json:"window_seconds,omitempty"`
+	BackoffMillis int  `json:"backoff_millis,omitempty"`
+	Attempts      int  `json:"attempts"`
+	Remaining     int  `json:"remaining"`
+	Restarting    bool `json:"restarting"`
+}
+
 // pluginResponse deliberately excludes runtime entrypoints, filesystem grants,
 // and discovery directories because they disclose deployment topology.
 type pluginResponse struct {
@@ -47,6 +57,7 @@ type pluginResponse struct {
 	LastError     string                       `json:"last_error,omitempty"`
 	DiscoveredAt  time.Time                    `json:"discovered_at"`
 	RestartPolicy *pluginRestartPolicyResponse `json:"restart_policy,omitempty"`
+	RestartState  *pluginRestartStateResponse  `json:"restart_state,omitempty"`
 }
 
 type pluginAuditEventResponse struct {
@@ -62,7 +73,7 @@ type restartPluginRequest struct {
 	Config map[string]string `json:"config"`
 }
 
-func pluginForResponse(value plugin.Plugin) pluginResponse {
+func pluginForResponse(manager *plugin.Manager, value plugin.Plugin) pluginResponse {
 	response := pluginResponse{
 		ID:            value.Manifest.Metadata.ID,
 		Name:          value.Manifest.Metadata.Name,
@@ -79,6 +90,17 @@ func pluginForResponse(value plugin.Plugin) pluginResponse {
 			MaxAttempts:   policy.MaxAttempts,
 			WindowSeconds: policy.WindowSeconds,
 			BackoffMillis: policy.BackoffMillis,
+		}
+	}
+	if state, ok := manager.RestartStatus(value.Manifest.Metadata.ID); ok && response.RestartPolicy != nil {
+		response.RestartState = &pluginRestartStateResponse{
+			Enabled:       state.Enabled,
+			MaxAttempts:   state.MaxAttempts,
+			WindowSeconds: state.WindowSeconds,
+			BackoffMillis: state.BackoffMillis,
+			Attempts:      state.Attempts,
+			Remaining:     state.Remaining,
+			Restarting:    state.Restarting,
 		}
 	}
 	return response
@@ -103,7 +125,7 @@ func (h *PluginHandler) List(c *gin.Context) {
 	plugins := h.manager.List("")
 	response := make([]pluginResponse, 0, len(plugins))
 	for _, value := range plugins {
-		response = append(response, pluginForResponse(value))
+		response = append(response, pluginForResponse(h.manager, value))
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": response})
 }
@@ -115,7 +137,7 @@ func (h *PluginHandler) Get(c *gin.Context) {
 		c.Error(apperrors.NewNotFoundError("plugin not found"))
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": pluginForResponse(*value)})
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": pluginForResponse(h.manager, *value)})
 }
 
 // ListAudit returns durable system-scope plugin events. Target and Message are
@@ -178,7 +200,7 @@ func (h *PluginHandler) Restart(c *gin.Context) {
 		c.Error(apperrors.NewNotFoundError("plugin not found"))
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": pluginForResponse(*value)})
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": pluginForResponse(h.manager, *value)})
 }
 
 func handlePluginRestartError(c *gin.Context, err error) {
