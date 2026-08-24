@@ -257,7 +257,11 @@ func main() {
 			},
 		},
 	}
-	if err := pluginsdk.Serve(implementation, implementation, pluginsdk.Options{}); err != nil {
+	ctx, stop := pluginsdk.ContextWithSignals(context.Background())
+	defer stop()
+	if err := pluginsdk.ServeContext(ctx, implementation, implementation, pluginsdk.Options{
+		ShutdownTimeout: 5 * time.Second,
+	}); err != nil {
 		panic(fmt.Errorf("serve plugin gRPC: %w", err))
 	}
 }

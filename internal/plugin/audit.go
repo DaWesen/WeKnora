@@ -25,16 +25,18 @@ type AuditEvent struct {
 }
 
 const (
-	AuditActionPluginStarted       = "plugin.started"
-	AuditActionPluginStartFailed   = "plugin.start_failed"
-	AuditActionPluginStopped       = "plugin.stopped"
-	AuditActionPluginStopFailed    = "plugin.stop_failed"
-	AuditActionPluginHealthFailed  = "plugin.health_failed"
-	AuditActionPluginIdentityFail  = "plugin.identity_failed"
-	AuditActionPluginNetworkDenied = "plugin.network_denied"
-	AuditActionPluginRuntimeFailed = "plugin.runtime_failed"
-	AuditActionPluginRestarted     = "plugin.restarted"
-	AuditActionPluginRestartDenied = "plugin.restart_denied"
+	AuditActionPluginStarted           = "plugin.started"
+	AuditActionPluginStartFailed       = "plugin.start_failed"
+	AuditActionPluginStopped           = "plugin.stopped"
+	AuditActionPluginStopFailed        = "plugin.stop_failed"
+	AuditActionPluginHealthFailed      = "plugin.health_failed"
+	AuditActionPluginConfigFailed      = "plugin.config_failed"
+	AuditActionPluginCredentialsDenied = "plugin.credentials_denied"
+	AuditActionPluginIdentityFail      = "plugin.identity_failed"
+	AuditActionPluginNetworkDenied     = "plugin.network_denied"
+	AuditActionPluginRuntimeFailed     = "plugin.runtime_failed"
+	AuditActionPluginRestarted         = "plugin.restarted"
+	AuditActionPluginRestartDenied     = "plugin.restart_denied"
 )
 
 const defaultAuditEventLimit = 512

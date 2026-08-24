@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -114,6 +115,12 @@ func (m *Manager) RecordNetworkDenied(pluginID, target, message string) {
 	m.recordAudit(pluginID, AuditActionPluginNetworkDenied, "denied", target, message, nil)
 }
 
+// RecordCredentialsDenied records only the rejection outcome. Credential values
+// and plugin diagnostic text must never enter the audit trail.
+func (m *Manager) RecordCredentialsDenied(pluginID string) {
+	m.recordAudit(pluginID, AuditActionPluginCredentialsDenied, "denied", "", "plugin credentials rejected", nil)
+}
+
 // Start launches a discovered plugin without runtime configuration.
 func (m *Manager) Start(ctx context.Context, id string) error {
 	return m.StartWithConfig(ctx, id, nil)
@@ -157,6 +164,13 @@ func (m *Manager) StartWithConfig(ctx context.Context, id string, config map[str
 		logger.Errorf(ctx, "[Plugin] health check failed id=%s error=%v", id, err)
 		return err
 	}
+	if err := m.validateRuntimeConfig(ctx, *plugin, config); err != nil {
+		_ = m.runtime.Stop(context.Background(), id)
+		_ = m.SetStatus(id, StatusFailed, err)
+		m.recordAudit(id, AuditActionPluginConfigFailed, "denied", "", "plugin rejected runtime configuration", map[string]string{"stage": "runtime_config"})
+		logger.Errorf(ctx, "[Plugin] runtime config validation failed id=%s error=%v", id, err)
+		return err
+	}
 	if err := m.verifyIdentity(ctx, *plugin); err != nil {
 		_ = m.runtime.Stop(context.Background(), id)
 		_ = m.SetStatus(id, StatusFailed, err)
@@ -170,6 +184,38 @@ func (m *Manager) StartWithConfig(ctx context.Context, id string, config map[str
 	})
 	logger.Infof(ctx, "[Plugin] started id=%s type=%s network=%t", id, plugin.Manifest.Spec.ExtensionType, plugin.Manifest.Spec.Permissions.Network.Enabled)
 	return nil
+}
+
+// validateRuntimeConfig lets a started plugin apply business-level validation
+// after the manifest schema has accepted the configuration. Audit events remain
+// deliberately generic so plugin-provided diagnostics never enter durable logs.
+func (m *Manager) validateRuntimeConfig(ctx context.Context, plugin Plugin, config map[string]string) error {
+	client, err := Dial(ctx, plugin.Manifest.Spec.Entrypoint.GRPCAddress)
+	if err != nil {
+		return fmt.Errorf("dial plugin for runtime config validation: %w", err)
+	}
+	defer client.Close()
+
+	response, err := client.ValidateConfig(ctx, config)
+	if err != nil {
+		return fmt.Errorf("validate plugin runtime configuration: %w", err)
+	}
+	if response.GetValid() {
+		return nil
+	}
+
+	fields := make([]string, 0, len(response.GetErrors()))
+	for _, fieldError := range response.GetErrors() {
+		field := fieldError.GetField()
+		if field != "" {
+			fields = append(fields, field)
+		}
+	}
+	sort.Strings(fields)
+	if len(fields) == 0 {
+		return fmt.Errorf("plugin rejected runtime configuration")
+	}
+	return fmt.Errorf("plugin rejected runtime configuration for fields: %s", strings.Join(fields, ", "))
 }
 
 func (m *Manager) verifyIdentity(ctx context.Context, plugin Plugin) error {
@@ -334,24 +380,26 @@ func (m *Manager) StopAll(ctx context.Context) error {
 		if plugin.Status != StatusRunning && plugin.Status != StatusFailed {
 			continue
 		}
+		if plugin.Manifest.Metadata.ID == "" {
+			continue
+		}
 		if err := m.stopRuntime(ctx, plugin); err != nil {
 			logger.Errorf(ctx, "[Plugin] stop all failed id=%s error=%v", plugin.Manifest.Metadata.ID, err)
 			return err
 		}
+		if err := m.SetStatus(plugin.Manifest.Metadata.ID, StatusDisabled, nil); err != nil {
+			return err
+		}
+		m.recordAudit(plugin.Manifest.Metadata.ID, AuditActionPluginStopped, "success", "", "plugin stopped", map[string]string{"reason": "application_shutdown"})
 	}
-	if err := m.runtime.StopAll(ctx); err != nil {
-		logger.Errorf(ctx, "[Plugin] stop all failed error=%v", err)
-		return err
-	}
-
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	for _, plugin := range m.byID {
 		if plugin.Status == StatusRunning || plugin.Status == StatusFailed {
 			plugin.Status = StatusDisabled
 			plugin.LastError = ""
 		}
 	}
+	m.mu.Unlock()
 	return nil
 }
 

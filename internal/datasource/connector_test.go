@@ -6,12 +6,39 @@ import (
 	"testing"
 
 	"github.com/Tencent/WeKnora/internal/plugin"
-	pluginpb "github.com/Tencent/WeKnora/sdk/plugin/proto"
 	"github.com/Tencent/WeKnora/internal/types"
+	pluginpb "github.com/Tencent/WeKnora/sdk/plugin/proto"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+func TestValidatePluginCredentialsDoesNotExposePluginMessage(t *testing.T) {
+	response := &pluginpb.ValidateCredentialsResponse{
+		Valid:   false,
+		Message: "token=super-secret upstream account is disabled",
+	}
+	err := validatePluginCredentials(response)
+	require.EqualError(t, err, "plugin credentials are invalid")
+	require.NotContains(t, err.Error(), "super-secret")
+
+	require.NoError(t, validatePluginCredentials(&pluginpb.ValidateCredentialsResponse{Valid: true}))
+	require.EqualError(t, validatePluginCredentials(nil), "plugin credentials are invalid")
+}
+
+func TestPluginConnectorRecordsCredentialRejectionWithoutDetails(t *testing.T) {
+	manager := plugin.NewManager(t.TempDir())
+	manager.RecordCredentialsDenied("com.example.credentials")
+
+	events := manager.AuditEvents(plugin.AuditQuery{
+		PluginID: "com.example.credentials",
+		Action:   plugin.AuditActionPluginCredentialsDenied,
+	})
+	require.Len(t, events, 1)
+	require.Equal(t, "denied", events[0].Outcome)
+	require.Equal(t, "plugin credentials rejected", events[0].Message)
+	require.Empty(t, events[0].Details)
+}
 
 func TestPluginConnectorSyncErrorSecurityPolicyDenied(t *testing.T) {
 	manager := plugin.NewManager(t.TempDir())

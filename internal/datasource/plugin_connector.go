@@ -10,8 +10,8 @@ import (
 
 	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/plugin"
-	pluginpb "github.com/Tencent/WeKnora/sdk/plugin/proto"
 	"github.com/Tencent/WeKnora/internal/types"
+	pluginpb "github.com/Tencent/WeKnora/sdk/plugin/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -51,10 +51,11 @@ func (c *PluginConnector) Validate(ctx context.Context, config *types.DataSource
 	response, err := client.ValidateCredentials(ctx, configValues)
 	if err != nil {
 		c.markTransportFailure(ctx, err)
-		return err
+		return fmt.Errorf("validate plugin credentials: %w", err)
 	}
-	if !response.Valid {
-		return fmt.Errorf("plugin credentials are invalid: %s", response.Message)
+	if err := validatePluginCredentials(response); err != nil {
+		c.manager.RecordCredentialsDenied(c.pluginID)
+		return err
 	}
 	return nil
 }
@@ -229,6 +230,16 @@ func (c *PluginConnector) connect(ctx context.Context, config *types.DataSourceC
 	return client, configValues, nil
 }
 
+// validatePluginCredentials intentionally does not return the plugin response
+// message. A connector can include upstream identity or authorization details
+// that must not be exposed to API callers or persisted in audit history.
+func validatePluginCredentials(response *pluginpb.ValidateCredentialsResponse) error {
+	if response == nil || !response.Valid {
+		return fmt.Errorf("plugin credentials are invalid")
+	}
+	return nil
+}
+
 func validatePluginConfig(ctx context.Context, client *plugin.Client, config map[string]string) error {
 	response, err := client.ValidateConfig(ctx, config)
 	if err != nil {
@@ -240,7 +251,7 @@ func validatePluginConfig(ctx context.Context, client *plugin.Client, config map
 	if len(response.Errors) == 0 {
 		return fmt.Errorf("plugin configuration is invalid")
 	}
-	return fmt.Errorf("plugin configuration is invalid: %s: %s", response.Errors[0].Field, response.Errors[0].Message)
+	return fmt.Errorf("plugin configuration is invalid: %s", response.Errors[0].Field)
 }
 
 func pluginConfig(config *types.DataSourceConfig) map[string]string {
