@@ -39,8 +39,21 @@ type restartState struct {
 }
 
 type automaticRecovery struct {
+	cancel   context.CancelFunc
+	done     chan struct{}
+	previous *automaticRecovery
+}
+
+type healthMonitor struct {
 	cancel context.CancelFunc
-	done   chan struct{}
+}
+
+// HealthStatus describes periodic health monitoring without exposing runtime endpoints.
+type HealthStatus struct {
+	Enabled         bool
+	IntervalSeconds int
+	TimeoutSeconds  int
+	Monitoring      bool
 }
 
 // RestartStatus is a safe snapshot of the manifest restart policy and its
@@ -86,6 +99,7 @@ type Manager struct {
 	restarting      map[string]bool
 	restartConfigs  map[string]map[string]string
 	recoveries      map[string]*automaticRecovery
+	healthMonitors  map[string]*healthMonitor
 }
 
 func NewManager(root string) *Manager {
@@ -105,6 +119,7 @@ func NewManagerWithAudit(root string, persistentAudit auditSink) *Manager {
 		restarting:      make(map[string]bool),
 		restartConfigs:  make(map[string]map[string]string),
 		recoveries:      make(map[string]*automaticRecovery),
+		healthMonitors:  make(map[string]*healthMonitor),
 	}
 	manager.runtime.SetProcessExitHandler(manager.handleRuntimeFailure)
 	return manager
@@ -203,6 +218,7 @@ func (m *Manager) StartWithConfig(ctx context.Context, id string, config map[str
 		"extension_type":  string(plugin.Manifest.Spec.ExtensionType),
 		"network_enabled": fmt.Sprintf("%t", plugin.Manifest.Spec.Permissions.Network.Enabled),
 	})
+	m.startHealthMonitor(id)
 	logger.Infof(ctx, "[Plugin] started id=%s type=%s network=%t", id, plugin.Manifest.Spec.ExtensionType, plugin.Manifest.Spec.Permissions.Network.Enabled)
 	return nil
 }
@@ -343,11 +359,98 @@ func (m *Manager) MarkRuntimeFailed(id string, cause error) error {
 // handleRuntimeFailure 在宿主进程或容器异常退出后异步恢复插件。配置仅保留
 // 在内存中，避免将凭据写入审计记录或磁盘。Restart 仍是预算的唯一执行点。
 func (m *Manager) handleRuntimeFailure(id string, cause error) {
+	m.stopHealthMonitor(id)
 	if err := m.MarkRuntimeFailed(id, cause); err != nil {
 		logger.Errorf(context.Background(), "[Plugin] record runtime failure id=%s error=%v", id, err)
 		return
 	}
+	m.scheduleAutomaticRecovery(id)
+}
 
+func (m *Manager) startHealthMonitor(id string) {
+	plugin, ok := m.Get(id)
+	if !ok || HealthCheckInterval(*plugin) == 0 {
+		return
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	monitor := &healthMonitor{cancel: cancel}
+	m.mu.Lock()
+	if previous := m.healthMonitors[id]; previous != nil {
+		previous.cancel()
+	}
+	m.healthMonitors[id] = monitor
+	m.mu.Unlock()
+
+	go func() {
+		ticker := time.NewTicker(HealthCheckInterval(*plugin))
+		defer ticker.Stop()
+		defer m.endHealthMonitor(id, monitor)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				current, ok := m.Get(id)
+				if !ok || current.Status != StatusRunning {
+					return
+				}
+				if err := CheckHealth(ctx, current.Manifest.Spec.Entrypoint.GRPCAddress, healthCheckTimeout(*current)); err != nil {
+					if ctx.Err() == nil {
+						m.handleHealthCheckFailure(id, err)
+					}
+					return
+				}
+			}
+		}
+	}()
+}
+
+func (m *Manager) endHealthMonitor(id string, monitor *healthMonitor) {
+	m.mu.Lock()
+	if m.healthMonitors[id] == monitor {
+		delete(m.healthMonitors, id)
+	}
+	m.mu.Unlock()
+}
+
+func (m *Manager) stopHealthMonitor(id string) {
+	m.mu.Lock()
+	monitor := m.healthMonitors[id]
+	delete(m.healthMonitors, id)
+	m.mu.Unlock()
+	if monitor != nil {
+		monitor.cancel()
+	}
+}
+
+func (m *Manager) stopAllHealthMonitors() {
+	m.mu.Lock()
+	monitors := make([]*healthMonitor, 0, len(m.healthMonitors))
+	for _, monitor := range m.healthMonitors {
+		monitors = append(monitors, monitor)
+	}
+	m.healthMonitors = make(map[string]*healthMonitor)
+	m.mu.Unlock()
+	for _, monitor := range monitors {
+		monitor.cancel()
+	}
+}
+
+func (m *Manager) handleHealthCheckFailure(id string, cause error) {
+	m.stopHealthMonitor(id)
+	if err := m.runtime.Stop(context.Background(), id); err != nil {
+		logger.Errorf(context.Background(), "[Plugin] stop unhealthy runtime id=%s error=%v", id, err)
+	}
+	if err := m.MarkRuntimeFailed(id, cause); err != nil {
+		logger.Errorf(context.Background(), "[Plugin] record health failure id=%s error=%v", id, err)
+		return
+	}
+	m.recordAudit(id, AuditActionPluginHealthFailed, "failed", "", cause.Error(), nil)
+	m.scheduleAutomaticRecovery(id)
+}
+
+func (m *Manager) scheduleAutomaticRecovery(id string) {
 	config, ok := m.restartConfig(id)
 	if !ok {
 		m.recordAudit(id, AuditActionPluginRestartDenied, "denied", "", "automatic recovery requires retained runtime configuration", nil)
@@ -361,6 +464,9 @@ func (m *Manager) handleRuntimeFailure(id string, cause error) {
 	ctx, recovery := m.beginAutomaticRecovery(id)
 	go func() {
 		defer m.endAutomaticRecovery(id, recovery)
+		if !waitForPreviousRecovery(ctx, recovery) {
+			return
+		}
 		if err := m.Restart(ctx, id, config); err != nil && ctx.Err() == nil {
 			logger.Errorf(context.Background(), "[Plugin] automatic recovery failed id=%s error=%v", id, err)
 		}
@@ -373,10 +479,42 @@ func (m *Manager) beginAutomaticRecovery(id string) (context.Context, *automatic
 	m.mu.Lock()
 	if previous := m.recoveries[id]; previous != nil {
 		previous.cancel()
+		recovery.previous = previous
 	}
 	m.recoveries[id] = recovery
 	m.mu.Unlock()
 	return ctx, recovery
+}
+
+func waitForPreviousRecovery(ctx context.Context, recovery *automaticRecovery) bool {
+	if recovery.previous == nil {
+		return true
+	}
+	select {
+	case <-recovery.previous.done:
+		return true
+	case <-ctx.Done():
+		return false
+	}
+}
+
+func cancelRecoveryChain(recovery *automaticRecovery) {
+	for recovery != nil {
+		recovery.cancel()
+		recovery = recovery.previous
+	}
+}
+
+func waitForRecoveryChain(ctx context.Context, recovery *automaticRecovery) error {
+	for recovery != nil {
+		select {
+		case <-recovery.done:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+		recovery = recovery.previous
+	}
+	return nil
 }
 
 func (m *Manager) endAutomaticRecovery(id string, recovery *automaticRecovery) {
@@ -395,13 +533,8 @@ func (m *Manager) cancelAutomaticRecovery(ctx context.Context, id string) error 
 	if recovery == nil {
 		return nil
 	}
-	recovery.cancel()
-	select {
-	case <-recovery.done:
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
-	}
+	cancelRecoveryChain(recovery)
+	return waitForRecoveryChain(ctx, recovery)
 }
 
 func (m *Manager) rememberRestartConfig(id string, config map[string]string) {
@@ -479,6 +612,28 @@ func (m *Manager) RestartStatus(id string) (RestartStatus, bool) {
 	}, true
 }
 
+// HealthStatus returns the safe monitoring configuration and whether its monitor
+// is currently active. It intentionally omits the health endpoint address.
+func (m *Manager) HealthStatus(id string) (HealthStatus, bool) {
+	plugin, ok := m.Get(id)
+	if !ok {
+		return HealthStatus{}, false
+	}
+	check := plugin.Manifest.Spec.HealthCheck
+	if check == nil {
+		return HealthStatus{}, true
+	}
+	m.mu.RLock()
+	_, monitoring := m.healthMonitors[id]
+	m.mu.RUnlock()
+	return HealthStatus{
+		Enabled:         true,
+		IntervalSeconds: check.IntervalSeconds,
+		TimeoutSeconds:  check.TimeoutSeconds,
+		Monitoring:      monitoring,
+	}, true
+}
+
 func (m *Manager) reserveRestartAttempt(id string, policy RestartPolicy, now time.Time) (int, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -518,6 +673,7 @@ func restartBackoff(policy RestartPolicy) time.Duration {
 }
 
 func (m *Manager) Stop(ctx context.Context, id string) error {
+	m.stopHealthMonitor(id)
 	plugin, ok := m.Get(id)
 	if !ok {
 		return fs.ErrNotExist
@@ -540,6 +696,7 @@ func (m *Manager) Stop(ctx context.Context, id string) error {
 }
 
 func (m *Manager) StopAll(ctx context.Context) error {
+	m.stopAllHealthMonitors()
 	if err := m.cancelAllAutomaticRecoveries(ctx); err != nil {
 		return err
 	}
@@ -579,13 +736,11 @@ func (m *Manager) cancelAllAutomaticRecoveries(ctx context.Context) error {
 	}
 	m.mu.RUnlock()
 	for _, recovery := range recoveries {
-		recovery.cancel()
+		cancelRecoveryChain(recovery)
 	}
 	for _, recovery := range recoveries {
-		select {
-		case <-recovery.done:
-		case <-ctx.Done():
-			return ctx.Err()
+		if err := waitForRecoveryChain(ctx, recovery); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -697,6 +852,15 @@ func (m *Manager) List(extensionType ExtensionType) []Plugin {
 		return plugins[i].Manifest.Metadata.ID < plugins[j].Manifest.Metadata.ID
 	})
 	return plugins
+}
+
+// HealthCheckInterval returns the configured monitoring interval for a plugin.
+// A zero duration means the plugin has no periodic health monitoring configured.
+func HealthCheckInterval(plugin Plugin) time.Duration {
+	if check := plugin.Manifest.Spec.HealthCheck; check != nil {
+		return time.Duration(check.IntervalSeconds) * time.Second
+	}
+	return 0
 }
 
 // SetStatus records the result of lifecycle operations that will be implemented

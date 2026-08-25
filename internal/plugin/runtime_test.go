@@ -213,6 +213,32 @@ func (s *recoveryTestServer) ValidateConfig(context.Context, *pluginpb.ValidateC
 	return &pluginpb.ValidateConfigResponse{Valid: true}, nil
 }
 
+func TestHealthCheckFailureStopsRuntimeAndMarksPluginFailed(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	plugin := Plugin{
+		Status: StatusRunning,
+		Manifest: Manifest{
+			Metadata: Metadata{ID: "com.example.health"},
+			Spec:     Spec{},
+		},
+	}
+	manager.byID[plugin.Manifest.Metadata.ID] = &plugin
+	manager.runtime.started[plugin.Manifest.Metadata.ID] = &startedPlugin{}
+	manager.rememberRestartConfig(plugin.Manifest.Metadata.ID, map[string]string{"token": "secret"})
+
+	manager.handleHealthCheckFailure(plugin.Manifest.Metadata.ID, errors.New("health endpoint unavailable"))
+
+	current, ok := manager.Get(plugin.Manifest.Metadata.ID)
+	require.True(t, ok)
+	require.Equal(t, StatusFailed, current.Status)
+	require.False(t, manager.runtime.IsStarted(plugin.Manifest.Metadata.ID))
+	events := manager.AuditEvents(AuditQuery{PluginID: plugin.Manifest.Metadata.ID})
+	require.Len(t, events, 2)
+	require.Equal(t, AuditActionPluginHealthFailed, events[0].Action)
+	require.Equal(t, AuditActionPluginRuntimeFailed, events[1].Action)
+	require.NotContains(t, strings.Join([]string{events[0].Message, events[1].Message}, " "), "secret")
+}
+
 func TestUnexpectedProcessExitAutomaticallyRestartsPlugin(t *testing.T) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)

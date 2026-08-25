@@ -52,6 +52,15 @@
           </div>
           <span v-else>—</span>
         </template>
+        <template #health_monitoring="{ row }">
+          <div v-if="row.health_state" class="plugin-health-state">
+            <t-tag :theme="row.health_state.monitoring ? 'success' : 'warning'" variant="light">
+              {{ row.health_state.monitoring ? t('pluginManagement.healthMonitoring') : t('pluginManagement.healthMonitorStopped') }}
+            </t-tag>
+            <span>{{ t('pluginManagement.healthInterval', { seconds: row.health_state.interval_seconds ?? 0 }) }}</span>
+          </div>
+          <span v-else>—</span>
+        </template>
         <template #actions="{ row }">
           <div class="plugin-actions">
             <t-button size="small" variant="text" @click="openAudit(row)">
@@ -182,6 +191,7 @@ const columns = computed(() => [
   { colKey: 'status', title: t('pluginManagement.status'), width: 112 },
   { colKey: 'last_error', title: t('pluginManagement.lastError'), minWidth: 180 },
   { colKey: 'restart_budget', title: t('pluginManagement.restartBudget'), minWidth: 180 },
+  { colKey: 'health_monitoring', title: t('pluginManagement.healthMonitoringTitle'), minWidth: 180 },
   { colKey: 'actions', title: t('pluginManagement.actions'), width: 168, align: 'right' as const },
 ])
 
@@ -273,6 +283,8 @@ onMounted(() => {
 .plugin-restart-budget { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
 .plugin-restart-budget strong { color: var(--td-text-color-secondary); font-weight: 500; }
 .plugin-restart-budget span { color: var(--td-text-color-placeholder); }
+.plugin-health-state { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; font-size: 12px; }
+.plugin-health-state span { color: var(--td-text-color-placeholder); }
 .plugin-actions { display: flex; justify-content: flex-end; gap: 4px; }
 .plugin-audit-toolbar { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .plugin-audit-toolbar :deep(.t-select) { flex: 1; }

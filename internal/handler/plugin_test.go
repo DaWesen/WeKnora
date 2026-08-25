@@ -78,6 +78,9 @@ spec:
     maxAttempts: 3
     windowSeconds: 60
     backoffMillis: 100
+  healthCheck:
+    intervalSeconds: 30
+    timeoutSeconds: 5
   permissions:
     network:
       enabled: true
@@ -126,6 +129,7 @@ func TestPluginHandlerListExposesSafeRestartBudget(t *testing.T) {
 		Success bool `json:"success"`
 		Data    []struct {
 			RestartState *pluginRestartStateResponse `json:"restart_state"`
+			HealthState  *pluginHealthStateResponse  `json:"health_state"`
 		} `json:"data"`
 	}
 	if err := json.Unmarshal(writer.Body.Bytes(), &response); err != nil {
@@ -137,6 +141,10 @@ func TestPluginHandlerListExposesSafeRestartBudget(t *testing.T) {
 	state := response.Data[0].RestartState
 	if !state.Enabled || state.Attempts != 0 || state.Remaining != 3 || state.MaxAttempts != 3 || state.BackoffMillis != 100 {
 		t.Fatalf("unexpected restart state: %#v", state)
+	}
+	health := response.Data[0].HealthState
+	if health == nil || !health.Enabled || health.Monitoring || health.IntervalSeconds != 30 || health.TimeoutSeconds != 5 {
+		t.Fatalf("unexpected health state: %#v", health)
 	}
 	if strings.Contains(writer.Body.String(), "attempted_at") || strings.Contains(writer.Body.String(), "plugin.sock") {
 		t.Fatalf("restart response leaked internal attempt or runtime details: %s", writer.Body.String())

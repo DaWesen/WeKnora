@@ -586,6 +586,13 @@ export interface PluginRestartState {
   restarting: boolean
 }
 
+export interface PluginHealthState {
+  enabled: boolean
+  interval_seconds?: number
+  timeout_seconds?: number
+  monitoring: boolean
+}
+
 export interface Plugin {
   id: string
   name: string
@@ -597,6 +604,7 @@ export interface Plugin {
   discovered_at: string
   restart_policy?: PluginRestartPolicy
   restart_state?: PluginRestartState
+  health_state?: PluginHealthState
 }
 
 export interface PluginAuditEvent {

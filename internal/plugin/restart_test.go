@@ -252,6 +252,68 @@ func TestHandleRuntimeFailureDoesNotRestartWhenPolicyDisabled(t *testing.T) {
 	require.Equal(t, AuditActionPluginRuntimeFailed, events[0].Action)
 }
 
+func TestReplacementRecoveryWaitsForPreviousRecovery(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	firstContext, first := manager.beginAutomaticRecovery("com.example.files")
+	secondContext, second := manager.beginAutomaticRecovery("com.example.files")
+
+	select {
+	case <-firstContext.Done():
+	case <-time.After(time.Second):
+		t.Fatal("previous automatic recovery was not cancelled")
+	}
+	ready := make(chan bool, 1)
+	go func() { ready <- waitForPreviousRecovery(secondContext, second) }()
+	select {
+	case <-ready:
+		t.Fatal("replacement recovery did not wait for its predecessor")
+	case <-time.After(20 * time.Millisecond):
+	}
+
+	manager.endAutomaticRecovery("com.example.files", first)
+	select {
+	case started := <-ready:
+		require.True(t, started)
+	case <-time.After(time.Second):
+		t.Fatal("replacement recovery did not continue after its predecessor exited")
+	}
+	manager.endAutomaticRecovery("com.example.files", second)
+}
+
+func TestStopCancelsEntireAutomaticRecoveryChain(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	manager.byID["com.example.files"] = &Plugin{
+		Manifest: validRestartManifest(),
+		Status:   StatusFailed,
+	}
+	firstContext, first := manager.beginAutomaticRecovery("com.example.files")
+	secondContext, second := manager.beginAutomaticRecovery("com.example.files")
+	for _, recovery := range []struct {
+		id       string
+		ctx      context.Context
+		recovery *automaticRecovery
+	}{
+		{id: "com.example.files", ctx: firstContext, recovery: first},
+		{id: "com.example.files", ctx: secondContext, recovery: second},
+	} {
+		go func() {
+			<-recovery.ctx.Done()
+			manager.endAutomaticRecovery(recovery.id, recovery.recovery)
+		}()
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	require.NoError(t, manager.Stop(ctx, "com.example.files"))
+	for _, recoveryContext := range []context.Context{firstContext, secondContext} {
+		select {
+		case <-recoveryContext.Done():
+		case <-time.After(time.Second):
+			t.Fatal("automatic recovery chain was not cancelled")
+		}
+	}
+}
+
 func TestStopForgetsRetainedRestartConfig(t *testing.T) {
 	manager := NewManager(t.TempDir())
 	manager.byID["com.example.files"] = &Plugin{

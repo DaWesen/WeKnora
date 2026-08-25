@@ -71,6 +71,33 @@ func TestValidatePluginInfo(t *testing.T) {
 	require.ErrorContains(t, validatePluginInfo(manifest, "com.example.local-files", "1.0.0", []string{"retriever"}), "does not provide")
 }
 
+func TestManifestRejectsInvalidHealthCheck(t *testing.T) {
+	manifest := Manifest{
+		APIVersion: APIVersionV1,
+		Kind:       "Plugin",
+		Metadata:   Metadata{ID: "com.example.health", Name: "Health", Version: "1.0.0"},
+		Spec: Spec{
+			ExtensionType:  ExtensionTypeDataSource,
+			WeKnoraVersion: ">=0.1.0",
+			Entrypoint:     Entrypoint{Type: "process", Command: []string{"plugin"}, GRPCAddress: "127.0.0.1:50051"},
+			Permissions:    Permissions{Network: NetworkPermission{Enabled: true}},
+			HealthCheck:    &HealthCheck{IntervalSeconds: 2, TimeoutSeconds: 3},
+		},
+	}
+	require.ErrorContains(t, manifest.Validate(), "must not exceed")
+
+	manifest.Spec.HealthCheck = &HealthCheck{IntervalSeconds: 0, TimeoutSeconds: 1}
+	require.ErrorContains(t, manifest.Validate(), "intervalSeconds")
+	manifest.Spec.HealthCheck = &HealthCheck{IntervalSeconds: 2, TimeoutSeconds: 0}
+	require.ErrorContains(t, manifest.Validate(), "timeoutSeconds")
+}
+
+func TestHealthCheckInterval(t *testing.T) {
+	require.Zero(t, HealthCheckInterval(Plugin{}))
+	plugin := Plugin{Manifest: Manifest{Spec: Spec{HealthCheck: &HealthCheck{IntervalSeconds: 3}}}}
+	require.Equal(t, 3*time.Second, HealthCheckInterval(plugin))
+}
+
 func TestManagerRestartStatusPrunesExpiredAttempts(t *testing.T) {
 	manager := NewManager(t.TempDir())
 	manager.byID["files"] = &Plugin{Manifest: Manifest{Metadata: Metadata{ID: "files"}, Spec: Spec{

@@ -176,6 +176,17 @@ func (m Manifest) Validate() error {
 			return fmt.Errorf("network-disabled container plugins require unix:// gRPC addresses")
 		}
 	}
+	if check := m.Spec.HealthCheck; check != nil {
+		if check.IntervalSeconds <= 0 || check.IntervalSeconds > 3600 {
+			return fmt.Errorf("health check intervalSeconds must be between 1 and 3600")
+		}
+		if check.TimeoutSeconds <= 0 || check.TimeoutSeconds > 60 {
+			return fmt.Errorf("health check timeoutSeconds must be between 1 and 60")
+		}
+		if check.TimeoutSeconds > check.IntervalSeconds {
+			return fmt.Errorf("health check timeoutSeconds must not exceed intervalSeconds")
+		}
+	}
 	if policy := m.Spec.RestartPolicy; policy != nil && policy.Enabled {
 		if policy.MaxAttempts <= 0 || policy.MaxAttempts > 10 {
 			return fmt.Errorf("restart policy maxAttempts must be between 1 and 10")

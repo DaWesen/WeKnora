@@ -45,6 +45,13 @@ type pluginRestartStateResponse struct {
 	Restarting    bool `json:"restarting"`
 }
 
+type pluginHealthStateResponse struct {
+	Enabled         bool `json:"enabled"`
+	IntervalSeconds int  `json:"interval_seconds,omitempty"`
+	TimeoutSeconds  int  `json:"timeout_seconds,omitempty"`
+	Monitoring      bool `json:"monitoring"`
+}
+
 // pluginResponse deliberately excludes runtime entrypoints, filesystem grants,
 // and discovery directories because they disclose deployment topology.
 type pluginResponse struct {
@@ -58,6 +65,7 @@ type pluginResponse struct {
 	DiscoveredAt  time.Time                    `json:"discovered_at"`
 	RestartPolicy *pluginRestartPolicyResponse `json:"restart_policy,omitempty"`
 	RestartState  *pluginRestartStateResponse  `json:"restart_state,omitempty"`
+	HealthState   *pluginHealthStateResponse   `json:"health_state,omitempty"`
 }
 
 type pluginAuditEventResponse struct {
@@ -101,6 +109,14 @@ func pluginForResponse(manager *plugin.Manager, value plugin.Plugin) pluginRespo
 			Attempts:      state.Attempts,
 			Remaining:     state.Remaining,
 			Restarting:    state.Restarting,
+		}
+	}
+	if state, ok := manager.HealthStatus(value.Manifest.Metadata.ID); ok && state.Enabled {
+		response.HealthState = &pluginHealthStateResponse{
+			Enabled:         state.Enabled,
+			IntervalSeconds: state.IntervalSeconds,
+			TimeoutSeconds:  state.TimeoutSeconds,
+			Monitoring:      state.Monitoring,
 		}
 	}
 	return response
