@@ -178,12 +178,12 @@ func TestMarkRuntimeFailedSetsStatusAndAudits(t *testing.T) {
 	plugin, ok := manager.Get("com.example.files")
 	require.True(t, ok)
 	require.Equal(t, StatusFailed, plugin.Status)
-	require.Equal(t, context.DeadlineExceeded.Error(), plugin.LastError)
+	require.Equal(t, "plugin runtime failed", plugin.LastError)
 
 	events := manager.AuditEvents(AuditQuery{PluginID: "com.example.files", Action: AuditActionPluginRuntimeFailed})
 	require.Len(t, events, 1)
 	require.Equal(t, "failed", events[0].Outcome)
-	require.Equal(t, context.DeadlineExceeded.Error(), events[0].Message)
+	require.Equal(t, "plugin runtime failed", events[0].Message)
 }
 
 func TestMarkRuntimeFailedRequiresCause(t *testing.T) {
@@ -222,7 +222,7 @@ func TestHandleRuntimeFailureWithoutRetainedConfigStaysFailed(t *testing.T) {
 	current, ok := manager.Get("com.example.files")
 	require.True(t, ok)
 	require.Equal(t, StatusFailed, current.Status)
-	require.Equal(t, context.DeadlineExceeded.Error(), current.LastError)
+	require.Equal(t, "plugin runtime failed", current.LastError)
 	require.False(t, manager.runtime.IsStarted("com.example.files"))
 
 	events := manager.AuditEvents(AuditQuery{PluginID: "com.example.files"})
@@ -327,6 +327,25 @@ func TestStopForgetsRetainedRestartConfig(t *testing.T) {
 	require.False(t, ok)
 }
 
+func TestStopClearsHealthState(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	plugin := validRestartManifest()
+	plugin.Spec.HealthCheck = &HealthCheck{IntervalSeconds: 30, TimeoutSeconds: 5}
+	manager.byID[plugin.Metadata.ID] = &Plugin{Manifest: plugin, Status: StatusRunning}
+	manager.healthStates[plugin.Metadata.ID] = &healthState{
+		consecutiveFailures: 1,
+		lastCheckedAt:       time.Now().UTC(),
+		lastFailureAt:       time.Now().UTC(),
+	}
+
+	require.NoError(t, manager.Stop(context.Background(), plugin.Metadata.ID))
+	status, ok := manager.HealthStatus(plugin.Metadata.ID)
+	require.True(t, ok)
+	require.Zero(t, status.ConsecutiveFailures)
+	require.True(t, status.LastCheckedAt.IsZero())
+	require.True(t, status.LastFailureAt.IsZero())
+}
+
 func TestStopCancelsAutomaticRecovery(t *testing.T) {
 	manager := NewManager(t.TempDir())
 	manager.byID["com.example.files"] = &Plugin{
@@ -364,6 +383,20 @@ func TestStopAllForgetsAllRetainedRestartConfigs(t *testing.T) {
 	_, secondOK := manager.restartConfig(second.Metadata.ID)
 	require.False(t, firstOK)
 	require.False(t, secondOK)
+}
+
+func TestStopAllClearsHealthStates(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	first := validRestartManifest()
+	second := validRestartManifest()
+	second.Metadata.ID = "com.example.second"
+	for _, manifest := range []Manifest{first, second} {
+		manager.byID[manifest.Metadata.ID] = &Plugin{Manifest: manifest, Status: StatusFailed}
+		manager.healthStates[manifest.Metadata.ID] = &healthState{consecutiveFailures: 1, lastCheckedAt: time.Now().UTC()}
+	}
+
+	require.NoError(t, manager.StopAll(context.Background()))
+	require.Empty(t, manager.healthStates)
 }
 
 func TestStopAllCancelsAutomaticRecoveries(t *testing.T) {

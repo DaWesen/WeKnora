@@ -26,4 +26,6 @@ spec:
     filesystem:
       readOnly: []
   healthCheck:
+    intervalSeconds: 30
     timeoutSeconds: 5
+    failureThreshold: 3

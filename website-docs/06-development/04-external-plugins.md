@@ -75,7 +75,9 @@ spec:
     filesystem:
       readOnly: []
   healthCheck:
+    intervalSeconds: 30
     timeoutSeconds: 5
+    failureThreshold: 3
   restartPolicy:
     enabled: true
     maxAttempts: 3
@@ -90,7 +92,8 @@ spec:
 - `extensionType` 支持 `datasource`、`document_parser`、`web_search`、`model_provider`、`retriever`。
 - `weknoraVersion` 必填，用于声明兼容版本范围。
 - `configSchema` 当前支持字符串字段和 `required` 的轻量 schema 校验；插件仍须在 gRPC `ValidateConfig` 中校验业务规则。
-- `healthCheck.timeoutSeconds` 用于启动后的健康检查。
+- `healthCheck` 启用运行期 gRPC 健康监测：`intervalSeconds` 必填，范围为 1–3600；`timeoutSeconds` 范围为 1–60，且不得大于检查间隔；`failureThreshold` 可选，范围为 0–10，未设置或为 0 时按 1 次连续失败处理。
+- 插件启动完成后按 `intervalSeconds` 周期探测。连续失败达到阈值后，运行时将被停止、插件标记为失败，并在 `restartPolicy` 允许时进入受预算和退避约束的自动恢复；一次成功探测会清零连续失败计数。
 - restart policy 启用时，`maxAttempts` 为 1–10，`windowSeconds` 为 1–3600，`backoffMillis` 为 0–60000。
 
 ## 进程与容器运行时

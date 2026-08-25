@@ -58,11 +58,13 @@
               {{ row.health_state.monitoring ? t('pluginManagement.healthMonitoring') : t('pluginManagement.healthMonitorStopped') }}
             </t-tag>
             <span>{{ t('pluginManagement.healthInterval', { seconds: row.health_state.interval_seconds ?? 0 }) }}</span>
+            <span>{{ t('pluginManagement.healthTimeout', { seconds: row.health_state.timeout_seconds ?? 0 }) }}</span>
             <span>{{ t('pluginManagement.healthFailureProgress', {
               failures: row.health_state.consecutive_failures,
               threshold: row.health_state.failure_threshold ?? 1,
             }) }}</span>
             <span v-if="row.health_state.last_checked_at">{{ t('pluginManagement.healthLastChecked', { time: formatDate(row.health_state.last_checked_at) }) }}</span>
+            <span v-if="row.health_state.last_failure_at">{{ t('pluginManagement.healthLastFailure', { time: formatDate(row.health_state.last_failure_at) }) }}</span>
           </div>
           <span v-else>—</span>
         </template>
@@ -180,6 +182,7 @@ const auditActionOptions = computed(() => [
   'plugin.stopped',
   'plugin.stop_failed',
   'plugin.health_failed',
+  'plugin.health_recovered',
   'plugin.identity_failed',
   'plugin.network_denied',
   'plugin.runtime_failed',

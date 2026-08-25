@@ -2,11 +2,13 @@ package plugin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -53,6 +55,11 @@ type healthState struct {
 	consecutiveFailures int
 	lastCheckedAt       time.Time
 	lastFailureAt       time.Time
+}
+
+type healthCheckResult struct {
+	failureThresholdReached bool
+	recoveredFailures       int
 }
 
 // HealthStatus describes periodic health monitoring without exposing runtime endpoints.
@@ -208,9 +215,11 @@ func (m *Manager) StartWithConfig(ctx context.Context, id string, config map[str
 	}
 	if err := m.CheckHealth(ctx, id, plugin.Manifest.Spec.Entrypoint.GRPCAddress, healthCheckTimeout(*plugin)); err != nil {
 		_ = m.runtime.Stop(context.Background(), id)
-		m.recordAudit(id, AuditActionPluginHealthFailed, "failed", "", err.Error(), nil)
+		safeErr := errors.New("plugin health check failed")
+		_ = m.SetStatus(id, StatusFailed, safeErr)
+		m.recordAudit(id, AuditActionPluginHealthFailed, "failed", "", safeErr.Error(), nil)
 		logger.Errorf(ctx, "[Plugin] health check failed id=%s error=%v", id, err)
-		return err
+		return safeErr
 	}
 	if err := m.validateRuntimeConfig(ctx, *plugin, config); err != nil {
 		_ = m.runtime.Stop(context.Background(), id)
@@ -363,10 +372,13 @@ func (m *Manager) MarkRuntimeFailed(id string, cause error) error {
 	if cause == nil {
 		return fmt.Errorf("plugin runtime failure cause is required")
 	}
-	if err := m.SetStatus(id, StatusFailed, cause); err != nil {
+	// Transport errors can contain a plugin endpoint. Keep the detailed cause in
+	// logs at its origin, but never retain it in control-plane state or audits.
+	safeCause := errors.New("plugin runtime failed")
+	if err := m.SetStatus(id, StatusFailed, safeCause); err != nil {
 		return err
 	}
-	m.recordAudit(id, AuditActionPluginRuntimeFailed, "failed", "", cause.Error(), nil)
+	m.recordAudit(id, AuditActionPluginRuntimeFailed, "failed", "", safeCause.Error(), nil)
 	return nil
 }
 
@@ -417,7 +429,13 @@ func (m *Manager) startHealthMonitor(id string) {
 				if ctx.Err() != nil {
 					return
 				}
-				if m.recordHealthCheck(id, monitor, err, healthFailureThreshold(*current)) && err != nil {
+				result := m.recordHealthCheck(id, monitor, err, healthFailureThreshold(*current))
+				if result.recoveredFailures > 0 {
+					m.recordAudit(id, AuditActionPluginHealthRecovered, "success", "", "plugin health check recovered", map[string]string{
+						"previous_consecutive_failures": strconv.Itoa(result.recoveredFailures),
+					})
+				}
+				if result.failureThresholdReached && err != nil {
 					m.handleHealthCheckFailure(id, monitor, err)
 					return
 				}
@@ -426,11 +444,11 @@ func (m *Manager) startHealthMonitor(id string) {
 	}()
 }
 
-func (m *Manager) recordHealthCheck(id string, monitor *healthMonitor, checkErr error, threshold int) bool {
+func (m *Manager) recordHealthCheck(id string, monitor *healthMonitor, checkErr error, threshold int) healthCheckResult {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.healthMonitors[id] != monitor {
-		return false
+		return healthCheckResult{}
 	}
 	state := m.healthStates[id]
 	if state == nil {
@@ -439,17 +457,25 @@ func (m *Manager) recordHealthCheck(id string, monitor *healthMonitor, checkErr 
 	}
 	state.lastCheckedAt = time.Now().UTC()
 	if checkErr == nil {
+		result := healthCheckResult{recoveredFailures: state.consecutiveFailures}
 		state.consecutiveFailures = 0
-		return false
+		state.lastFailureAt = time.Time{}
+		return result
 	}
 	state.consecutiveFailures++
 	state.lastFailureAt = state.lastCheckedAt
-	return state.consecutiveFailures >= threshold
+	return healthCheckResult{failureThresholdReached: state.consecutiveFailures >= threshold}
 }
 
 func (m *Manager) resetHealthState(id string) {
 	m.mu.Lock()
 	m.healthStates[id] = &healthState{}
+	m.mu.Unlock()
+}
+
+func (m *Manager) clearHealthState(id string) {
+	m.mu.Lock()
+	delete(m.healthStates, id)
 	m.mu.Unlock()
 }
 
@@ -506,7 +532,7 @@ func (m *Manager) handleHealthCheckFailure(id string, monitor *healthMonitor, ca
 		logger.Errorf(context.Background(), "[Plugin] record health failure id=%s error=%v", id, err)
 		return
 	}
-	m.recordAudit(id, AuditActionPluginHealthFailed, "failed", "", cause.Error(), nil)
+	m.recordAudit(id, AuditActionPluginHealthFailed, "failed", "", "plugin health check failed", nil)
 	m.scheduleAutomaticRecovery(id)
 }
 
@@ -527,10 +553,44 @@ func (m *Manager) scheduleAutomaticRecovery(id string) {
 		if !waitForPreviousRecovery(ctx, recovery) {
 			return
 		}
-		if err := m.Restart(ctx, id, config); err != nil && ctx.Err() == nil {
-			logger.Errorf(context.Background(), "[Plugin] automatic recovery failed id=%s error=%v", id, err)
+		for {
+			canRetry, budgetExhausted := m.canRetryAutomaticRecovery(ctx, id)
+			if !canRetry {
+				if budgetExhausted {
+					m.recordAudit(id, AuditActionPluginRestartDenied, "denied", "", "restart budget exhausted", nil)
+				}
+				return
+			}
+			err := m.Restart(ctx, id, config)
+			if err == nil || ctx.Err() != nil {
+				return
+			}
+			logger.Errorf(context.Background(), "[Plugin] automatic recovery attempt failed id=%s error=%v", id, err)
 		}
 	}()
+}
+
+// canRetryAutomaticRecovery keeps retry scheduling separate from Restart. Each
+// actual attempt still goes through Restart so the policy budget, backoff and
+// concurrent-restart guard have exactly one enforcement path. The second result
+// tells the caller that the recovery chain ended because its budget was spent.
+func (m *Manager) canRetryAutomaticRecovery(ctx context.Context, id string) (bool, bool) {
+	if ctx.Err() != nil {
+		return false, false
+	}
+	plugin, ok := m.Get(id)
+	if !ok || plugin.Status != StatusFailed {
+		return false, false
+	}
+	policy := plugin.Manifest.Spec.RestartPolicy
+	if policy == nil || !policy.Enabled {
+		return false, false
+	}
+	status, ok := m.RestartStatus(id)
+	if !ok || status.Restarting {
+		return false, false
+	}
+	return status.Remaining > 0, status.Remaining == 0
 }
 
 func (m *Manager) beginAutomaticRecovery(id string) (context.Context, *automaticRecovery) {
@@ -758,6 +818,7 @@ func (m *Manager) Stop(ctx context.Context, id string) error {
 		return err
 	}
 	m.forgetRestartConfig(id)
+	m.clearHealthState(id)
 	m.recordAudit(id, AuditActionPluginStopped, "success", "", "plugin stopped", nil)
 	logger.Infof(ctx, "[Plugin] stopped id=%s", id)
 	return nil
@@ -792,6 +853,7 @@ func (m *Manager) StopAll(ctx context.Context) error {
 		}
 	}
 	m.restartConfigs = make(map[string]map[string]string)
+	m.healthStates = make(map[string]*healthState)
 	m.mu.Unlock()
 	return nil
 }

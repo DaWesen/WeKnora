@@ -151,6 +151,25 @@ func TestPluginHandlerListExposesSafeRestartBudget(t *testing.T) {
 	}
 }
 
+func TestPluginHandlerDoesNotExposeRuntimeFailureEndpoint(t *testing.T) {
+	manager := newPluginHandlerTestManager(t)
+	if err := manager.MarkRuntimeFailed("files", fmt.Errorf("dial unix:///private/plugin.sock: connection refused")); err != nil {
+		t.Fatalf("mark runtime failed: %v", err)
+	}
+	router := newPluginHandlerTestRouter(manager, newPluginAuditService(nil))
+	writer := httptest.NewRecorder()
+	router.ServeHTTP(writer, httptest.NewRequest(http.MethodGet, "/plugins/files", nil))
+	if writer.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d body=%s", writer.Code, writer.Body.String())
+	}
+	if strings.Contains(writer.Body.String(), "plugin.sock") {
+		t.Fatalf("plugin response leaked runtime endpoint: %s", writer.Body.String())
+	}
+	if !strings.Contains(writer.Body.String(), "plugin runtime failed") {
+		t.Fatalf("plugin response did not expose the sanitized failure: %s", writer.Body.String())
+	}
+}
+
 func TestPluginHandlerGetAndAuditRejectUnknownPlugin(t *testing.T) {
 	router := newPluginHandlerTestRouter(newPluginHandlerTestManager(t), newPluginAuditService(nil))
 	for _, requestPath := range []string{"/plugins/missing", "/plugins/missing/audit"} {

@@ -30,6 +30,7 @@ const (
 	AuditActionPluginStopped           = "plugin.stopped"
 	AuditActionPluginStopFailed        = "plugin.stop_failed"
 	AuditActionPluginHealthFailed      = "plugin.health_failed"
+	AuditActionPluginHealthRecovered   = "plugin.health_recovered"
 	AuditActionPluginConfigFailed      = "plugin.config_failed"
 	AuditActionPluginCredentialsDenied = "plugin.credentials_denied"
 	AuditActionPluginIdentityFail      = "plugin.identity_failed"
