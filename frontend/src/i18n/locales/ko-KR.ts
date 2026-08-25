@@ -77,6 +77,8 @@ export default {
     healthMonitoring: '모니터링 중',
     healthMonitorStopped: '모니터링 안 함',
     healthInterval: '{seconds}초마다 확인',
+    healthFailureProgress: '연속 실패 {failures}/{threshold}',
+    healthLastChecked: '최근 확인: {time}',
     loadFailed: '플러그인 목록을 불러오지 못했습니다.',
     auditTitle: '플러그인 감사: {name}',
     auditDescription: '재시작 후에도 유지되는 정제된 감사 기록만 표시됩니다.',

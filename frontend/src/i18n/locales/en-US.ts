@@ -54,6 +54,8 @@ export default {
     healthMonitoring: 'Monitoring',
     healthMonitorStopped: 'Not monitoring',
     healthInterval: 'Checks every {seconds}s',
+    healthFailureProgress: 'Consecutive failures {failures}/{threshold}',
+    healthLastChecked: 'Last checked: {time}',
     loadFailed: 'Failed to load plugins.',
     auditTitle: 'Plugin audit: {name}',
     auditDescription: 'Only sanitized audit records retained across restarts are shown.',

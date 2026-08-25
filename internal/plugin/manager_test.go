@@ -90,12 +90,16 @@ func TestManifestRejectsInvalidHealthCheck(t *testing.T) {
 	require.ErrorContains(t, manifest.Validate(), "intervalSeconds")
 	manifest.Spec.HealthCheck = &HealthCheck{IntervalSeconds: 2, TimeoutSeconds: 0}
 	require.ErrorContains(t, manifest.Validate(), "timeoutSeconds")
+	manifest.Spec.HealthCheck = &HealthCheck{IntervalSeconds: 2, TimeoutSeconds: 1, FailureThreshold: 11}
+	require.ErrorContains(t, manifest.Validate(), "failureThreshold")
 }
 
-func TestHealthCheckInterval(t *testing.T) {
+func TestHealthCheckIntervalAndFailureThreshold(t *testing.T) {
 	require.Zero(t, HealthCheckInterval(Plugin{}))
-	plugin := Plugin{Manifest: Manifest{Spec: Spec{HealthCheck: &HealthCheck{IntervalSeconds: 3}}}}
+	require.Equal(t, 1, healthFailureThreshold(Plugin{}))
+	plugin := Plugin{Manifest: Manifest{Spec: Spec{HealthCheck: &HealthCheck{IntervalSeconds: 3, FailureThreshold: 2}}}}
 	require.Equal(t, 3*time.Second, HealthCheckInterval(plugin))
+	require.Equal(t, 2, healthFailureThreshold(plugin))
 }
 
 func TestManagerRestartStatusPrunesExpiredAttempts(t *testing.T) {
@@ -103,9 +107,10 @@ func TestManagerRestartStatusPrunesExpiredAttempts(t *testing.T) {
 	manager.byID["files"] = &Plugin{Manifest: Manifest{Metadata: Metadata{ID: "files"}, Spec: Spec{
 		RestartPolicy: &RestartPolicy{Enabled: true, MaxAttempts: 3, WindowSeconds: 60, BackoffMillis: 100},
 	}}}
+	now := time.Now().UTC()
 	manager.restarts["files"] = &restartState{attempts: []time.Time{
-		time.Now().UTC().Add(-2 * time.Hour),
-		time.Now().UTC().Add(-time.Minute),
+		now.Add(-2 * time.Hour),
+		now.Add(-30 * time.Second),
 	}}
 
 	status, ok := manager.RestartStatus("files")

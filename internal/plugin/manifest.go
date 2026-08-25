@@ -68,8 +68,9 @@ type FilesystemPermission struct {
 }
 
 type HealthCheck struct {
-	IntervalSeconds int `yaml:"intervalSeconds"`
-	TimeoutSeconds  int `yaml:"timeoutSeconds"`
+	IntervalSeconds  int `yaml:"intervalSeconds"`
+	TimeoutSeconds   int `yaml:"timeoutSeconds"`
+	FailureThreshold int `yaml:"failureThreshold,omitempty"`
 }
 
 // RestartPolicy controls automatic recovery after an unexpected plugin failure.
@@ -185,6 +186,9 @@ func (m Manifest) Validate() error {
 		}
 		if check.TimeoutSeconds > check.IntervalSeconds {
 			return fmt.Errorf("health check timeoutSeconds must not exceed intervalSeconds")
+		}
+		if check.FailureThreshold < 0 || check.FailureThreshold > 10 {
+			return fmt.Errorf("health check failureThreshold must be between 0 and 10")
 		}
 	}
 	if policy := m.Spec.RestartPolicy; policy != nil && policy.Enabled {

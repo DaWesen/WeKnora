@@ -46,10 +46,14 @@ type pluginRestartStateResponse struct {
 }
 
 type pluginHealthStateResponse struct {
-	Enabled         bool `json:"enabled"`
-	IntervalSeconds int  `json:"interval_seconds,omitempty"`
-	TimeoutSeconds  int  `json:"timeout_seconds,omitempty"`
-	Monitoring      bool `json:"monitoring"`
+	Enabled             bool      `json:"enabled"`
+	IntervalSeconds     int       `json:"interval_seconds,omitempty"`
+	TimeoutSeconds      int       `json:"timeout_seconds,omitempty"`
+	FailureThreshold    int       `json:"failure_threshold,omitempty"`
+	ConsecutiveFailures int       `json:"consecutive_failures"`
+	Monitoring          bool      `json:"monitoring"`
+	LastCheckedAt       time.Time `json:"last_checked_at,omitempty"`
+	LastFailureAt       time.Time `json:"last_failure_at,omitempty"`
 }
 
 // pluginResponse deliberately excludes runtime entrypoints, filesystem grants,
@@ -113,10 +117,14 @@ func pluginForResponse(manager *plugin.Manager, value plugin.Plugin) pluginRespo
 	}
 	if state, ok := manager.HealthStatus(value.Manifest.Metadata.ID); ok && state.Enabled {
 		response.HealthState = &pluginHealthStateResponse{
-			Enabled:         state.Enabled,
-			IntervalSeconds: state.IntervalSeconds,
-			TimeoutSeconds:  state.TimeoutSeconds,
-			Monitoring:      state.Monitoring,
+			Enabled:             state.Enabled,
+			IntervalSeconds:     state.IntervalSeconds,
+			TimeoutSeconds:      state.TimeoutSeconds,
+			FailureThreshold:    state.FailureThreshold,
+			ConsecutiveFailures: state.ConsecutiveFailures,
+			Monitoring:          state.Monitoring,
+			LastCheckedAt:       state.LastCheckedAt,
+			LastFailureAt:       state.LastFailureAt,
 		}
 	}
 	return response

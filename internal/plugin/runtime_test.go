@@ -226,7 +226,7 @@ func TestHealthCheckFailureStopsRuntimeAndMarksPluginFailed(t *testing.T) {
 	manager.runtime.started[plugin.Manifest.Metadata.ID] = &startedPlugin{}
 	manager.rememberRestartConfig(plugin.Manifest.Metadata.ID, map[string]string{"token": "secret"})
 
-	manager.handleHealthCheckFailure(plugin.Manifest.Metadata.ID, errors.New("health endpoint unavailable"))
+	manager.handleHealthCheckFailure(plugin.Manifest.Metadata.ID, nil, errors.New("health endpoint unavailable"))
 
 	current, ok := manager.Get(plugin.Manifest.Metadata.ID)
 	require.True(t, ok)
@@ -237,6 +237,73 @@ func TestHealthCheckFailureStopsRuntimeAndMarksPluginFailed(t *testing.T) {
 	require.Equal(t, AuditActionPluginHealthFailed, events[0].Action)
 	require.Equal(t, AuditActionPluginRuntimeFailed, events[1].Action)
 	require.NotContains(t, strings.Join([]string{events[0].Message, events[1].Message}, " "), "secret")
+}
+
+func TestHealthMonitorRequiresConfiguredConsecutiveFailures(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	id := "com.example.health"
+	monitor := &healthMonitor{cancel: func() {}, done: make(chan struct{})}
+	manager.healthMonitors[id] = monitor
+	plugin := Plugin{Manifest: Manifest{Spec: Spec{HealthCheck: &HealthCheck{FailureThreshold: 2}}}}
+
+	require.False(t, manager.recordHealthCheck(id, monitor, errors.New("first failure"), healthFailureThreshold(plugin)))
+	require.True(t, manager.recordHealthCheck(id, monitor, errors.New("second failure"), healthFailureThreshold(plugin)))
+
+	require.False(t, manager.recordHealthCheck(id, monitor, nil, healthFailureThreshold(plugin)))
+	require.False(t, manager.recordHealthCheck(id, monitor, errors.New("first failure after success"), healthFailureThreshold(plugin)))
+	require.True(t, manager.recordHealthCheck(id, monitor, errors.New("second failure after success"), healthFailureThreshold(plugin)))
+}
+
+func TestHealthStatusReportsFailureProgress(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	plugin := Plugin{
+		Manifest: Manifest{
+			Metadata: Metadata{ID: "com.example.health"},
+			Spec:     Spec{HealthCheck: &HealthCheck{IntervalSeconds: 10, TimeoutSeconds: 2, FailureThreshold: 3}},
+		},
+	}
+	manager.byID[plugin.Manifest.Metadata.ID] = &plugin
+	monitor := &healthMonitor{cancel: func() {}, done: make(chan struct{})}
+	manager.healthMonitors[plugin.Manifest.Metadata.ID] = monitor
+
+	require.False(t, manager.recordHealthCheck(plugin.Manifest.Metadata.ID, monitor, errors.New("health failed"), healthFailureThreshold(plugin)))
+	status, ok := manager.HealthStatus(plugin.Manifest.Metadata.ID)
+	require.True(t, ok)
+	require.True(t, status.Enabled)
+	require.True(t, status.Monitoring)
+	require.Equal(t, 3, status.FailureThreshold)
+	require.Equal(t, 1, status.ConsecutiveFailures)
+	require.False(t, status.LastCheckedAt.IsZero())
+	require.False(t, status.LastFailureAt.IsZero())
+
+	require.False(t, manager.recordHealthCheck(plugin.Manifest.Metadata.ID, monitor, nil, healthFailureThreshold(plugin)))
+	status, ok = manager.HealthStatus(plugin.Manifest.Metadata.ID)
+	require.True(t, ok)
+	require.Zero(t, status.ConsecutiveFailures)
+}
+
+func TestStaleHealthMonitorCannotStopReplacementRuntime(t *testing.T) {
+	manager := NewManager(t.TempDir())
+	plugin := Plugin{
+		Status: StatusRunning,
+		Manifest: Manifest{
+			Metadata: Metadata{ID: "com.example.health"},
+			Spec:     Spec{},
+		},
+	}
+	manager.byID[plugin.Manifest.Metadata.ID] = &plugin
+	manager.runtime.started[plugin.Manifest.Metadata.ID] = &startedPlugin{}
+	current := &healthMonitor{cancel: func() {}, done: make(chan struct{})}
+	stale := &healthMonitor{cancel: func() {}, done: make(chan struct{})}
+	manager.healthMonitors[plugin.Manifest.Metadata.ID] = current
+
+	manager.handleHealthCheckFailure(plugin.Manifest.Metadata.ID, stale, errors.New("stale health failure"))
+
+	updated, ok := manager.Get(plugin.Manifest.Metadata.ID)
+	require.True(t, ok)
+	require.Equal(t, StatusRunning, updated.Status)
+	require.True(t, manager.runtime.IsStarted(plugin.Manifest.Metadata.ID))
+	require.Empty(t, manager.AuditEvents(AuditQuery{PluginID: plugin.Manifest.Metadata.ID}))
 }
 
 func TestUnexpectedProcessExitAutomaticallyRestartsPlugin(t *testing.T) {

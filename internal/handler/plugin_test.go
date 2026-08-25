@@ -143,7 +143,7 @@ func TestPluginHandlerListExposesSafeRestartBudget(t *testing.T) {
 		t.Fatalf("unexpected restart state: %#v", state)
 	}
 	health := response.Data[0].HealthState
-	if health == nil || !health.Enabled || health.Monitoring || health.IntervalSeconds != 30 || health.TimeoutSeconds != 5 {
+	if health == nil || !health.Enabled || health.Monitoring || health.IntervalSeconds != 30 || health.TimeoutSeconds != 5 || health.FailureThreshold != 1 || health.ConsecutiveFailures != 0 {
 		t.Fatalf("unexpected health state: %#v", health)
 	}
 	if strings.Contains(writer.Body.String(), "attempted_at") || strings.Contains(writer.Body.String(), "plugin.sock") {

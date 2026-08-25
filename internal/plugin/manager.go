@@ -46,14 +46,25 @@ type automaticRecovery struct {
 
 type healthMonitor struct {
 	cancel context.CancelFunc
+	done   chan struct{}
+}
+
+type healthState struct {
+	consecutiveFailures int
+	lastCheckedAt       time.Time
+	lastFailureAt       time.Time
 }
 
 // HealthStatus describes periodic health monitoring without exposing runtime endpoints.
 type HealthStatus struct {
-	Enabled         bool
-	IntervalSeconds int
-	TimeoutSeconds  int
-	Monitoring      bool
+	Enabled             bool
+	IntervalSeconds     int
+	TimeoutSeconds      int
+	FailureThreshold    int
+	ConsecutiveFailures int
+	Monitoring          bool
+	LastCheckedAt       time.Time
+	LastFailureAt       time.Time
 }
 
 // RestartStatus is a safe snapshot of the manifest restart policy and its
@@ -100,6 +111,7 @@ type Manager struct {
 	restartConfigs  map[string]map[string]string
 	recoveries      map[string]*automaticRecovery
 	healthMonitors  map[string]*healthMonitor
+	healthStates    map[string]*healthState
 }
 
 func NewManager(root string) *Manager {
@@ -120,6 +132,7 @@ func NewManagerWithAudit(root string, persistentAudit auditSink) *Manager {
 		restartConfigs:  make(map[string]map[string]string),
 		recoveries:      make(map[string]*automaticRecovery),
 		healthMonitors:  make(map[string]*healthMonitor),
+		healthStates:    make(map[string]*healthState),
 	}
 	manager.runtime.SetProcessExitHandler(manager.handleRuntimeFailure)
 	return manager
@@ -214,6 +227,7 @@ func (m *Manager) StartWithConfig(ctx context.Context, id string, config map[str
 		return err
 	}
 	m.rememberRestartConfig(id, config)
+	m.resetHealthState(id)
 	m.recordAudit(id, AuditActionPluginStarted, "success", "", "plugin started", map[string]string{
 		"extension_type":  string(plugin.Manifest.Spec.ExtensionType),
 		"network_enabled": fmt.Sprintf("%t", plugin.Manifest.Spec.Permissions.Network.Enabled),
@@ -374,13 +388,17 @@ func (m *Manager) startHealthMonitor(id string) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	monitor := &healthMonitor{cancel: cancel}
+	monitor := &healthMonitor{cancel: cancel, done: make(chan struct{})}
 	m.mu.Lock()
-	if previous := m.healthMonitors[id]; previous != nil {
+	previous := m.healthMonitors[id]
+	if previous != nil {
 		previous.cancel()
 	}
 	m.healthMonitors[id] = monitor
 	m.mu.Unlock()
+	if previous != nil {
+		<-previous.done
+	}
 
 	go func() {
 		ticker := time.NewTicker(HealthCheckInterval(*plugin))
@@ -395,15 +413,44 @@ func (m *Manager) startHealthMonitor(id string) {
 				if !ok || current.Status != StatusRunning {
 					return
 				}
-				if err := CheckHealth(ctx, current.Manifest.Spec.Entrypoint.GRPCAddress, healthCheckTimeout(*current)); err != nil {
-					if ctx.Err() == nil {
-						m.handleHealthCheckFailure(id, err)
-					}
+				err := CheckHealth(ctx, current.Manifest.Spec.Entrypoint.GRPCAddress, healthCheckTimeout(*current))
+				if ctx.Err() != nil {
+					return
+				}
+				if m.recordHealthCheck(id, monitor, err, healthFailureThreshold(*current)) && err != nil {
+					m.handleHealthCheckFailure(id, monitor, err)
 					return
 				}
 			}
 		}
 	}()
+}
+
+func (m *Manager) recordHealthCheck(id string, monitor *healthMonitor, checkErr error, threshold int) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.healthMonitors[id] != monitor {
+		return false
+	}
+	state := m.healthStates[id]
+	if state == nil {
+		state = &healthState{}
+		m.healthStates[id] = state
+	}
+	state.lastCheckedAt = time.Now().UTC()
+	if checkErr == nil {
+		state.consecutiveFailures = 0
+		return false
+	}
+	state.consecutiveFailures++
+	state.lastFailureAt = state.lastCheckedAt
+	return state.consecutiveFailures >= threshold
+}
+
+func (m *Manager) resetHealthState(id string) {
+	m.mu.Lock()
+	m.healthStates[id] = &healthState{}
+	m.mu.Unlock()
 }
 
 func (m *Manager) endHealthMonitor(id string, monitor *healthMonitor) {
@@ -412,6 +459,16 @@ func (m *Manager) endHealthMonitor(id string, monitor *healthMonitor) {
 		delete(m.healthMonitors, id)
 	}
 	m.mu.Unlock()
+	close(monitor.done)
+}
+
+func (m *Manager) ownsHealthMonitor(id string, monitor *healthMonitor) bool {
+	if monitor == nil {
+		return true
+	}
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.healthMonitors[id] == monitor
 }
 
 func (m *Manager) stopHealthMonitor(id string) {
@@ -437,7 +494,10 @@ func (m *Manager) stopAllHealthMonitors() {
 	}
 }
 
-func (m *Manager) handleHealthCheckFailure(id string, cause error) {
+func (m *Manager) handleHealthCheckFailure(id string, monitor *healthMonitor, cause error) {
+	if !m.ownsHealthMonitor(id, monitor) {
+		return
+	}
 	m.stopHealthMonitor(id)
 	if err := m.runtime.Stop(context.Background(), id); err != nil {
 		logger.Errorf(context.Background(), "[Plugin] stop unhealthy runtime id=%s error=%v", id, err)
@@ -625,13 +685,21 @@ func (m *Manager) HealthStatus(id string) (HealthStatus, bool) {
 	}
 	m.mu.RLock()
 	_, monitoring := m.healthMonitors[id]
+	state := m.healthStates[id]
+	status := HealthStatus{
+		Enabled:          true,
+		IntervalSeconds:  check.IntervalSeconds,
+		TimeoutSeconds:   check.TimeoutSeconds,
+		FailureThreshold: healthFailureThreshold(*plugin),
+		Monitoring:       monitoring,
+	}
+	if state != nil {
+		status.ConsecutiveFailures = state.consecutiveFailures
+		status.LastCheckedAt = state.lastCheckedAt
+		status.LastFailureAt = state.lastFailureAt
+	}
 	m.mu.RUnlock()
-	return HealthStatus{
-		Enabled:         true,
-		IntervalSeconds: check.IntervalSeconds,
-		TimeoutSeconds:  check.TimeoutSeconds,
-		Monitoring:      monitoring,
-	}, true
+	return status, true
 }
 
 func (m *Manager) reserveRestartAttempt(id string, policy RestartPolicy, now time.Time) (int, error) {
@@ -861,6 +929,13 @@ func HealthCheckInterval(plugin Plugin) time.Duration {
 		return time.Duration(check.IntervalSeconds) * time.Second
 	}
 	return 0
+}
+
+func healthFailureThreshold(plugin Plugin) int {
+	if check := plugin.Manifest.Spec.HealthCheck; check != nil && check.FailureThreshold > 0 {
+		return check.FailureThreshold
+	}
+	return 1
 }
 
 // SetStatus records the result of lifecycle operations that will be implemented

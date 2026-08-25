@@ -590,7 +590,11 @@ export interface PluginHealthState {
   enabled: boolean
   interval_seconds?: number
   timeout_seconds?: number
+  failure_threshold?: number
+  consecutive_failures: number
   monitoring: boolean
+  last_checked_at?: string
+  last_failure_at?: string
 }
 
 export interface Plugin {

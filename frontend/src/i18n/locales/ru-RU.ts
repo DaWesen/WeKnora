@@ -77,6 +77,8 @@ export default {
     healthMonitoring: 'Мониторинг',
     healthMonitorStopped: 'Не отслеживается',
     healthInterval: 'Проверка каждые {seconds} с',
+    healthFailureProgress: 'Последовательные сбои {failures}/{threshold}',
+    healthLastChecked: 'Последняя проверка: {time}',
     loadFailed: 'Не удалось загрузить плагины.',
     auditTitle: 'Аудит плагина: {name}',
     auditDescription: 'Показаны только очищенные записи аудита, сохраняемые после перезапуска.',
