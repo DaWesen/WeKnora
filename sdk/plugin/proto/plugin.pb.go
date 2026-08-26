@@ -1694,6 +1694,1458 @@ func (x *Completed) GetCursor() string {
 	return ""
 }
 
+type ExtensionConfigField struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Label         string                 `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
+	Type          string                 `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
+	Required      bool                   `protobuf:"varint,4,opt,name=required,proto3" json:"required,omitempty"`
+	DefaultValue  string                 `protobuf:"bytes,5,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
+	Options       []string               `protobuf:"bytes,6,rep,name=options,proto3" json:"options,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExtensionConfigField) Reset() {
+	*x = ExtensionConfigField{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExtensionConfigField) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExtensionConfigField) ProtoMessage() {}
+
+func (x *ExtensionConfigField) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExtensionConfigField.ProtoReflect.Descriptor instead.
+func (*ExtensionConfigField) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *ExtensionConfigField) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *ExtensionConfigField) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *ExtensionConfigField) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *ExtensionConfigField) GetRequired() bool {
+	if x != nil {
+		return x.Required
+	}
+	return false
+}
+
+func (x *ExtensionConfigField) GetDefaultValue() string {
+	if x != nil {
+		return x.DefaultValue
+	}
+	return ""
+}
+
+func (x *ExtensionConfigField) GetOptions() []string {
+	if x != nil {
+		return x.Options
+	}
+	return nil
+}
+
+type DocumentParserDescribeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DocumentParserDescribeRequest) Reset() {
+	*x = DocumentParserDescribeRequest{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DocumentParserDescribeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DocumentParserDescribeRequest) ProtoMessage() {}
+
+func (x *DocumentParserDescribeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DocumentParserDescribeRequest.ProtoReflect.Descriptor instead.
+func (*DocumentParserDescribeRequest) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{28}
+}
+
+type DocumentParserDescribeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	EngineName    string                 `protobuf:"bytes,1,opt,name=engine_name,json=engineName,proto3" json:"engine_name,omitempty"`
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	FileTypes     []string               `protobuf:"bytes,3,rep,name=file_types,json=fileTypes,proto3" json:"file_types,omitempty"`
+	Capabilities  []string               `protobuf:"bytes,4,rep,name=capabilities,proto3" json:"capabilities,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DocumentParserDescribeResponse) Reset() {
+	*x = DocumentParserDescribeResponse{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DocumentParserDescribeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DocumentParserDescribeResponse) ProtoMessage() {}
+
+func (x *DocumentParserDescribeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DocumentParserDescribeResponse.ProtoReflect.Descriptor instead.
+func (*DocumentParserDescribeResponse) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *DocumentParserDescribeResponse) GetEngineName() string {
+	if x != nil {
+		return x.EngineName
+	}
+	return ""
+}
+
+func (x *DocumentParserDescribeResponse) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *DocumentParserDescribeResponse) GetFileTypes() []string {
+	if x != nil {
+		return x.FileTypes
+	}
+	return nil
+}
+
+func (x *DocumentParserDescribeResponse) GetCapabilities() []string {
+	if x != nil {
+		return x.Capabilities
+	}
+	return nil
+}
+
+type DocumentParserParseRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Config        map[string]string      `protobuf:"bytes,1,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	FileContent   []byte                 `protobuf:"bytes,2,opt,name=file_content,json=fileContent,proto3" json:"file_content,omitempty"`
+	FileName      string                 `protobuf:"bytes,3,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	FileType      string                 `protobuf:"bytes,4,opt,name=file_type,json=fileType,proto3" json:"file_type,omitempty"`
+	Url           string                 `protobuf:"bytes,5,opt,name=url,proto3" json:"url,omitempty"`
+	Title         string                 `protobuf:"bytes,6,opt,name=title,proto3" json:"title,omitempty"`
+	RequestId     string                 `protobuf:"bytes,7,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DocumentParserParseRequest) Reset() {
+	*x = DocumentParserParseRequest{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DocumentParserParseRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DocumentParserParseRequest) ProtoMessage() {}
+
+func (x *DocumentParserParseRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DocumentParserParseRequest.ProtoReflect.Descriptor instead.
+func (*DocumentParserParseRequest) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *DocumentParserParseRequest) GetConfig() map[string]string {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+func (x *DocumentParserParseRequest) GetFileContent() []byte {
+	if x != nil {
+		return x.FileContent
+	}
+	return nil
+}
+
+func (x *DocumentParserParseRequest) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+func (x *DocumentParserParseRequest) GetFileType() string {
+	if x != nil {
+		return x.FileType
+	}
+	return ""
+}
+
+func (x *DocumentParserParseRequest) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *DocumentParserParseRequest) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *DocumentParserParseRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+type DocumentParserParseResponse struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	MarkdownContent string                 `protobuf:"bytes,1,opt,name=markdown_content,json=markdownContent,proto3" json:"markdown_content,omitempty"`
+	Images          []*ParsedImage         `protobuf:"bytes,2,rep,name=images,proto3" json:"images,omitempty"`
+	Metadata        map[string]string      `protobuf:"bytes,3,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Error           string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	IsAudio         bool                   `protobuf:"varint,5,opt,name=is_audio,json=isAudio,proto3" json:"is_audio,omitempty"`
+	AudioData       []byte                 `protobuf:"bytes,6,opt,name=audio_data,json=audioData,proto3" json:"audio_data,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *DocumentParserParseResponse) Reset() {
+	*x = DocumentParserParseResponse{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DocumentParserParseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DocumentParserParseResponse) ProtoMessage() {}
+
+func (x *DocumentParserParseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DocumentParserParseResponse.ProtoReflect.Descriptor instead.
+func (*DocumentParserParseResponse) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *DocumentParserParseResponse) GetMarkdownContent() string {
+	if x != nil {
+		return x.MarkdownContent
+	}
+	return ""
+}
+
+func (x *DocumentParserParseResponse) GetImages() []*ParsedImage {
+	if x != nil {
+		return x.Images
+	}
+	return nil
+}
+
+func (x *DocumentParserParseResponse) GetMetadata() map[string]string {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+func (x *DocumentParserParseResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *DocumentParserParseResponse) GetIsAudio() bool {
+	if x != nil {
+		return x.IsAudio
+	}
+	return false
+}
+
+func (x *DocumentParserParseResponse) GetAudioData() []byte {
+	if x != nil {
+		return x.AudioData
+	}
+	return nil
+}
+
+type ParsedImage struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Filename      string                 `protobuf:"bytes,1,opt,name=filename,proto3" json:"filename,omitempty"`
+	OriginalRef   string                 `protobuf:"bytes,2,opt,name=original_ref,json=originalRef,proto3" json:"original_ref,omitempty"`
+	MimeType      string                 `protobuf:"bytes,3,opt,name=mime_type,json=mimeType,proto3" json:"mime_type,omitempty"`
+	StorageKey    string                 `protobuf:"bytes,4,opt,name=storage_key,json=storageKey,proto3" json:"storage_key,omitempty"`
+	ImageData     []byte                 `protobuf:"bytes,5,opt,name=image_data,json=imageData,proto3" json:"image_data,omitempty"`
+	IsOriginal    bool                   `protobuf:"varint,6,opt,name=is_original,json=isOriginal,proto3" json:"is_original,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ParsedImage) Reset() {
+	*x = ParsedImage{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ParsedImage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ParsedImage) ProtoMessage() {}
+
+func (x *ParsedImage) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ParsedImage.ProtoReflect.Descriptor instead.
+func (*ParsedImage) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *ParsedImage) GetFilename() string {
+	if x != nil {
+		return x.Filename
+	}
+	return ""
+}
+
+func (x *ParsedImage) GetOriginalRef() string {
+	if x != nil {
+		return x.OriginalRef
+	}
+	return ""
+}
+
+func (x *ParsedImage) GetMimeType() string {
+	if x != nil {
+		return x.MimeType
+	}
+	return ""
+}
+
+func (x *ParsedImage) GetStorageKey() string {
+	if x != nil {
+		return x.StorageKey
+	}
+	return ""
+}
+
+func (x *ParsedImage) GetImageData() []byte {
+	if x != nil {
+		return x.ImageData
+	}
+	return nil
+}
+
+func (x *ParsedImage) GetIsOriginal() bool {
+	if x != nil {
+		return x.IsOriginal
+	}
+	return false
+}
+
+type WebSearchDescribeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WebSearchDescribeRequest) Reset() {
+	*x = WebSearchDescribeRequest{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WebSearchDescribeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WebSearchDescribeRequest) ProtoMessage() {}
+
+func (x *WebSearchDescribeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WebSearchDescribeRequest.ProtoReflect.Descriptor instead.
+func (*WebSearchDescribeRequest) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{33}
+}
+
+type WebSearchDescribeResponse struct {
+	state          protoimpl.MessageState  `protogen:"open.v1"`
+	ProviderType   string                  `protobuf:"bytes,1,opt,name=provider_type,json=providerType,proto3" json:"provider_type,omitempty"`
+	DisplayName    string                  `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	Description    string                  `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	RequiresApiKey bool                    `protobuf:"varint,4,opt,name=requires_api_key,json=requiresApiKey,proto3" json:"requires_api_key,omitempty"`
+	SupportsProxy  bool                    `protobuf:"varint,5,opt,name=supports_proxy,json=supportsProxy,proto3" json:"supports_proxy,omitempty"`
+	ConfigFields   []*ExtensionConfigField `protobuf:"bytes,6,rep,name=config_fields,json=configFields,proto3" json:"config_fields,omitempty"`
+	Capabilities   []string                `protobuf:"bytes,7,rep,name=capabilities,proto3" json:"capabilities,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *WebSearchDescribeResponse) Reset() {
+	*x = WebSearchDescribeResponse{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WebSearchDescribeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WebSearchDescribeResponse) ProtoMessage() {}
+
+func (x *WebSearchDescribeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WebSearchDescribeResponse.ProtoReflect.Descriptor instead.
+func (*WebSearchDescribeResponse) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *WebSearchDescribeResponse) GetProviderType() string {
+	if x != nil {
+		return x.ProviderType
+	}
+	return ""
+}
+
+func (x *WebSearchDescribeResponse) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *WebSearchDescribeResponse) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *WebSearchDescribeResponse) GetRequiresApiKey() bool {
+	if x != nil {
+		return x.RequiresApiKey
+	}
+	return false
+}
+
+func (x *WebSearchDescribeResponse) GetSupportsProxy() bool {
+	if x != nil {
+		return x.SupportsProxy
+	}
+	return false
+}
+
+func (x *WebSearchDescribeResponse) GetConfigFields() []*ExtensionConfigField {
+	if x != nil {
+		return x.ConfigFields
+	}
+	return nil
+}
+
+func (x *WebSearchDescribeResponse) GetCapabilities() []string {
+	if x != nil {
+		return x.Capabilities
+	}
+	return nil
+}
+
+type WebSearchRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Config        map[string]string      `protobuf:"bytes,1,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Query         string                 `protobuf:"bytes,2,opt,name=query,proto3" json:"query,omitempty"`
+	MaxResults    int32                  `protobuf:"varint,3,opt,name=max_results,json=maxResults,proto3" json:"max_results,omitempty"`
+	IncludeDate   bool                   `protobuf:"varint,4,opt,name=include_date,json=includeDate,proto3" json:"include_date,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WebSearchRequest) Reset() {
+	*x = WebSearchRequest{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WebSearchRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WebSearchRequest) ProtoMessage() {}
+
+func (x *WebSearchRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WebSearchRequest.ProtoReflect.Descriptor instead.
+func (*WebSearchRequest) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *WebSearchRequest) GetConfig() map[string]string {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+func (x *WebSearchRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *WebSearchRequest) GetMaxResults() int32 {
+	if x != nil {
+		return x.MaxResults
+	}
+	return 0
+}
+
+func (x *WebSearchRequest) GetIncludeDate() bool {
+	if x != nil {
+		return x.IncludeDate
+	}
+	return false
+}
+
+type WebSearchResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Results       []*WebSearchResult     `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WebSearchResponse) Reset() {
+	*x = WebSearchResponse{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WebSearchResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WebSearchResponse) ProtoMessage() {}
+
+func (x *WebSearchResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WebSearchResponse.ProtoReflect.Descriptor instead.
+func (*WebSearchResponse) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *WebSearchResponse) GetResults() []*WebSearchResult {
+	if x != nil {
+		return x.Results
+	}
+	return nil
+}
+
+type WebSearchResult struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Title         string                 `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
+	Url           string                 `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	Snippet       string                 `protobuf:"bytes,3,opt,name=snippet,proto3" json:"snippet,omitempty"`
+	Content       string                 `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
+	Source        string                 `protobuf:"bytes,5,opt,name=source,proto3" json:"source,omitempty"`
+	PublishedAt   string                 `protobuf:"bytes,6,opt,name=published_at,json=publishedAt,proto3" json:"published_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WebSearchResult) Reset() {
+	*x = WebSearchResult{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WebSearchResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WebSearchResult) ProtoMessage() {}
+
+func (x *WebSearchResult) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WebSearchResult.ProtoReflect.Descriptor instead.
+func (*WebSearchResult) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *WebSearchResult) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *WebSearchResult) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *WebSearchResult) GetSnippet() string {
+	if x != nil {
+		return x.Snippet
+	}
+	return ""
+}
+
+func (x *WebSearchResult) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *WebSearchResult) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *WebSearchResult) GetPublishedAt() string {
+	if x != nil {
+		return x.PublishedAt
+	}
+	return ""
+}
+
+type ModelProviderDescribeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ModelProviderDescribeRequest) Reset() {
+	*x = ModelProviderDescribeRequest{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ModelProviderDescribeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ModelProviderDescribeRequest) ProtoMessage() {}
+
+func (x *ModelProviderDescribeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ModelProviderDescribeRequest.ProtoReflect.Descriptor instead.
+func (*ModelProviderDescribeRequest) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{38}
+}
+
+type ModelProviderDescribeResponse struct {
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	ProviderType  string                  `protobuf:"bytes,1,opt,name=provider_type,json=providerType,proto3" json:"provider_type,omitempty"`
+	DisplayName   string                  `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	Description   string                  `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	ModelTypes    []string                `protobuf:"bytes,4,rep,name=model_types,json=modelTypes,proto3" json:"model_types,omitempty"`
+	DefaultUrls   map[string]string       `protobuf:"bytes,5,rep,name=default_urls,json=defaultUrls,proto3" json:"default_urls,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	RequiresAuth  bool                    `protobuf:"varint,6,opt,name=requires_auth,json=requiresAuth,proto3" json:"requires_auth,omitempty"`
+	ConfigFields  []*ExtensionConfigField `protobuf:"bytes,7,rep,name=config_fields,json=configFields,proto3" json:"config_fields,omitempty"`
+	Capabilities  []string                `protobuf:"bytes,8,rep,name=capabilities,proto3" json:"capabilities,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ModelProviderDescribeResponse) Reset() {
+	*x = ModelProviderDescribeResponse{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ModelProviderDescribeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ModelProviderDescribeResponse) ProtoMessage() {}
+
+func (x *ModelProviderDescribeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ModelProviderDescribeResponse.ProtoReflect.Descriptor instead.
+func (*ModelProviderDescribeResponse) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *ModelProviderDescribeResponse) GetProviderType() string {
+	if x != nil {
+		return x.ProviderType
+	}
+	return ""
+}
+
+func (x *ModelProviderDescribeResponse) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *ModelProviderDescribeResponse) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *ModelProviderDescribeResponse) GetModelTypes() []string {
+	if x != nil {
+		return x.ModelTypes
+	}
+	return nil
+}
+
+func (x *ModelProviderDescribeResponse) GetDefaultUrls() map[string]string {
+	if x != nil {
+		return x.DefaultUrls
+	}
+	return nil
+}
+
+func (x *ModelProviderDescribeResponse) GetRequiresAuth() bool {
+	if x != nil {
+		return x.RequiresAuth
+	}
+	return false
+}
+
+func (x *ModelProviderDescribeResponse) GetConfigFields() []*ExtensionConfigField {
+	if x != nil {
+		return x.ConfigFields
+	}
+	return nil
+}
+
+func (x *ModelProviderDescribeResponse) GetCapabilities() []string {
+	if x != nil {
+		return x.Capabilities
+	}
+	return nil
+}
+
+type ListModelsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Config        map[string]string      `protobuf:"bytes,1,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListModelsRequest) Reset() {
+	*x = ListModelsRequest{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListModelsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListModelsRequest) ProtoMessage() {}
+
+func (x *ListModelsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListModelsRequest.ProtoReflect.Descriptor instead.
+func (*ListModelsRequest) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *ListModelsRequest) GetConfig() map[string]string {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+type ListModelsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Models        []*PluginModel         `protobuf:"bytes,1,rep,name=models,proto3" json:"models,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListModelsResponse) Reset() {
+	*x = ListModelsResponse{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListModelsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListModelsResponse) ProtoMessage() {}
+
+func (x *ListModelsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListModelsResponse.ProtoReflect.Descriptor instead.
+func (*ListModelsResponse) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *ListModelsResponse) GetModels() []*PluginModel {
+	if x != nil {
+		return x.Models
+	}
+	return nil
+}
+
+type PluginModel struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Capabilities  []string               `protobuf:"bytes,3,rep,name=capabilities,proto3" json:"capabilities,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PluginModel) Reset() {
+	*x = PluginModel{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PluginModel) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PluginModel) ProtoMessage() {}
+
+func (x *PluginModel) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PluginModel.ProtoReflect.Descriptor instead.
+func (*PluginModel) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *PluginModel) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *PluginModel) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *PluginModel) GetCapabilities() []string {
+	if x != nil {
+		return x.Capabilities
+	}
+	return nil
+}
+
+type RetrieverDescribeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RetrieverDescribeRequest) Reset() {
+	*x = RetrieverDescribeRequest{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[43]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RetrieverDescribeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RetrieverDescribeRequest) ProtoMessage() {}
+
+func (x *RetrieverDescribeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[43]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RetrieverDescribeRequest.ProtoReflect.Descriptor instead.
+func (*RetrieverDescribeRequest) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{43}
+}
+
+type RetrieverDescribeResponse struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	EngineType     string                 `protobuf:"bytes,1,opt,name=engine_type,json=engineType,proto3" json:"engine_type,omitempty"`
+	Description    string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Capabilities   []string               `protobuf:"bytes,3,rep,name=capabilities,proto3" json:"capabilities,omitempty"`
+	RetrieverTypes []string               `protobuf:"bytes,4,rep,name=retriever_types,json=retrieverTypes,proto3" json:"retriever_types,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *RetrieverDescribeResponse) Reset() {
+	*x = RetrieverDescribeResponse{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[44]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RetrieverDescribeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RetrieverDescribeResponse) ProtoMessage() {}
+
+func (x *RetrieverDescribeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[44]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RetrieverDescribeResponse.ProtoReflect.Descriptor instead.
+func (*RetrieverDescribeResponse) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{44}
+}
+
+func (x *RetrieverDescribeResponse) GetEngineType() string {
+	if x != nil {
+		return x.EngineType
+	}
+	return ""
+}
+
+func (x *RetrieverDescribeResponse) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *RetrieverDescribeResponse) GetCapabilities() []string {
+	if x != nil {
+		return x.Capabilities
+	}
+	return nil
+}
+
+func (x *RetrieverDescribeResponse) GetRetrieverTypes() []string {
+	if x != nil {
+		return x.RetrieverTypes
+	}
+	return nil
+}
+
+type RetrieveRequest struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	Config              map[string]string      `protobuf:"bytes,1,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Query               string                 `protobuf:"bytes,2,opt,name=query,proto3" json:"query,omitempty"`
+	Embedding           []float32              `protobuf:"fixed32,3,rep,packed,name=embedding,proto3" json:"embedding,omitempty"`
+	KnowledgeBaseIds    []string               `protobuf:"bytes,4,rep,name=knowledge_base_ids,json=knowledgeBaseIds,proto3" json:"knowledge_base_ids,omitempty"`
+	KnowledgeIds        []string               `protobuf:"bytes,5,rep,name=knowledge_ids,json=knowledgeIds,proto3" json:"knowledge_ids,omitempty"`
+	TagIds              []string               `protobuf:"bytes,6,rep,name=tag_ids,json=tagIds,proto3" json:"tag_ids,omitempty"`
+	ExcludeKnowledgeIds []string               `protobuf:"bytes,7,rep,name=exclude_knowledge_ids,json=excludeKnowledgeIds,proto3" json:"exclude_knowledge_ids,omitempty"`
+	ExcludeChunkIds     []string               `protobuf:"bytes,8,rep,name=exclude_chunk_ids,json=excludeChunkIds,proto3" json:"exclude_chunk_ids,omitempty"`
+	TopK                int32                  `protobuf:"varint,9,opt,name=top_k,json=topK,proto3" json:"top_k,omitempty"`
+	Threshold           float64                `protobuf:"fixed64,10,opt,name=threshold,proto3" json:"threshold,omitempty"`
+	KnowledgeType       string                 `protobuf:"bytes,11,opt,name=knowledge_type,json=knowledgeType,proto3" json:"knowledge_type,omitempty"`
+	RetrieverType       string                 `protobuf:"bytes,12,opt,name=retriever_type,json=retrieverType,proto3" json:"retriever_type,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *RetrieveRequest) Reset() {
+	*x = RetrieveRequest{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[45]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RetrieveRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RetrieveRequest) ProtoMessage() {}
+
+func (x *RetrieveRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[45]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RetrieveRequest.ProtoReflect.Descriptor instead.
+func (*RetrieveRequest) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *RetrieveRequest) GetConfig() map[string]string {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+func (x *RetrieveRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *RetrieveRequest) GetEmbedding() []float32 {
+	if x != nil {
+		return x.Embedding
+	}
+	return nil
+}
+
+func (x *RetrieveRequest) GetKnowledgeBaseIds() []string {
+	if x != nil {
+		return x.KnowledgeBaseIds
+	}
+	return nil
+}
+
+func (x *RetrieveRequest) GetKnowledgeIds() []string {
+	if x != nil {
+		return x.KnowledgeIds
+	}
+	return nil
+}
+
+func (x *RetrieveRequest) GetTagIds() []string {
+	if x != nil {
+		return x.TagIds
+	}
+	return nil
+}
+
+func (x *RetrieveRequest) GetExcludeKnowledgeIds() []string {
+	if x != nil {
+		return x.ExcludeKnowledgeIds
+	}
+	return nil
+}
+
+func (x *RetrieveRequest) GetExcludeChunkIds() []string {
+	if x != nil {
+		return x.ExcludeChunkIds
+	}
+	return nil
+}
+
+func (x *RetrieveRequest) GetTopK() int32 {
+	if x != nil {
+		return x.TopK
+	}
+	return 0
+}
+
+func (x *RetrieveRequest) GetThreshold() float64 {
+	if x != nil {
+		return x.Threshold
+	}
+	return 0
+}
+
+func (x *RetrieveRequest) GetKnowledgeType() string {
+	if x != nil {
+		return x.KnowledgeType
+	}
+	return ""
+}
+
+func (x *RetrieveRequest) GetRetrieverType() string {
+	if x != nil {
+		return x.RetrieverType
+	}
+	return ""
+}
+
+type RetrieveResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Results       []*RetrieveHit         `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RetrieveResponse) Reset() {
+	*x = RetrieveResponse{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[46]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RetrieveResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RetrieveResponse) ProtoMessage() {}
+
+func (x *RetrieveResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[46]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RetrieveResponse.ProtoReflect.Descriptor instead.
+func (*RetrieveResponse) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{46}
+}
+
+func (x *RetrieveResponse) GetResults() []*RetrieveHit {
+	if x != nil {
+		return x.Results
+	}
+	return nil
+}
+
+type RetrieveHit struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Content         string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	SourceId        string                 `protobuf:"bytes,3,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
+	SourceType      string                 `protobuf:"bytes,4,opt,name=source_type,json=sourceType,proto3" json:"source_type,omitempty"`
+	ChunkId         string                 `protobuf:"bytes,5,opt,name=chunk_id,json=chunkId,proto3" json:"chunk_id,omitempty"`
+	KnowledgeId     string                 `protobuf:"bytes,6,opt,name=knowledge_id,json=knowledgeId,proto3" json:"knowledge_id,omitempty"`
+	KnowledgeBaseId string                 `protobuf:"bytes,7,opt,name=knowledge_base_id,json=knowledgeBaseId,proto3" json:"knowledge_base_id,omitempty"`
+	TagId           string                 `protobuf:"bytes,8,opt,name=tag_id,json=tagId,proto3" json:"tag_id,omitempty"`
+	Score           float64                `protobuf:"fixed64,9,opt,name=score,proto3" json:"score,omitempty"`
+	IsEnabled       bool                   `protobuf:"varint,10,opt,name=is_enabled,json=isEnabled,proto3" json:"is_enabled,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *RetrieveHit) Reset() {
+	*x = RetrieveHit{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[47]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RetrieveHit) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RetrieveHit) ProtoMessage() {}
+
+func (x *RetrieveHit) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[47]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RetrieveHit.ProtoReflect.Descriptor instead.
+func (*RetrieveHit) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{47}
+}
+
+func (x *RetrieveHit) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *RetrieveHit) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *RetrieveHit) GetSourceId() string {
+	if x != nil {
+		return x.SourceId
+	}
+	return ""
+}
+
+func (x *RetrieveHit) GetSourceType() string {
+	if x != nil {
+		return x.SourceType
+	}
+	return ""
+}
+
+func (x *RetrieveHit) GetChunkId() string {
+	if x != nil {
+		return x.ChunkId
+	}
+	return ""
+}
+
+func (x *RetrieveHit) GetKnowledgeId() string {
+	if x != nil {
+		return x.KnowledgeId
+	}
+	return ""
+}
+
+func (x *RetrieveHit) GetKnowledgeBaseId() string {
+	if x != nil {
+		return x.KnowledgeBaseId
+	}
+	return ""
+}
+
+func (x *RetrieveHit) GetTagId() string {
+	if x != nil {
+		return x.TagId
+	}
+	return ""
+}
+
+func (x *RetrieveHit) GetScore() float64 {
+	if x != nil {
+		return x.Score
+	}
+	return 0
+}
+
+func (x *RetrieveHit) GetIsEnabled() bool {
+	if x != nil {
+		return x.IsEnabled
+	}
+	return false
+}
+
 var File_sdk_plugin_proto_plugin_proto protoreflect.FileDescriptor
 
 const file_sdk_plugin_proto_plugin_proto_rawDesc = "" +
@@ -1835,7 +3287,147 @@ const file_sdk_plugin_proto_plugin_proto_rawDesc = "" +
 	"\x04code\x18\x04 \x01(\x0e2 .weknora.plugin.v1.SyncErrorCodeR\x04code\x12\x16\n" +
 	"\x06target\x18\x05 \x01(\tR\x06target\"#\n" +
 	"\tCompleted\x12\x16\n" +
-	"\x06cursor\x18\x01 \x01(\tR\x06cursor*\\\n" +
+	"\x06cursor\x18\x01 \x01(\tR\x06cursor\"\xad\x01\n" +
+	"\x14ExtensionConfigField\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05label\x18\x02 \x01(\tR\x05label\x12\x12\n" +
+	"\x04type\x18\x03 \x01(\tR\x04type\x12\x1a\n" +
+	"\brequired\x18\x04 \x01(\bR\brequired\x12#\n" +
+	"\rdefault_value\x18\x05 \x01(\tR\fdefaultValue\x12\x18\n" +
+	"\aoptions\x18\x06 \x03(\tR\aoptions\"\x1f\n" +
+	"\x1dDocumentParserDescribeRequest\"\xa6\x01\n" +
+	"\x1eDocumentParserDescribeResponse\x12\x1f\n" +
+	"\vengine_name\x18\x01 \x01(\tR\n" +
+	"engineName\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1d\n" +
+	"\n" +
+	"file_types\x18\x03 \x03(\tR\tfileTypes\x12\"\n" +
+	"\fcapabilities\x18\x04 \x03(\tR\fcapabilities\"\xce\x02\n" +
+	"\x1aDocumentParserParseRequest\x12Q\n" +
+	"\x06config\x18\x01 \x03(\v29.weknora.plugin.v1.DocumentParserParseRequest.ConfigEntryR\x06config\x12!\n" +
+	"\ffile_content\x18\x02 \x01(\fR\vfileContent\x12\x1b\n" +
+	"\tfile_name\x18\x03 \x01(\tR\bfileName\x12\x1b\n" +
+	"\tfile_type\x18\x04 \x01(\tR\bfileType\x12\x10\n" +
+	"\x03url\x18\x05 \x01(\tR\x03url\x12\x14\n" +
+	"\x05title\x18\x06 \x01(\tR\x05title\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\a \x01(\tR\trequestId\x1a9\n" +
+	"\vConfigEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe7\x02\n" +
+	"\x1bDocumentParserParseResponse\x12)\n" +
+	"\x10markdown_content\x18\x01 \x01(\tR\x0fmarkdownContent\x126\n" +
+	"\x06images\x18\x02 \x03(\v2\x1e.weknora.plugin.v1.ParsedImageR\x06images\x12X\n" +
+	"\bmetadata\x18\x03 \x03(\v2<.weknora.plugin.v1.DocumentParserParseResponse.MetadataEntryR\bmetadata\x12\x14\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error\x12\x19\n" +
+	"\bis_audio\x18\x05 \x01(\bR\aisAudio\x12\x1d\n" +
+	"\n" +
+	"audio_data\x18\x06 \x01(\fR\taudioData\x1a;\n" +
+	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xca\x01\n" +
+	"\vParsedImage\x12\x1a\n" +
+	"\bfilename\x18\x01 \x01(\tR\bfilename\x12!\n" +
+	"\foriginal_ref\x18\x02 \x01(\tR\voriginalRef\x12\x1b\n" +
+	"\tmime_type\x18\x03 \x01(\tR\bmimeType\x12\x1f\n" +
+	"\vstorage_key\x18\x04 \x01(\tR\n" +
+	"storageKey\x12\x1d\n" +
+	"\n" +
+	"image_data\x18\x05 \x01(\fR\timageData\x12\x1f\n" +
+	"\vis_original\x18\x06 \x01(\bR\n" +
+	"isOriginal\"\x1a\n" +
+	"\x18WebSearchDescribeRequest\"\xc8\x02\n" +
+	"\x19WebSearchDescribeResponse\x12#\n" +
+	"\rprovider_type\x18\x01 \x01(\tR\fproviderType\x12!\n" +
+	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12(\n" +
+	"\x10requires_api_key\x18\x04 \x01(\bR\x0erequiresApiKey\x12%\n" +
+	"\x0esupports_proxy\x18\x05 \x01(\bR\rsupportsProxy\x12L\n" +
+	"\rconfig_fields\x18\x06 \x03(\v2'.weknora.plugin.v1.ExtensionConfigFieldR\fconfigFields\x12\"\n" +
+	"\fcapabilities\x18\a \x03(\tR\fcapabilities\"\xf0\x01\n" +
+	"\x10WebSearchRequest\x12G\n" +
+	"\x06config\x18\x01 \x03(\v2/.weknora.plugin.v1.WebSearchRequest.ConfigEntryR\x06config\x12\x14\n" +
+	"\x05query\x18\x02 \x01(\tR\x05query\x12\x1f\n" +
+	"\vmax_results\x18\x03 \x01(\x05R\n" +
+	"maxResults\x12!\n" +
+	"\finclude_date\x18\x04 \x01(\bR\vincludeDate\x1a9\n" +
+	"\vConfigEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"Q\n" +
+	"\x11WebSearchResponse\x12<\n" +
+	"\aresults\x18\x01 \x03(\v2\".weknora.plugin.v1.WebSearchResultR\aresults\"\xa8\x01\n" +
+	"\x0fWebSearchResult\x12\x14\n" +
+	"\x05title\x18\x01 \x01(\tR\x05title\x12\x10\n" +
+	"\x03url\x18\x02 \x01(\tR\x03url\x12\x18\n" +
+	"\asnippet\x18\x03 \x01(\tR\asnippet\x12\x18\n" +
+	"\acontent\x18\x04 \x01(\tR\acontent\x12\x16\n" +
+	"\x06source\x18\x05 \x01(\tR\x06source\x12!\n" +
+	"\fpublished_at\x18\x06 \x01(\tR\vpublishedAt\"\x1e\n" +
+	"\x1cModelProviderDescribeRequest\"\xe7\x03\n" +
+	"\x1dModelProviderDescribeResponse\x12#\n" +
+	"\rprovider_type\x18\x01 \x01(\tR\fproviderType\x12!\n" +
+	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x1f\n" +
+	"\vmodel_types\x18\x04 \x03(\tR\n" +
+	"modelTypes\x12d\n" +
+	"\fdefault_urls\x18\x05 \x03(\v2A.weknora.plugin.v1.ModelProviderDescribeResponse.DefaultUrlsEntryR\vdefaultUrls\x12#\n" +
+	"\rrequires_auth\x18\x06 \x01(\bR\frequiresAuth\x12L\n" +
+	"\rconfig_fields\x18\a \x03(\v2'.weknora.plugin.v1.ExtensionConfigFieldR\fconfigFields\x12\"\n" +
+	"\fcapabilities\x18\b \x03(\tR\fcapabilities\x1a>\n" +
+	"\x10DefaultUrlsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x98\x01\n" +
+	"\x11ListModelsRequest\x12H\n" +
+	"\x06config\x18\x01 \x03(\v20.weknora.plugin.v1.ListModelsRequest.ConfigEntryR\x06config\x1a9\n" +
+	"\vConfigEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"L\n" +
+	"\x12ListModelsResponse\x126\n" +
+	"\x06models\x18\x01 \x03(\v2\x1e.weknora.plugin.v1.PluginModelR\x06models\"U\n" +
+	"\vPluginModel\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\"\n" +
+	"\fcapabilities\x18\x03 \x03(\tR\fcapabilities\"\x1a\n" +
+	"\x18RetrieverDescribeRequest\"\xab\x01\n" +
+	"\x19RetrieverDescribeResponse\x12\x1f\n" +
+	"\vengine_type\x18\x01 \x01(\tR\n" +
+	"engineType\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\"\n" +
+	"\fcapabilities\x18\x03 \x03(\tR\fcapabilities\x12'\n" +
+	"\x0fretriever_types\x18\x04 \x03(\tR\x0eretrieverTypes\"\x95\x04\n" +
+	"\x0fRetrieveRequest\x12F\n" +
+	"\x06config\x18\x01 \x03(\v2..weknora.plugin.v1.RetrieveRequest.ConfigEntryR\x06config\x12\x14\n" +
+	"\x05query\x18\x02 \x01(\tR\x05query\x12\x1c\n" +
+	"\tembedding\x18\x03 \x03(\x02R\tembedding\x12,\n" +
+	"\x12knowledge_base_ids\x18\x04 \x03(\tR\x10knowledgeBaseIds\x12#\n" +
+	"\rknowledge_ids\x18\x05 \x03(\tR\fknowledgeIds\x12\x17\n" +
+	"\atag_ids\x18\x06 \x03(\tR\x06tagIds\x122\n" +
+	"\x15exclude_knowledge_ids\x18\a \x03(\tR\x13excludeKnowledgeIds\x12*\n" +
+	"\x11exclude_chunk_ids\x18\b \x03(\tR\x0fexcludeChunkIds\x12\x13\n" +
+	"\x05top_k\x18\t \x01(\x05R\x04topK\x12\x1c\n" +
+	"\tthreshold\x18\n" +
+	" \x01(\x01R\tthreshold\x12%\n" +
+	"\x0eknowledge_type\x18\v \x01(\tR\rknowledgeType\x12%\n" +
+	"\x0eretriever_type\x18\f \x01(\tR\rretrieverType\x1a9\n" +
+	"\vConfigEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"L\n" +
+	"\x10RetrieveResponse\x128\n" +
+	"\aresults\x18\x01 \x03(\v2\x1e.weknora.plugin.v1.RetrieveHitR\aresults\"\xab\x02\n" +
+	"\vRetrieveHit\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
+	"\acontent\x18\x02 \x01(\tR\acontent\x12\x1b\n" +
+	"\tsource_id\x18\x03 \x01(\tR\bsourceId\x12\x1f\n" +
+	"\vsource_type\x18\x04 \x01(\tR\n" +
+	"sourceType\x12\x19\n" +
+	"\bchunk_id\x18\x05 \x01(\tR\achunkId\x12!\n" +
+	"\fknowledge_id\x18\x06 \x01(\tR\vknowledgeId\x12*\n" +
+	"\x11knowledge_base_id\x18\a \x01(\tR\x0fknowledgeBaseId\x12\x15\n" +
+	"\x06tag_id\x18\b \x01(\tR\x05tagId\x12\x14\n" +
+	"\x05score\x18\t \x01(\x01R\x05score\x12\x1d\n" +
+	"\n" +
+	"is_enabled\x18\n" +
+	" \x01(\bR\tisEnabled*\\\n" +
 	"\rSyncErrorCode\x12\x1f\n" +
 	"\x1bSYNC_ERROR_CODE_UNSPECIFIED\x10\x00\x12*\n" +
 	"&SYNC_ERROR_CODE_SECURITY_POLICY_DENIED\x10\x012\xf8\x02\n" +
@@ -1843,7 +3435,20 @@ const file_sdk_plugin_proto_plugin_proto_rawDesc = "" +
 	"\aGetInfo\x12!.weknora.plugin.v1.GetInfoRequest\x1a\x1d.weknora.plugin.v1.PluginInfo\x12\\\n" +
 	"\vHealthCheck\x12%.weknora.plugin.v1.HealthCheckRequest\x1a&.weknora.plugin.v1.HealthCheckResponse\x12e\n" +
 	"\x0eValidateConfig\x12(.weknora.plugin.v1.ValidateConfigRequest\x1a).weknora.plugin.v1.ValidateConfigResponse\x12S\n" +
-	"\bShutdown\x12\".weknora.plugin.v1.ShutdownRequest\x1a#.weknora.plugin.v1.ShutdownResponse2\x8f\x04\n" +
+	"\bShutdown\x12\".weknora.plugin.v1.ShutdownRequest\x1a#.weknora.plugin.v1.ShutdownResponse2\xef\x01\n" +
+	"\x14DocumentParserPlugin\x12o\n" +
+	"\bDescribe\x120.weknora.plugin.v1.DocumentParserDescribeRequest\x1a1.weknora.plugin.v1.DocumentParserDescribeResponse\x12f\n" +
+	"\x05Parse\x12-.weknora.plugin.v1.DocumentParserParseRequest\x1a..weknora.plugin.v1.DocumentParserParseResponse2\xcd\x01\n" +
+	"\x0fWebSearchPlugin\x12e\n" +
+	"\bDescribe\x12+.weknora.plugin.v1.WebSearchDescribeRequest\x1a,.weknora.plugin.v1.WebSearchDescribeResponse\x12S\n" +
+	"\x06Search\x12#.weknora.plugin.v1.WebSearchRequest\x1a$.weknora.plugin.v1.WebSearchResponse2\xdf\x01\n" +
+	"\x13ModelProviderPlugin\x12m\n" +
+	"\bDescribe\x12/.weknora.plugin.v1.ModelProviderDescribeRequest\x1a0.weknora.plugin.v1.ModelProviderDescribeResponse\x12Y\n" +
+	"\n" +
+	"ListModels\x12$.weknora.plugin.v1.ListModelsRequest\x1a%.weknora.plugin.v1.ListModelsResponse2\xcd\x01\n" +
+	"\x0fRetrieverPlugin\x12e\n" +
+	"\bDescribe\x12+.weknora.plugin.v1.RetrieverDescribeRequest\x1a,.weknora.plugin.v1.RetrieverDescribeResponse\x12S\n" +
+	"\bRetrieve\x12\".weknora.plugin.v1.RetrieveRequest\x1a#.weknora.plugin.v1.RetrieveResponse2\x8f\x04\n" +
 	"\x10DataSourcePlugin\x12t\n" +
 	"\x13ValidateCredentials\x12-.weknora.plugin.v1.ValidateCredentialsRequest\x1a..weknora.plugin.v1.ValidateCredentialsResponse\x12b\n" +
 	"\rListResources\x12'.weknora.plugin.v1.ListResourcesRequest\x1a(.weknora.plugin.v1.ListResourcesResponse\x12\x83\x01\n" +
@@ -1864,7 +3469,7 @@ func file_sdk_plugin_proto_plugin_proto_rawDescGZIP() []byte {
 }
 
 var file_sdk_plugin_proto_plugin_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_sdk_plugin_proto_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
+var file_sdk_plugin_proto_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 63)
 var file_sdk_plugin_proto_plugin_proto_goTypes = []any{
 	(SyncErrorCode)(0),                       // 0: weknora.plugin.v1.SyncErrorCode
 	(HealthCheckResponse_Status)(0),          // 1: weknora.plugin.v1.HealthCheckResponse.Status
@@ -1895,60 +3500,115 @@ var file_sdk_plugin_proto_plugin_proto_goTypes = []any{
 	(*Checkpoint)(nil),                       // 26: weknora.plugin.v1.Checkpoint
 	(*SyncError)(nil),                        // 27: weknora.plugin.v1.SyncError
 	(*Completed)(nil),                        // 28: weknora.plugin.v1.Completed
-	nil,                                      // 29: weknora.plugin.v1.ValidateConfigRequest.ConfigEntry
-	nil,                                      // 30: weknora.plugin.v1.ValidateCredentialsRequest.ConfigEntry
-	nil,                                      // 31: weknora.plugin.v1.ListResourcesRequest.ConfigEntry
-	nil,                                      // 32: weknora.plugin.v1.ResolveResourceAncestorsRequest.ConfigEntry
-	nil,                                      // 33: weknora.plugin.v1.FetchAllRequest.ConfigEntry
-	nil,                                      // 34: weknora.plugin.v1.Resource.MetadataEntry
-	nil,                                      // 35: weknora.plugin.v1.Document.MetadataEntry
-	nil,                                      // 36: weknora.plugin.v1.SyncRequest.ConfigEntry
-	nil,                                      // 37: weknora.plugin.v1.UpsertDocument.MetadataEntry
+	(*ExtensionConfigField)(nil),             // 29: weknora.plugin.v1.ExtensionConfigField
+	(*DocumentParserDescribeRequest)(nil),    // 30: weknora.plugin.v1.DocumentParserDescribeRequest
+	(*DocumentParserDescribeResponse)(nil),   // 31: weknora.plugin.v1.DocumentParserDescribeResponse
+	(*DocumentParserParseRequest)(nil),       // 32: weknora.plugin.v1.DocumentParserParseRequest
+	(*DocumentParserParseResponse)(nil),      // 33: weknora.plugin.v1.DocumentParserParseResponse
+	(*ParsedImage)(nil),                      // 34: weknora.plugin.v1.ParsedImage
+	(*WebSearchDescribeRequest)(nil),         // 35: weknora.plugin.v1.WebSearchDescribeRequest
+	(*WebSearchDescribeResponse)(nil),        // 36: weknora.plugin.v1.WebSearchDescribeResponse
+	(*WebSearchRequest)(nil),                 // 37: weknora.plugin.v1.WebSearchRequest
+	(*WebSearchResponse)(nil),                // 38: weknora.plugin.v1.WebSearchResponse
+	(*WebSearchResult)(nil),                  // 39: weknora.plugin.v1.WebSearchResult
+	(*ModelProviderDescribeRequest)(nil),     // 40: weknora.plugin.v1.ModelProviderDescribeRequest
+	(*ModelProviderDescribeResponse)(nil),    // 41: weknora.plugin.v1.ModelProviderDescribeResponse
+	(*ListModelsRequest)(nil),                // 42: weknora.plugin.v1.ListModelsRequest
+	(*ListModelsResponse)(nil),               // 43: weknora.plugin.v1.ListModelsResponse
+	(*PluginModel)(nil),                      // 44: weknora.plugin.v1.PluginModel
+	(*RetrieverDescribeRequest)(nil),         // 45: weknora.plugin.v1.RetrieverDescribeRequest
+	(*RetrieverDescribeResponse)(nil),        // 46: weknora.plugin.v1.RetrieverDescribeResponse
+	(*RetrieveRequest)(nil),                  // 47: weknora.plugin.v1.RetrieveRequest
+	(*RetrieveResponse)(nil),                 // 48: weknora.plugin.v1.RetrieveResponse
+	(*RetrieveHit)(nil),                      // 49: weknora.plugin.v1.RetrieveHit
+	nil,                                      // 50: weknora.plugin.v1.ValidateConfigRequest.ConfigEntry
+	nil,                                      // 51: weknora.plugin.v1.ValidateCredentialsRequest.ConfigEntry
+	nil,                                      // 52: weknora.plugin.v1.ListResourcesRequest.ConfigEntry
+	nil,                                      // 53: weknora.plugin.v1.ResolveResourceAncestorsRequest.ConfigEntry
+	nil,                                      // 54: weknora.plugin.v1.FetchAllRequest.ConfigEntry
+	nil,                                      // 55: weknora.plugin.v1.Resource.MetadataEntry
+	nil,                                      // 56: weknora.plugin.v1.Document.MetadataEntry
+	nil,                                      // 57: weknora.plugin.v1.SyncRequest.ConfigEntry
+	nil,                                      // 58: weknora.plugin.v1.UpsertDocument.MetadataEntry
+	nil,                                      // 59: weknora.plugin.v1.DocumentParserParseRequest.ConfigEntry
+	nil,                                      // 60: weknora.plugin.v1.DocumentParserParseResponse.MetadataEntry
+	nil,                                      // 61: weknora.plugin.v1.WebSearchRequest.ConfigEntry
+	nil,                                      // 62: weknora.plugin.v1.ModelProviderDescribeResponse.DefaultUrlsEntry
+	nil,                                      // 63: weknora.plugin.v1.ListModelsRequest.ConfigEntry
+	nil,                                      // 64: weknora.plugin.v1.RetrieveRequest.ConfigEntry
 }
 var file_sdk_plugin_proto_plugin_proto_depIdxs = []int32{
 	1,  // 0: weknora.plugin.v1.HealthCheckResponse.status:type_name -> weknora.plugin.v1.HealthCheckResponse.Status
-	29, // 1: weknora.plugin.v1.ValidateConfigRequest.config:type_name -> weknora.plugin.v1.ValidateConfigRequest.ConfigEntry
+	50, // 1: weknora.plugin.v1.ValidateConfigRequest.config:type_name -> weknora.plugin.v1.ValidateConfigRequest.ConfigEntry
 	8,  // 2: weknora.plugin.v1.ValidateConfigResponse.errors:type_name -> weknora.plugin.v1.FieldError
-	30, // 3: weknora.plugin.v1.ValidateCredentialsRequest.config:type_name -> weknora.plugin.v1.ValidateCredentialsRequest.ConfigEntry
-	31, // 4: weknora.plugin.v1.ListResourcesRequest.config:type_name -> weknora.plugin.v1.ListResourcesRequest.ConfigEntry
+	51, // 3: weknora.plugin.v1.ValidateCredentialsRequest.config:type_name -> weknora.plugin.v1.ValidateCredentialsRequest.ConfigEntry
+	52, // 4: weknora.plugin.v1.ListResourcesRequest.config:type_name -> weknora.plugin.v1.ListResourcesRequest.ConfigEntry
 	19, // 5: weknora.plugin.v1.ListResourcesResponse.resources:type_name -> weknora.plugin.v1.Resource
-	32, // 6: weknora.plugin.v1.ResolveResourceAncestorsRequest.config:type_name -> weknora.plugin.v1.ResolveResourceAncestorsRequest.ConfigEntry
-	33, // 7: weknora.plugin.v1.FetchAllRequest.config:type_name -> weknora.plugin.v1.FetchAllRequest.ConfigEntry
+	53, // 6: weknora.plugin.v1.ResolveResourceAncestorsRequest.config:type_name -> weknora.plugin.v1.ResolveResourceAncestorsRequest.ConfigEntry
+	54, // 7: weknora.plugin.v1.FetchAllRequest.config:type_name -> weknora.plugin.v1.FetchAllRequest.ConfigEntry
 	20, // 8: weknora.plugin.v1.FetchAllResponse.documents:type_name -> weknora.plugin.v1.Document
-	34, // 9: weknora.plugin.v1.Resource.metadata:type_name -> weknora.plugin.v1.Resource.MetadataEntry
-	35, // 10: weknora.plugin.v1.Document.metadata:type_name -> weknora.plugin.v1.Document.MetadataEntry
-	36, // 11: weknora.plugin.v1.SyncRequest.config:type_name -> weknora.plugin.v1.SyncRequest.ConfigEntry
+	55, // 9: weknora.plugin.v1.Resource.metadata:type_name -> weknora.plugin.v1.Resource.MetadataEntry
+	56, // 10: weknora.plugin.v1.Document.metadata:type_name -> weknora.plugin.v1.Document.MetadataEntry
+	57, // 11: weknora.plugin.v1.SyncRequest.config:type_name -> weknora.plugin.v1.SyncRequest.ConfigEntry
 	23, // 12: weknora.plugin.v1.SyncEvent.upsert_document:type_name -> weknora.plugin.v1.UpsertDocument
 	24, // 13: weknora.plugin.v1.SyncEvent.delete_document:type_name -> weknora.plugin.v1.DeleteDocument
 	25, // 14: weknora.plugin.v1.SyncEvent.progress:type_name -> weknora.plugin.v1.Progress
 	26, // 15: weknora.plugin.v1.SyncEvent.checkpoint:type_name -> weknora.plugin.v1.Checkpoint
 	27, // 16: weknora.plugin.v1.SyncEvent.error:type_name -> weknora.plugin.v1.SyncError
 	28, // 17: weknora.plugin.v1.SyncEvent.completed:type_name -> weknora.plugin.v1.Completed
-	37, // 18: weknora.plugin.v1.UpsertDocument.metadata:type_name -> weknora.plugin.v1.UpsertDocument.MetadataEntry
+	58, // 18: weknora.plugin.v1.UpsertDocument.metadata:type_name -> weknora.plugin.v1.UpsertDocument.MetadataEntry
 	0,  // 19: weknora.plugin.v1.SyncError.code:type_name -> weknora.plugin.v1.SyncErrorCode
-	2,  // 20: weknora.plugin.v1.PluginLifecycle.GetInfo:input_type -> weknora.plugin.v1.GetInfoRequest
-	4,  // 21: weknora.plugin.v1.PluginLifecycle.HealthCheck:input_type -> weknora.plugin.v1.HealthCheckRequest
-	6,  // 22: weknora.plugin.v1.PluginLifecycle.ValidateConfig:input_type -> weknora.plugin.v1.ValidateConfigRequest
-	9,  // 23: weknora.plugin.v1.PluginLifecycle.Shutdown:input_type -> weknora.plugin.v1.ShutdownRequest
-	11, // 24: weknora.plugin.v1.DataSourcePlugin.ValidateCredentials:input_type -> weknora.plugin.v1.ValidateCredentialsRequest
-	13, // 25: weknora.plugin.v1.DataSourcePlugin.ListResources:input_type -> weknora.plugin.v1.ListResourcesRequest
-	15, // 26: weknora.plugin.v1.DataSourcePlugin.ResolveResourceAncestors:input_type -> weknora.plugin.v1.ResolveResourceAncestorsRequest
-	17, // 27: weknora.plugin.v1.DataSourcePlugin.FetchAll:input_type -> weknora.plugin.v1.FetchAllRequest
-	21, // 28: weknora.plugin.v1.DataSourcePlugin.Sync:input_type -> weknora.plugin.v1.SyncRequest
-	3,  // 29: weknora.plugin.v1.PluginLifecycle.GetInfo:output_type -> weknora.plugin.v1.PluginInfo
-	5,  // 30: weknora.plugin.v1.PluginLifecycle.HealthCheck:output_type -> weknora.plugin.v1.HealthCheckResponse
-	7,  // 31: weknora.plugin.v1.PluginLifecycle.ValidateConfig:output_type -> weknora.plugin.v1.ValidateConfigResponse
-	10, // 32: weknora.plugin.v1.PluginLifecycle.Shutdown:output_type -> weknora.plugin.v1.ShutdownResponse
-	12, // 33: weknora.plugin.v1.DataSourcePlugin.ValidateCredentials:output_type -> weknora.plugin.v1.ValidateCredentialsResponse
-	14, // 34: weknora.plugin.v1.DataSourcePlugin.ListResources:output_type -> weknora.plugin.v1.ListResourcesResponse
-	16, // 35: weknora.plugin.v1.DataSourcePlugin.ResolveResourceAncestors:output_type -> weknora.plugin.v1.ResolveResourceAncestorsResponse
-	18, // 36: weknora.plugin.v1.DataSourcePlugin.FetchAll:output_type -> weknora.plugin.v1.FetchAllResponse
-	22, // 37: weknora.plugin.v1.DataSourcePlugin.Sync:output_type -> weknora.plugin.v1.SyncEvent
-	29, // [29:38] is the sub-list for method output_type
-	20, // [20:29] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	59, // 20: weknora.plugin.v1.DocumentParserParseRequest.config:type_name -> weknora.plugin.v1.DocumentParserParseRequest.ConfigEntry
+	34, // 21: weknora.plugin.v1.DocumentParserParseResponse.images:type_name -> weknora.plugin.v1.ParsedImage
+	60, // 22: weknora.plugin.v1.DocumentParserParseResponse.metadata:type_name -> weknora.plugin.v1.DocumentParserParseResponse.MetadataEntry
+	29, // 23: weknora.plugin.v1.WebSearchDescribeResponse.config_fields:type_name -> weknora.plugin.v1.ExtensionConfigField
+	61, // 24: weknora.plugin.v1.WebSearchRequest.config:type_name -> weknora.plugin.v1.WebSearchRequest.ConfigEntry
+	39, // 25: weknora.plugin.v1.WebSearchResponse.results:type_name -> weknora.plugin.v1.WebSearchResult
+	62, // 26: weknora.plugin.v1.ModelProviderDescribeResponse.default_urls:type_name -> weknora.plugin.v1.ModelProviderDescribeResponse.DefaultUrlsEntry
+	29, // 27: weknora.plugin.v1.ModelProviderDescribeResponse.config_fields:type_name -> weknora.plugin.v1.ExtensionConfigField
+	63, // 28: weknora.plugin.v1.ListModelsRequest.config:type_name -> weknora.plugin.v1.ListModelsRequest.ConfigEntry
+	44, // 29: weknora.plugin.v1.ListModelsResponse.models:type_name -> weknora.plugin.v1.PluginModel
+	64, // 30: weknora.plugin.v1.RetrieveRequest.config:type_name -> weknora.plugin.v1.RetrieveRequest.ConfigEntry
+	49, // 31: weknora.plugin.v1.RetrieveResponse.results:type_name -> weknora.plugin.v1.RetrieveHit
+	2,  // 32: weknora.plugin.v1.PluginLifecycle.GetInfo:input_type -> weknora.plugin.v1.GetInfoRequest
+	4,  // 33: weknora.plugin.v1.PluginLifecycle.HealthCheck:input_type -> weknora.plugin.v1.HealthCheckRequest
+	6,  // 34: weknora.plugin.v1.PluginLifecycle.ValidateConfig:input_type -> weknora.plugin.v1.ValidateConfigRequest
+	9,  // 35: weknora.plugin.v1.PluginLifecycle.Shutdown:input_type -> weknora.plugin.v1.ShutdownRequest
+	30, // 36: weknora.plugin.v1.DocumentParserPlugin.Describe:input_type -> weknora.plugin.v1.DocumentParserDescribeRequest
+	32, // 37: weknora.plugin.v1.DocumentParserPlugin.Parse:input_type -> weknora.plugin.v1.DocumentParserParseRequest
+	35, // 38: weknora.plugin.v1.WebSearchPlugin.Describe:input_type -> weknora.plugin.v1.WebSearchDescribeRequest
+	37, // 39: weknora.plugin.v1.WebSearchPlugin.Search:input_type -> weknora.plugin.v1.WebSearchRequest
+	40, // 40: weknora.plugin.v1.ModelProviderPlugin.Describe:input_type -> weknora.plugin.v1.ModelProviderDescribeRequest
+	42, // 41: weknora.plugin.v1.ModelProviderPlugin.ListModels:input_type -> weknora.plugin.v1.ListModelsRequest
+	45, // 42: weknora.plugin.v1.RetrieverPlugin.Describe:input_type -> weknora.plugin.v1.RetrieverDescribeRequest
+	47, // 43: weknora.plugin.v1.RetrieverPlugin.Retrieve:input_type -> weknora.plugin.v1.RetrieveRequest
+	11, // 44: weknora.plugin.v1.DataSourcePlugin.ValidateCredentials:input_type -> weknora.plugin.v1.ValidateCredentialsRequest
+	13, // 45: weknora.plugin.v1.DataSourcePlugin.ListResources:input_type -> weknora.plugin.v1.ListResourcesRequest
+	15, // 46: weknora.plugin.v1.DataSourcePlugin.ResolveResourceAncestors:input_type -> weknora.plugin.v1.ResolveResourceAncestorsRequest
+	17, // 47: weknora.plugin.v1.DataSourcePlugin.FetchAll:input_type -> weknora.plugin.v1.FetchAllRequest
+	21, // 48: weknora.plugin.v1.DataSourcePlugin.Sync:input_type -> weknora.plugin.v1.SyncRequest
+	3,  // 49: weknora.plugin.v1.PluginLifecycle.GetInfo:output_type -> weknora.plugin.v1.PluginInfo
+	5,  // 50: weknora.plugin.v1.PluginLifecycle.HealthCheck:output_type -> weknora.plugin.v1.HealthCheckResponse
+	7,  // 51: weknora.plugin.v1.PluginLifecycle.ValidateConfig:output_type -> weknora.plugin.v1.ValidateConfigResponse
+	10, // 52: weknora.plugin.v1.PluginLifecycle.Shutdown:output_type -> weknora.plugin.v1.ShutdownResponse
+	31, // 53: weknora.plugin.v1.DocumentParserPlugin.Describe:output_type -> weknora.plugin.v1.DocumentParserDescribeResponse
+	33, // 54: weknora.plugin.v1.DocumentParserPlugin.Parse:output_type -> weknora.plugin.v1.DocumentParserParseResponse
+	36, // 55: weknora.plugin.v1.WebSearchPlugin.Describe:output_type -> weknora.plugin.v1.WebSearchDescribeResponse
+	38, // 56: weknora.plugin.v1.WebSearchPlugin.Search:output_type -> weknora.plugin.v1.WebSearchResponse
+	41, // 57: weknora.plugin.v1.ModelProviderPlugin.Describe:output_type -> weknora.plugin.v1.ModelProviderDescribeResponse
+	43, // 58: weknora.plugin.v1.ModelProviderPlugin.ListModels:output_type -> weknora.plugin.v1.ListModelsResponse
+	46, // 59: weknora.plugin.v1.RetrieverPlugin.Describe:output_type -> weknora.plugin.v1.RetrieverDescribeResponse
+	48, // 60: weknora.plugin.v1.RetrieverPlugin.Retrieve:output_type -> weknora.plugin.v1.RetrieveResponse
+	12, // 61: weknora.plugin.v1.DataSourcePlugin.ValidateCredentials:output_type -> weknora.plugin.v1.ValidateCredentialsResponse
+	14, // 62: weknora.plugin.v1.DataSourcePlugin.ListResources:output_type -> weknora.plugin.v1.ListResourcesResponse
+	16, // 63: weknora.plugin.v1.DataSourcePlugin.ResolveResourceAncestors:output_type -> weknora.plugin.v1.ResolveResourceAncestorsResponse
+	18, // 64: weknora.plugin.v1.DataSourcePlugin.FetchAll:output_type -> weknora.plugin.v1.FetchAllResponse
+	22, // 65: weknora.plugin.v1.DataSourcePlugin.Sync:output_type -> weknora.plugin.v1.SyncEvent
+	49, // [49:66] is the sub-list for method output_type
+	32, // [32:49] is the sub-list for method input_type
+	32, // [32:32] is the sub-list for extension type_name
+	32, // [32:32] is the sub-list for extension extendee
+	0,  // [0:32] is the sub-list for field type_name
 }
 
 func init() { file_sdk_plugin_proto_plugin_proto_init() }
@@ -1970,9 +3630,9 @@ func file_sdk_plugin_proto_plugin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_sdk_plugin_proto_plugin_proto_rawDesc), len(file_sdk_plugin_proto_plugin_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   36,
+			NumMessages:   63,
 			NumExtensions: 0,
-			NumServices:   2,
+			NumServices:   6,
 		},
 		GoTypes:           file_sdk_plugin_proto_plugin_proto_goTypes,
 		DependencyIndexes: file_sdk_plugin_proto_plugin_proto_depIdxs,

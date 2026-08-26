@@ -113,7 +113,7 @@ func TestServeContextStopsOnCancellation(t *testing.T) {
 	implementation := &testDataSourceServer{}
 	done := make(chan error, 1)
 	go func() {
-		done <- ServeContext(ctx, lifecycle, implementation, Options{Address: address, ShutdownTimeout: time.Second})
+		done <- ServeContext(ctx, lifecycle, Options{Address: address, ShutdownTimeout: time.Second}, DataSourceService(implementation))
 	}()
 
 	time.Sleep(20 * time.Millisecond)

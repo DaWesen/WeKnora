@@ -42,7 +42,7 @@ export WEKNORA_PLUGIN_DIR=/var/lib/weknora/plugins
     └── local-files-plugin       # 仅进程模式需要
 ```
 
-启动时插件管理器会发现 manifest。每个插件 ID 必须唯一；同一个目录中不能同时安装同一 ID 的进程和容器 manifest。
+启动时插件管理器会发现 manifest。每个插件 ID 必须唯一；同一个目录中不能同时安装同一 ID 的进程和容器 manifest。容器示例的 `healthCheck` 已包含必填的 `intervalSeconds`，可以直接作为有效 Manifest 使用。
 
 ## Manifest
 

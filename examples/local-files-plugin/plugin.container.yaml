@@ -28,4 +28,5 @@ spec:
       readOnly:
         - "${config.rootPath}"
   healthCheck:
+    intervalSeconds: 30
     timeoutSeconds: 5

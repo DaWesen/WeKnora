@@ -3,6 +3,7 @@ package provider
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 
@@ -165,6 +166,27 @@ func Register(p Provider) {
 	registry[p.Info().Name] = p
 }
 
+// RegisterExternal adds a provider supplied by a plugin without allowing it to
+// replace a built-in provider identifier.
+func RegisterExternal(p Provider) error {
+	info := p.Info()
+	if info.Name == "" {
+		return fmt.Errorf("external provider name is empty")
+	}
+	for _, builtin := range AllProviders() {
+		if builtin == info.Name {
+			return fmt.Errorf("external provider %q conflicts with a built-in provider", info.Name)
+		}
+	}
+	registryMu.Lock()
+	defer registryMu.Unlock()
+	if _, exists := registry[info.Name]; exists {
+		return fmt.Errorf("provider %q already registered", info.Name)
+	}
+	registry[info.Name] = p
+	return nil
+}
+
 // Get 通过名称从注册表中获取提供者
 func Get(name ProviderName) (Provider, bool) {
 	registryMu.RLock()
@@ -190,12 +212,21 @@ func List() []ProviderInfo {
 	defer registryMu.RUnlock()
 
 	result := make([]ProviderInfo, 0, len(registry))
+	seen := make(map[ProviderName]struct{}, len(registry))
 	for _, name := range AllProviders() {
 		if p, ok := registry[name]; ok {
 			result = append(result, p.Info())
+			seen[name] = struct{}{}
 		}
 	}
-	return result
+	external := make([]ProviderInfo, 0, len(registry)-len(seen))
+	for name, p := range registry {
+		if _, exists := seen[name]; !exists {
+			external = append(external, p.Info())
+		}
+	}
+	sort.Slice(external, func(i, j int) bool { return external[i].Name < external[j].Name })
+	return append(result, external...)
 }
 
 // ListByModelType 返回所有支持指定模型类型的提供者（按 AllProviders 定义的顺序）

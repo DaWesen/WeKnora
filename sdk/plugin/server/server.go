@@ -28,8 +28,7 @@ type Metadata struct {
 	ExtensionTypes []string
 }
 
-// Lifecycle supplies conventional lifecycle responses for plugins that only
-// need to implement a datasource service.
+// Lifecycle supplies conventional lifecycle responses for external plugins.
 type Lifecycle struct {
 	pluginpb.UnimplementedPluginLifecycleServer
 	Metadata         Metadata
@@ -100,10 +99,57 @@ func Listen(address string) (net.Listener, error) {
 	return net.Listen("tcp", address)
 }
 
-func New(lifecycle pluginpb.PluginLifecycleServer, datasource pluginpb.DataSourcePluginServer, options ...grpc.ServerOption) *grpc.Server {
-	server := grpc.NewServer(options...)
+// ServiceRegistrar registers one extension-specific gRPC service. Plugins can
+// provide any combination of registrars while sharing one Lifecycle service.
+type ServiceRegistrar interface {
+	Register(*grpc.Server)
+}
+
+type serviceRegistrarFunc func(*grpc.Server)
+
+func (f serviceRegistrarFunc) Register(server *grpc.Server) {
+	f(server)
+}
+
+// DataSourceService adapts a datasource implementation to the generic SDK server.
+func DataSourceService(implementation pluginpb.DataSourcePluginServer) ServiceRegistrar {
+	return serviceRegistrarFunc(func(server *grpc.Server) {
+		pluginpb.RegisterDataSourcePluginServer(server, implementation)
+	})
+}
+
+func DocumentParserService(implementation pluginpb.DocumentParserPluginServer) ServiceRegistrar {
+	return serviceRegistrarFunc(func(server *grpc.Server) {
+		pluginpb.RegisterDocumentParserPluginServer(server, implementation)
+	})
+}
+
+func WebSearchService(implementation pluginpb.WebSearchPluginServer) ServiceRegistrar {
+	return serviceRegistrarFunc(func(server *grpc.Server) {
+		pluginpb.RegisterWebSearchPluginServer(server, implementation)
+	})
+}
+
+func ModelProviderService(implementation pluginpb.ModelProviderPluginServer) ServiceRegistrar {
+	return serviceRegistrarFunc(func(server *grpc.Server) {
+		pluginpb.RegisterModelProviderPluginServer(server, implementation)
+	})
+}
+
+func RetrieverService(implementation pluginpb.RetrieverPluginServer) ServiceRegistrar {
+	return serviceRegistrarFunc(func(server *grpc.Server) {
+		pluginpb.RegisterRetrieverPluginServer(server, implementation)
+	})
+}
+
+func New(lifecycle pluginpb.PluginLifecycleServer, services ...ServiceRegistrar) *grpc.Server {
+	server := grpc.NewServer()
 	pluginpb.RegisterPluginLifecycleServer(server, lifecycle)
-	pluginpb.RegisterDataSourcePluginServer(server, datasource)
+	for _, service := range services {
+		if service != nil {
+			service.Register(server)
+		}
+	}
 	return server
 }
 
@@ -115,15 +161,13 @@ type Options struct {
 
 // Serve starts a plugin gRPC server until it stops unexpectedly. Plugins that
 // need signal-aware process shutdown should use ServeContext.
-func Serve(lifecycle pluginpb.PluginLifecycleServer, datasource pluginpb.DataSourcePluginServer, options Options) error {
-	return ServeContext(context.Background(), lifecycle, datasource, options)
+func Serve(lifecycle pluginpb.PluginLifecycleServer, options Options, services ...ServiceRegistrar) error {
+	return ServeContext(context.Background(), lifecycle, options, services...)
 }
 
 // ServeContext stops accepting work when ctx is canceled, then gives in-flight
 // RPCs a bounded interval to complete before force-stopping the gRPC server.
-// This allows a plugin main function to connect OS signals to both the SDK
-// server and its Lifecycle.OnShutdown cleanup hook.
-func ServeContext(ctx context.Context, lifecycle pluginpb.PluginLifecycleServer, datasource pluginpb.DataSourcePluginServer, options Options) error {
+func ServeContext(ctx context.Context, lifecycle pluginpb.PluginLifecycleServer, options Options, services ...ServiceRegistrar) error {
 	address := options.Address
 	if address == "" {
 		address = Address()
@@ -135,7 +179,13 @@ func ServeContext(ctx context.Context, lifecycle pluginpb.PluginLifecycleServer,
 	defer listener.Close()
 	defer removeUnixSocket(address)
 
-	grpcServer := New(lifecycle, datasource, options.ServerOptions...)
+	grpcServer := grpc.NewServer(options.ServerOptions...)
+	pluginpb.RegisterPluginLifecycleServer(grpcServer, lifecycle)
+	for _, service := range services {
+		if service != nil {
+			service.Register(grpcServer)
+		}
+	}
 	serveResult := make(chan error, 1)
 	go func() { serveResult <- grpcServer.Serve(listener) }()
 

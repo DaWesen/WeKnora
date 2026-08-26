@@ -48,7 +48,7 @@ func (c *PluginConnector) Validate(ctx context.Context, config *types.DataSource
 		c.markTransportFailure(ctx, err)
 		return err
 	}
-	response, err := client.ValidateCredentials(ctx, configValues)
+	response, err := pluginpb.NewDataSourcePluginClient(client.Conn()).ValidateCredentials(ctx, &pluginpb.ValidateCredentialsRequest{Config: configValues})
 	if err != nil {
 		c.markTransportFailure(ctx, err)
 		return fmt.Errorf("validate plugin credentials: %w", err)
@@ -67,7 +67,10 @@ func (c *PluginConnector) ListResources(ctx context.Context, config *types.DataS
 	}
 	defer client.Close()
 
-	response, err := client.ListResources(ctx, configValues, parentID)
+	response, err := pluginpb.NewDataSourcePluginClient(client.Conn()).ListResources(ctx, &pluginpb.ListResourcesRequest{
+		Config:   configValues,
+		ParentId: parentID,
+	})
 	if err != nil {
 		c.markTransportFailure(ctx, err)
 		return nil, err
@@ -86,7 +89,10 @@ func (c *PluginConnector) ResolveResourceAncestors(ctx context.Context, config *
 	}
 	defer client.Close()
 
-	response, err := client.ResolveResourceAncestors(ctx, configValues, resourceIDs)
+	response, err := pluginpb.NewDataSourcePluginClient(client.Conn()).ResolveResourceAncestors(ctx, &pluginpb.ResolveResourceAncestorsRequest{
+		Config:      configValues,
+		ResourceIds: resourceIDs,
+	})
 	if err != nil {
 		c.markTransportFailure(ctx, err)
 		return nil, err
@@ -101,7 +107,10 @@ func (c *PluginConnector) FetchAll(ctx context.Context, config *types.DataSource
 	}
 	defer client.Close()
 
-	response, err := client.FetchAll(ctx, "", configValues, resourceIDs)
+	response, err := pluginpb.NewDataSourcePluginClient(client.Conn()).FetchAll(ctx, &pluginpb.FetchAllRequest{
+		Config:      configValues,
+		ResourceIds: resourceIDs,
+	})
 	if err != nil {
 		c.markTransportFailure(ctx, err)
 		return nil, err
@@ -133,7 +142,11 @@ func (c *PluginConnector) FetchStream(ctx context.Context, config *types.DataSou
 		c.markTransportFailure(ctx, err)
 		return nil, err
 	}
-	stream, err := client.Sync(ctx, "", configValues, readPluginCursor(cursor), config.ResourceIDs)
+	stream, err := pluginpb.NewDataSourcePluginClient(client.Conn()).Sync(ctx, &pluginpb.SyncRequest{
+		Config:      configValues,
+		Cursor:      readPluginCursor(cursor),
+		ResourceIds: config.ResourceIDs,
+	})
 	if err != nil {
 		c.markTransportFailure(ctx, err)
 		return nil, err

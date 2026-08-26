@@ -322,7 +322,7 @@ func (h *WebSearchProviderHandler) DeleteProvider(c *gin.Context) {
 func (h *WebSearchProviderHandler) ListProviderTypes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    types.GetWebSearchProviderTypes(),
+		"data":    h.registry.AllProviderTypes(),
 	})
 }
 

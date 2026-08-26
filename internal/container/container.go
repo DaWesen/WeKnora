@@ -83,6 +83,7 @@ import (
 	"github.com/Tencent/WeKnora/internal/models/chat"
 	"github.com/Tencent/WeKnora/internal/models/embedding"
 	"github.com/Tencent/WeKnora/internal/models/limiter"
+	modelprovider "github.com/Tencent/WeKnora/internal/models/provider"
 	"github.com/Tencent/WeKnora/internal/models/utils/ollama"
 	"github.com/Tencent/WeKnora/internal/plugin"
 	"github.com/Tencent/WeKnora/internal/router"
@@ -130,6 +131,7 @@ func BuildContainer(container *dig.Container) *dig.Container {
 	// Initialize retrieval engine registry for search capabilities
 	logger.Debugf(ctx, "[Container] Registering retrieval engine registry...")
 	must(container.Provide(initRetrieveEngineRegistry))
+	must(container.Provide(retriever.NewPluginQueryRegistry))
 
 	// External service clients
 	logger.Debugf(ctx, "[Container] Registering external service clients...")
@@ -351,6 +353,7 @@ func BuildContainer(container *dig.Container) *dig.Container {
 	// Data source sync framework
 	logger.Debugf(ctx, "[Container] Registering data source sync framework...")
 	must(container.Provide(initConnectorRegistry))
+	must(container.Invoke(loadExternalPlugins))
 	must(container.Provide(datasource.NewScheduler))
 	must(container.Provide(service.NewDataSourceService))
 	must(container.Invoke(startDataSourceScheduler))
@@ -1666,7 +1669,7 @@ func registerPluginCleanup(manager *plugin.Manager, cleaner interfaces.ResourceC
 // initConnectorRegistry creates and populates the connector registry with all available connectors.
 // Aggregates registration errors via errors.Join so a misconfigured or duplicated connector fails
 // container initialization loudly instead of silently disabling the feature at runtime.
-func initConnectorRegistry(pluginManager *plugin.Manager) (*datasource.ConnectorRegistry, error) {
+func initConnectorRegistry() (*datasource.ConnectorRegistry, error) {
 	registry := datasource.NewConnectorRegistry()
 
 	var errs error
@@ -1701,17 +1704,6 @@ func initConnectorRegistry(pluginManager *plugin.Manager) (*datasource.Connector
 	if err := registry.Register(gitlabConnector.NewConnector()); err != nil {
 		errs = errors.Join(errs, fmt.Errorf("register gitlab connector: %w", err))
 	}
-	for _, externalPlugin := range pluginManager.List(plugin.ExtensionTypeDataSource) {
-		pluginID := externalPlugin.Manifest.Metadata.ID
-		if err := registry.Register(datasource.NewPluginConnector(pluginManager, pluginID)); err != nil {
-			errs = errors.Join(errs, fmt.Errorf("register plugin connector %s: %w", pluginID, err))
-			continue
-		}
-		if err := datasource.RegisterPluginConnectorMetadata(pluginID, externalPlugin.Manifest.Metadata.Name, externalPlugin.Manifest.Metadata.Description); err != nil {
-			errs = errors.Join(errs, fmt.Errorf("register plugin connector metadata %s: %w", pluginID, err))
-		}
-	}
-
 	// Future connectors will be registered here:
 	// if err := registry.Register(confluenceConnector.NewConnector()); err != nil { ... }
 	// if err := registry.Register(githubConnector.NewConnector()); err != nil { ... }
@@ -1720,6 +1712,36 @@ func initConnectorRegistry(pluginManager *plugin.Manager) (*datasource.Connector
 		return nil, errs
 	}
 	return registry, nil
+}
+
+// loadExternalPlugins installs host adapters for all discovered extension types.
+// Runtime lifecycle remains owned by plugin.Manager.
+func loadExternalPlugins(
+	manager *plugin.Manager,
+	connectors *datasource.ConnectorRegistry,
+	webSearch *infra_web_search.Registry,
+	pluginRetrievers *retriever.PluginQueryRegistry,
+) error {
+	loaders := plugin.NewExtensionLoaderRegistry()
+	registrations := []struct {
+		name   string
+		loader plugin.ExtensionLoader
+	}{
+		{name: "datasource", loader: datasource.NewDataSourceLoader(connectors)},
+		{name: "document parser", loader: docparser.NewPluginLoader()},
+		{name: "web search", loader: infra_web_search.NewPluginLoader(webSearch)},
+		{name: "model provider", loader: modelprovider.NewPluginLoader()},
+		{name: "retriever", loader: retriever.NewPluginLoader(pluginRetrievers)},
+	}
+	for _, registration := range registrations {
+		if err := loaders.Register(registration.loader); err != nil {
+			return fmt.Errorf("register %s plugin loader: %w", registration.name, err)
+		}
+	}
+	if err := loaders.LoadAll(context.Background(), manager); err != nil {
+		return fmt.Errorf("load external plugins: %w", err)
+	}
+	return nil
 }
 
 // startDataSourceScheduler starts the data source cron scheduler and registers cleanup.

@@ -38,6 +38,7 @@ type Metadata struct {
 type Spec struct {
 	ExtensionType  ExtensionType  `yaml:"extensionType"`
 	WeKnoraVersion string         `yaml:"weknoraVersion"`
+	Capabilities   []string       `yaml:"capabilities,omitempty"`
 	Entrypoint     Entrypoint     `yaml:"entrypoint"`
 	ConfigSchema   map[string]any `yaml:"configSchema,omitempty"`
 	Permissions    Permissions    `yaml:"permissions"`
@@ -147,6 +148,17 @@ func (m Manifest) Validate() error {
 	case ExtensionTypeDataSource, ExtensionTypeDocumentParser, ExtensionTypeWebSearch, ExtensionTypeModelProvider, ExtensionTypeRetriever:
 	default:
 		return fmt.Errorf("unsupported extension type %q", m.Spec.ExtensionType)
+	}
+	seenCapabilities := make(map[string]struct{}, len(m.Spec.Capabilities))
+	for _, capability := range m.Spec.Capabilities {
+		capability = strings.TrimSpace(capability)
+		if capability == "" {
+			return fmt.Errorf("plugin capability must not be empty")
+		}
+		if _, exists := seenCapabilities[capability]; exists {
+			return fmt.Errorf("plugin capability %q is duplicated", capability)
+		}
+		seenCapabilities[capability] = struct{}{}
 	}
 	if strings.TrimSpace(m.Spec.WeKnoraVersion) == "" {
 		return fmt.Errorf("plugin WeKnora version range is required")

@@ -235,6 +235,566 @@ var PluginLifecycle_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
+	DocumentParserPlugin_Describe_FullMethodName = "/weknora.plugin.v1.DocumentParserPlugin/Describe"
+	DocumentParserPlugin_Parse_FullMethodName    = "/weknora.plugin.v1.DocumentParserPlugin/Parse"
+)
+
+// DocumentParserPluginClient is the client API for DocumentParserPlugin service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type DocumentParserPluginClient interface {
+	Describe(ctx context.Context, in *DocumentParserDescribeRequest, opts ...grpc.CallOption) (*DocumentParserDescribeResponse, error)
+	Parse(ctx context.Context, in *DocumentParserParseRequest, opts ...grpc.CallOption) (*DocumentParserParseResponse, error)
+}
+
+type documentParserPluginClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewDocumentParserPluginClient(cc grpc.ClientConnInterface) DocumentParserPluginClient {
+	return &documentParserPluginClient{cc}
+}
+
+func (c *documentParserPluginClient) Describe(ctx context.Context, in *DocumentParserDescribeRequest, opts ...grpc.CallOption) (*DocumentParserDescribeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DocumentParserDescribeResponse)
+	err := c.cc.Invoke(ctx, DocumentParserPlugin_Describe_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *documentParserPluginClient) Parse(ctx context.Context, in *DocumentParserParseRequest, opts ...grpc.CallOption) (*DocumentParserParseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DocumentParserParseResponse)
+	err := c.cc.Invoke(ctx, DocumentParserPlugin_Parse_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DocumentParserPluginServer is the server API for DocumentParserPlugin service.
+// All implementations must embed UnimplementedDocumentParserPluginServer
+// for forward compatibility.
+type DocumentParserPluginServer interface {
+	Describe(context.Context, *DocumentParserDescribeRequest) (*DocumentParserDescribeResponse, error)
+	Parse(context.Context, *DocumentParserParseRequest) (*DocumentParserParseResponse, error)
+	mustEmbedUnimplementedDocumentParserPluginServer()
+}
+
+// UnimplementedDocumentParserPluginServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedDocumentParserPluginServer struct{}
+
+func (UnimplementedDocumentParserPluginServer) Describe(context.Context, *DocumentParserDescribeRequest) (*DocumentParserDescribeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Describe not implemented")
+}
+func (UnimplementedDocumentParserPluginServer) Parse(context.Context, *DocumentParserParseRequest) (*DocumentParserParseResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Parse not implemented")
+}
+func (UnimplementedDocumentParserPluginServer) mustEmbedUnimplementedDocumentParserPluginServer() {}
+func (UnimplementedDocumentParserPluginServer) testEmbeddedByValue()                              {}
+
+// UnsafeDocumentParserPluginServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to DocumentParserPluginServer will
+// result in compilation errors.
+type UnsafeDocumentParserPluginServer interface {
+	mustEmbedUnimplementedDocumentParserPluginServer()
+}
+
+func RegisterDocumentParserPluginServer(s grpc.ServiceRegistrar, srv DocumentParserPluginServer) {
+	// If the following call panics, it indicates UnimplementedDocumentParserPluginServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&DocumentParserPlugin_ServiceDesc, srv)
+}
+
+func _DocumentParserPlugin_Describe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DocumentParserDescribeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DocumentParserPluginServer).Describe(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DocumentParserPlugin_Describe_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DocumentParserPluginServer).Describe(ctx, req.(*DocumentParserDescribeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DocumentParserPlugin_Parse_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DocumentParserParseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DocumentParserPluginServer).Parse(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DocumentParserPlugin_Parse_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DocumentParserPluginServer).Parse(ctx, req.(*DocumentParserParseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// DocumentParserPlugin_ServiceDesc is the grpc.ServiceDesc for DocumentParserPlugin service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var DocumentParserPlugin_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "weknora.plugin.v1.DocumentParserPlugin",
+	HandlerType: (*DocumentParserPluginServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Describe",
+			Handler:    _DocumentParserPlugin_Describe_Handler,
+		},
+		{
+			MethodName: "Parse",
+			Handler:    _DocumentParserPlugin_Parse_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "internal/plugin/proto/plugin.proto",
+}
+
+const (
+	WebSearchPlugin_Describe_FullMethodName = "/weknora.plugin.v1.WebSearchPlugin/Describe"
+	WebSearchPlugin_Search_FullMethodName   = "/weknora.plugin.v1.WebSearchPlugin/Search"
+)
+
+// WebSearchPluginClient is the client API for WebSearchPlugin service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type WebSearchPluginClient interface {
+	Describe(ctx context.Context, in *WebSearchDescribeRequest, opts ...grpc.CallOption) (*WebSearchDescribeResponse, error)
+	Search(ctx context.Context, in *WebSearchRequest, opts ...grpc.CallOption) (*WebSearchResponse, error)
+}
+
+type webSearchPluginClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewWebSearchPluginClient(cc grpc.ClientConnInterface) WebSearchPluginClient {
+	return &webSearchPluginClient{cc}
+}
+
+func (c *webSearchPluginClient) Describe(ctx context.Context, in *WebSearchDescribeRequest, opts ...grpc.CallOption) (*WebSearchDescribeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WebSearchDescribeResponse)
+	err := c.cc.Invoke(ctx, WebSearchPlugin_Describe_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *webSearchPluginClient) Search(ctx context.Context, in *WebSearchRequest, opts ...grpc.CallOption) (*WebSearchResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WebSearchResponse)
+	err := c.cc.Invoke(ctx, WebSearchPlugin_Search_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// WebSearchPluginServer is the server API for WebSearchPlugin service.
+// All implementations must embed UnimplementedWebSearchPluginServer
+// for forward compatibility.
+type WebSearchPluginServer interface {
+	Describe(context.Context, *WebSearchDescribeRequest) (*WebSearchDescribeResponse, error)
+	Search(context.Context, *WebSearchRequest) (*WebSearchResponse, error)
+	mustEmbedUnimplementedWebSearchPluginServer()
+}
+
+// UnimplementedWebSearchPluginServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedWebSearchPluginServer struct{}
+
+func (UnimplementedWebSearchPluginServer) Describe(context.Context, *WebSearchDescribeRequest) (*WebSearchDescribeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Describe not implemented")
+}
+func (UnimplementedWebSearchPluginServer) Search(context.Context, *WebSearchRequest) (*WebSearchResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Search not implemented")
+}
+func (UnimplementedWebSearchPluginServer) mustEmbedUnimplementedWebSearchPluginServer() {}
+func (UnimplementedWebSearchPluginServer) testEmbeddedByValue()                         {}
+
+// UnsafeWebSearchPluginServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to WebSearchPluginServer will
+// result in compilation errors.
+type UnsafeWebSearchPluginServer interface {
+	mustEmbedUnimplementedWebSearchPluginServer()
+}
+
+func RegisterWebSearchPluginServer(s grpc.ServiceRegistrar, srv WebSearchPluginServer) {
+	// If the following call panics, it indicates UnimplementedWebSearchPluginServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&WebSearchPlugin_ServiceDesc, srv)
+}
+
+func _WebSearchPlugin_Describe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WebSearchDescribeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WebSearchPluginServer).Describe(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WebSearchPlugin_Describe_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WebSearchPluginServer).Describe(ctx, req.(*WebSearchDescribeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _WebSearchPlugin_Search_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WebSearchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WebSearchPluginServer).Search(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WebSearchPlugin_Search_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WebSearchPluginServer).Search(ctx, req.(*WebSearchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// WebSearchPlugin_ServiceDesc is the grpc.ServiceDesc for WebSearchPlugin service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var WebSearchPlugin_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "weknora.plugin.v1.WebSearchPlugin",
+	HandlerType: (*WebSearchPluginServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Describe",
+			Handler:    _WebSearchPlugin_Describe_Handler,
+		},
+		{
+			MethodName: "Search",
+			Handler:    _WebSearchPlugin_Search_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "internal/plugin/proto/plugin.proto",
+}
+
+const (
+	ModelProviderPlugin_Describe_FullMethodName   = "/weknora.plugin.v1.ModelProviderPlugin/Describe"
+	ModelProviderPlugin_ListModels_FullMethodName = "/weknora.plugin.v1.ModelProviderPlugin/ListModels"
+)
+
+// ModelProviderPluginClient is the client API for ModelProviderPlugin service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type ModelProviderPluginClient interface {
+	Describe(ctx context.Context, in *ModelProviderDescribeRequest, opts ...grpc.CallOption) (*ModelProviderDescribeResponse, error)
+	ListModels(ctx context.Context, in *ListModelsRequest, opts ...grpc.CallOption) (*ListModelsResponse, error)
+}
+
+type modelProviderPluginClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewModelProviderPluginClient(cc grpc.ClientConnInterface) ModelProviderPluginClient {
+	return &modelProviderPluginClient{cc}
+}
+
+func (c *modelProviderPluginClient) Describe(ctx context.Context, in *ModelProviderDescribeRequest, opts ...grpc.CallOption) (*ModelProviderDescribeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ModelProviderDescribeResponse)
+	err := c.cc.Invoke(ctx, ModelProviderPlugin_Describe_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *modelProviderPluginClient) ListModels(ctx context.Context, in *ListModelsRequest, opts ...grpc.CallOption) (*ListModelsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListModelsResponse)
+	err := c.cc.Invoke(ctx, ModelProviderPlugin_ListModels_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ModelProviderPluginServer is the server API for ModelProviderPlugin service.
+// All implementations must embed UnimplementedModelProviderPluginServer
+// for forward compatibility.
+type ModelProviderPluginServer interface {
+	Describe(context.Context, *ModelProviderDescribeRequest) (*ModelProviderDescribeResponse, error)
+	ListModels(context.Context, *ListModelsRequest) (*ListModelsResponse, error)
+	mustEmbedUnimplementedModelProviderPluginServer()
+}
+
+// UnimplementedModelProviderPluginServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedModelProviderPluginServer struct{}
+
+func (UnimplementedModelProviderPluginServer) Describe(context.Context, *ModelProviderDescribeRequest) (*ModelProviderDescribeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Describe not implemented")
+}
+func (UnimplementedModelProviderPluginServer) ListModels(context.Context, *ListModelsRequest) (*ListModelsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListModels not implemented")
+}
+func (UnimplementedModelProviderPluginServer) mustEmbedUnimplementedModelProviderPluginServer() {}
+func (UnimplementedModelProviderPluginServer) testEmbeddedByValue()                             {}
+
+// UnsafeModelProviderPluginServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ModelProviderPluginServer will
+// result in compilation errors.
+type UnsafeModelProviderPluginServer interface {
+	mustEmbedUnimplementedModelProviderPluginServer()
+}
+
+func RegisterModelProviderPluginServer(s grpc.ServiceRegistrar, srv ModelProviderPluginServer) {
+	// If the following call panics, it indicates UnimplementedModelProviderPluginServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&ModelProviderPlugin_ServiceDesc, srv)
+}
+
+func _ModelProviderPlugin_Describe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ModelProviderDescribeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ModelProviderPluginServer).Describe(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ModelProviderPlugin_Describe_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ModelProviderPluginServer).Describe(ctx, req.(*ModelProviderDescribeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ModelProviderPlugin_ListModels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListModelsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ModelProviderPluginServer).ListModels(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ModelProviderPlugin_ListModels_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ModelProviderPluginServer).ListModels(ctx, req.(*ListModelsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// ModelProviderPlugin_ServiceDesc is the grpc.ServiceDesc for ModelProviderPlugin service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var ModelProviderPlugin_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "weknora.plugin.v1.ModelProviderPlugin",
+	HandlerType: (*ModelProviderPluginServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Describe",
+			Handler:    _ModelProviderPlugin_Describe_Handler,
+		},
+		{
+			MethodName: "ListModels",
+			Handler:    _ModelProviderPlugin_ListModels_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "internal/plugin/proto/plugin.proto",
+}
+
+const (
+	RetrieverPlugin_Describe_FullMethodName = "/weknora.plugin.v1.RetrieverPlugin/Describe"
+	RetrieverPlugin_Retrieve_FullMethodName = "/weknora.plugin.v1.RetrieverPlugin/Retrieve"
+)
+
+// RetrieverPluginClient is the client API for RetrieverPlugin service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type RetrieverPluginClient interface {
+	Describe(ctx context.Context, in *RetrieverDescribeRequest, opts ...grpc.CallOption) (*RetrieverDescribeResponse, error)
+	Retrieve(ctx context.Context, in *RetrieveRequest, opts ...grpc.CallOption) (*RetrieveResponse, error)
+}
+
+type retrieverPluginClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewRetrieverPluginClient(cc grpc.ClientConnInterface) RetrieverPluginClient {
+	return &retrieverPluginClient{cc}
+}
+
+func (c *retrieverPluginClient) Describe(ctx context.Context, in *RetrieverDescribeRequest, opts ...grpc.CallOption) (*RetrieverDescribeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RetrieverDescribeResponse)
+	err := c.cc.Invoke(ctx, RetrieverPlugin_Describe_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *retrieverPluginClient) Retrieve(ctx context.Context, in *RetrieveRequest, opts ...grpc.CallOption) (*RetrieveResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RetrieveResponse)
+	err := c.cc.Invoke(ctx, RetrieverPlugin_Retrieve_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RetrieverPluginServer is the server API for RetrieverPlugin service.
+// All implementations must embed UnimplementedRetrieverPluginServer
+// for forward compatibility.
+type RetrieverPluginServer interface {
+	Describe(context.Context, *RetrieverDescribeRequest) (*RetrieverDescribeResponse, error)
+	Retrieve(context.Context, *RetrieveRequest) (*RetrieveResponse, error)
+	mustEmbedUnimplementedRetrieverPluginServer()
+}
+
+// UnimplementedRetrieverPluginServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedRetrieverPluginServer struct{}
+
+func (UnimplementedRetrieverPluginServer) Describe(context.Context, *RetrieverDescribeRequest) (*RetrieverDescribeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Describe not implemented")
+}
+func (UnimplementedRetrieverPluginServer) Retrieve(context.Context, *RetrieveRequest) (*RetrieveResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Retrieve not implemented")
+}
+func (UnimplementedRetrieverPluginServer) mustEmbedUnimplementedRetrieverPluginServer() {}
+func (UnimplementedRetrieverPluginServer) testEmbeddedByValue()                         {}
+
+// UnsafeRetrieverPluginServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to RetrieverPluginServer will
+// result in compilation errors.
+type UnsafeRetrieverPluginServer interface {
+	mustEmbedUnimplementedRetrieverPluginServer()
+}
+
+func RegisterRetrieverPluginServer(s grpc.ServiceRegistrar, srv RetrieverPluginServer) {
+	// If the following call panics, it indicates UnimplementedRetrieverPluginServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&RetrieverPlugin_ServiceDesc, srv)
+}
+
+func _RetrieverPlugin_Describe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RetrieverDescribeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RetrieverPluginServer).Describe(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RetrieverPlugin_Describe_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RetrieverPluginServer).Describe(ctx, req.(*RetrieverDescribeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RetrieverPlugin_Retrieve_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RetrieveRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RetrieverPluginServer).Retrieve(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RetrieverPlugin_Retrieve_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RetrieverPluginServer).Retrieve(ctx, req.(*RetrieveRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// RetrieverPlugin_ServiceDesc is the grpc.ServiceDesc for RetrieverPlugin service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var RetrieverPlugin_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "weknora.plugin.v1.RetrieverPlugin",
+	HandlerType: (*RetrieverPluginServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Describe",
+			Handler:    _RetrieverPlugin_Describe_Handler,
+		},
+		{
+			MethodName: "Retrieve",
+			Handler:    _RetrieverPlugin_Retrieve_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "internal/plugin/proto/plugin.proto",
+}
+
+const (
 	DataSourcePlugin_ValidateCredentials_FullMethodName      = "/weknora.plugin.v1.DataSourcePlugin/ValidateCredentials"
 	DataSourcePlugin_ListResources_FullMethodName            = "/weknora.plugin.v1.DataSourcePlugin/ListResources"
 	DataSourcePlugin_ResolveResourceAncestors_FullMethodName = "/weknora.plugin.v1.DataSourcePlugin/ResolveResourceAncestors"

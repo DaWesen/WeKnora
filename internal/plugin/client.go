@@ -14,9 +14,8 @@ import (
 
 // Client is the gRPC client used by the host to invoke a running plugin.
 type Client struct {
-	conn       *grpc.ClientConn
-	lifecycle  pluginpb.PluginLifecycleClient
-	datasource pluginpb.DataSourcePluginClient
+	conn      *grpc.ClientConn
+	lifecycle pluginpb.PluginLifecycleClient
 }
 
 func Dial(ctx context.Context, address string) (*Client, error) {
@@ -35,10 +34,14 @@ func Dial(ctx context.Context, address string) (*Client, error) {
 		return nil, fmt.Errorf("dial plugin gRPC endpoint %q: %w", address, err)
 	}
 	return &Client{
-		conn:       conn,
-		lifecycle:  pluginpb.NewPluginLifecycleClient(conn),
-		datasource: pluginpb.NewDataSourcePluginClient(conn),
+		conn:      conn,
+		lifecycle: pluginpb.NewPluginLifecycleClient(conn),
 	}, nil
+}
+
+// Conn exposes the shared gRPC connection for an extension-specific adapter.
+func (c *Client) Conn() grpc.ClientConnInterface {
+	return c.conn
 }
 
 func (c *Client) Close() error {
@@ -61,41 +64,6 @@ func (c *Client) ValidateConfig(ctx context.Context, config map[string]string) (
 func (c *Client) Shutdown(ctx context.Context) error {
 	_, err := c.lifecycle.Shutdown(ctx, &pluginpb.ShutdownRequest{})
 	return err
-}
-
-func (c *Client) ValidateCredentials(ctx context.Context, config map[string]string) (*pluginpb.ValidateCredentialsResponse, error) {
-	return c.datasource.ValidateCredentials(ctx, &pluginpb.ValidateCredentialsRequest{Config: config})
-}
-
-func (c *Client) ListResources(ctx context.Context, config map[string]string, parentID string) (*pluginpb.ListResourcesResponse, error) {
-	return c.datasource.ListResources(ctx, &pluginpb.ListResourcesRequest{
-		Config:   config,
-		ParentId: parentID,
-	})
-}
-
-func (c *Client) ResolveResourceAncestors(ctx context.Context, config map[string]string, resourceIDs []string) (*pluginpb.ResolveResourceAncestorsResponse, error) {
-	return c.datasource.ResolveResourceAncestors(ctx, &pluginpb.ResolveResourceAncestorsRequest{
-		Config:      config,
-		ResourceIds: resourceIDs,
-	})
-}
-
-func (c *Client) FetchAll(ctx context.Context, datasourceID string, config map[string]string, resourceIDs []string) (*pluginpb.FetchAllResponse, error) {
-	return c.datasource.FetchAll(ctx, &pluginpb.FetchAllRequest{
-		DatasourceId: datasourceID,
-		Config:       config,
-		ResourceIds:  resourceIDs,
-	})
-}
-
-func (c *Client) Sync(ctx context.Context, datasourceID string, config map[string]string, cursor string, resourceIDs []string) (pluginpb.DataSourcePlugin_SyncClient, error) {
-	return c.datasource.Sync(ctx, &pluginpb.SyncRequest{
-		DatasourceId: datasourceID,
-		Config:       config,
-		Cursor:       cursor,
-		ResourceIds:  resourceIDs,
-	})
 }
 
 // CheckHealth verifies that a plugin endpoint is reachable and reports serving.
