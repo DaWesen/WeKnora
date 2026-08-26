@@ -87,6 +87,27 @@ func NewExtensionLoaderRegistry() *ExtensionLoaderRegistry {
 	}
 }
 
+// RegisterBuiltinDescriptor registers a descriptor for a built-in (non-gRPC)
+// implementation. This lets the host expose built-in and external extensions
+// through the same descriptor surface without forcing built-ins through gRPC.
+func (r *ExtensionLoaderRegistry) RegisterBuiltinDescriptor(descriptor ExtensionDescriptor) error {
+	if descriptor.ID == "" {
+		return fmt.Errorf("builtin descriptor id is empty")
+	}
+	if descriptor.Type == "" {
+		return fmt.Errorf("builtin descriptor type is empty")
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, exists := r.descriptors[descriptor.ID]; exists {
+		return fmt.Errorf("descriptor %q already registered", descriptor.ID)
+	}
+	descriptor.ConfigSchema = cloneConfigSchema(descriptor.ConfigSchema)
+	descriptor.Capabilities = append([]string(nil), descriptor.Capabilities...)
+	r.descriptors[descriptor.ID] = descriptor
+	return nil
+}
+
 func (r *ExtensionLoaderRegistry) Register(loader ExtensionLoader) error {
 	if loader == nil {
 		return fmt.Errorf("extension loader is nil")
@@ -161,4 +182,20 @@ func (r *ExtensionLoaderRegistry) LoadAll(ctx context.Context, manager *Manager)
 		}
 	}
 	return errs
+}
+
+// ValidateDescribeCapabilities checks that every capability advertised by the
+// plugin's Describe RPC also appears in the manifest. This prevents a plugin
+// from silently advertising capabilities its manifest did not declare.
+func ValidateDescribeCapabilities(manifestCaps, describeCaps []string) error {
+	manifestSet := make(map[string]struct{}, len(manifestCaps))
+	for _, cap := range manifestCaps {
+		manifestSet[cap] = struct{}{}
+	}
+	for _, cap := range describeCaps {
+		if _, ok := manifestSet[cap]; !ok {
+			return fmt.Errorf("plugin capability %q is not declared in manifest", cap)
+		}
+	}
+	return nil
 }

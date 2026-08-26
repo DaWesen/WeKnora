@@ -43,6 +43,9 @@ func (l *PluginLoader) Load(ctx context.Context, manager *plugin.Manager, discov
 	if providerType == "" {
 		return fmt.Errorf("web search plugin %q returned an empty provider type", pluginID)
 	}
+	if err := plugin.ValidateDescribeCapabilities(discovered.Manifest.Spec.Capabilities, description.GetCapabilities()); err != nil {
+		return fmt.Errorf("web search plugin %q: %w", pluginID, err)
+	}
 	return l.registry.RegisterWithInfo(providerType, types.WebSearchProviderTypeInfo{
 		Name:           description.GetDisplayName(),
 		Description:    description.GetDescription(),

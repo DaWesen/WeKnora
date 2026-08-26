@@ -32,8 +32,8 @@ func TestExtensionLoaderRegistryRegister(t *testing.T) {
 
 func TestExtensionLoaderRegistryLoadAll(t *testing.T) {
 	manager := NewManager(t.TempDir())
-	manager.byID["datasource"] = &Plugin{Manifest: Manifest{Metadata: Metadata{ID: "datasource"}, Spec: Spec{ExtensionType: ExtensionTypeDataSource}}}
-	manager.byID["web-search"] = &Plugin{Manifest: Manifest{Metadata: Metadata{ID: "web-search"}, Spec: Spec{ExtensionType: ExtensionTypeWebSearch}}}
+	manager.byID["datasource"] = &Plugin{Manifest: Manifest{Metadata: Metadata{ID: "datasource"}, Spec: Spec{ExtensionType: ExtensionTypeDataSource, WeKnoraVersion: ">=0.1.0"}}}
+	manager.byID["web-search"] = &Plugin{Manifest: Manifest{Metadata: Metadata{ID: "web-search"}, Spec: Spec{ExtensionType: ExtensionTypeWebSearch, WeKnoraVersion: ">=0.1.0"}}}
 
 	datasourceLoader := &testExtensionLoader{extensionType: ExtensionTypeDataSource}
 	webSearchLoader := &testExtensionLoader{extensionType: ExtensionTypeWebSearch, err: errors.New("registry unavailable")}
@@ -51,7 +51,7 @@ func TestExtensionLoaderRegistryLoadAll(t *testing.T) {
 
 func TestExtensionLoaderRegistryLoadRejectsMissingType(t *testing.T) {
 	registry := NewExtensionLoaderRegistry()
-	err := registry.Load(context.Background(), NewManager(t.TempDir()), Plugin{Manifest: Manifest{Metadata: Metadata{ID: "parser"}, Spec: Spec{ExtensionType: ExtensionTypeDocumentParser}}})
+	err := registry.Load(context.Background(), NewManager(t.TempDir()), Plugin{Manifest: Manifest{Metadata: Metadata{ID: "parser"}, Spec: Spec{ExtensionType: ExtensionTypeDocumentParser, WeKnoraVersion: ">=0.1.0"}}})
 	require.EqualError(t, err, "no extension loader registered for \"document_parser\"")
 }
 
@@ -64,9 +64,10 @@ func TestExtensionLoaderRegistryDescriptorsAreIsolatedAndSorted(t *testing.T) {
 		require.NoError(t, registry.Load(context.Background(), nil, Plugin{Manifest: Manifest{
 			Metadata: Metadata{ID: id, Name: id},
 			Spec: Spec{
-				ExtensionType: ExtensionTypeDataSource,
-				Capabilities:  []string{"sync"},
-				ConfigSchema:  map[string]any{"nested": map[string]any{"values": []any{"one"}}},
+				ExtensionType:  ExtensionTypeDataSource,
+				WeKnoraVersion: ">=0.1.0",
+				Capabilities:   []string{"sync"},
+				ConfigSchema:   map[string]any{"nested": map[string]any{"values": []any{"one"}}},
 			},
 		}}))
 	}
@@ -80,4 +81,30 @@ func TestExtensionLoaderRegistryDescriptorsAreIsolatedAndSorted(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, []string{"sync"}, descriptor.Capabilities)
 	require.Equal(t, "one", descriptor.ConfigSchema["nested"].(map[string]any)["values"].([]any)[0])
+}
+
+func TestRegisterBuiltinDescriptor(t *testing.T) {
+	registry := NewExtensionLoaderRegistry()
+	require.EqualError(t, registry.RegisterBuiltinDescriptor(ExtensionDescriptor{}), "builtin descriptor id is empty")
+	require.EqualError(t, registry.RegisterBuiltinDescriptor(ExtensionDescriptor{ID: "x"}), "builtin descriptor type is empty")
+	require.NoError(t, registry.RegisterBuiltinDescriptor(ExtensionDescriptor{
+		ID: "builtin:web_search:bing", Type: ExtensionTypeWebSearch, Name: "Bing",
+		Capabilities: []string{"proxy"},
+	}))
+	require.EqualError(t, registry.RegisterBuiltinDescriptor(ExtensionDescriptor{
+		ID: "builtin:web_search:bing", Type: ExtensionTypeWebSearch,
+	}), "descriptor \"builtin:web_search:bing\" already registered")
+
+	descriptors := registry.Descriptors()
+	require.Len(t, descriptors, 1)
+	require.Equal(t, "builtin:web_search:bing", descriptors[0].ID)
+	require.Equal(t, []string{"proxy"}, descriptors[0].Capabilities)
+}
+
+func TestValidateDescribeCapabilities(t *testing.T) {
+	require.NoError(t, ValidateDescribeCapabilities(nil, nil))
+	require.NoError(t, ValidateDescribeCapabilities([]string{"sync"}, nil))
+	require.NoError(t, ValidateDescribeCapabilities([]string{"sync", "stream"}, []string{"sync"}))
+	require.EqualError(t, ValidateDescribeCapabilities([]string{"sync"}, []string{"stream"}),
+		`plugin capability "stream" is not declared in manifest`)
 }

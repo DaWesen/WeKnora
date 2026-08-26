@@ -1715,14 +1715,20 @@ func initConnectorRegistry() (*datasource.ConnectorRegistry, error) {
 }
 
 // loadExternalPlugins installs host adapters for all discovered extension types.
-// Runtime lifecycle remains owned by plugin.Manager.
+// Runtime lifecycle remains owned by plugin.Manager. Built-in extensions are
+// registered as descriptors so the host exposes them through the same surface
+// as external plugins.
 func loadExternalPlugins(
 	manager *plugin.Manager,
 	connectors *datasource.ConnectorRegistry,
 	webSearch *infra_web_search.Registry,
 	pluginRetrievers *retriever.PluginQueryRegistry,
+	retrieveEngineRegistry interfaces.RetrieveEngineRegistry,
 ) error {
 	loaders := plugin.NewExtensionLoaderRegistry()
+	if err := registerBuiltinDescriptors(loaders, webSearch); err != nil {
+		return fmt.Errorf("register builtin descriptors: %w", err)
+	}
 	registrations := []struct {
 		name   string
 		loader plugin.ExtensionLoader
@@ -1731,7 +1737,7 @@ func loadExternalPlugins(
 		{name: "document parser", loader: docparser.NewPluginLoader()},
 		{name: "web search", loader: infra_web_search.NewPluginLoader(webSearch)},
 		{name: "model provider", loader: modelprovider.NewPluginLoader()},
-		{name: "retriever", loader: retriever.NewPluginLoader(pluginRetrievers)},
+		{name: "retriever", loader: retriever.NewPluginLoader(pluginRetrievers, retrieveEngineRegistry)},
 	}
 	for _, registration := range registrations {
 		if err := loaders.Register(registration.loader); err != nil {
@@ -1742,6 +1748,68 @@ func loadExternalPlugins(
 		return fmt.Errorf("load external plugins: %w", err)
 	}
 	return nil
+}
+
+// registerBuiltinDescriptors registers descriptors for built-in web search
+// providers and built-in model providers so they appear alongside external
+// plugin descriptors in the host API.
+func registerBuiltinDescriptors(
+	loaders *plugin.ExtensionLoaderRegistry,
+	webSearch *infra_web_search.Registry,
+) error {
+	for _, info := range types.GetWebSearchProviderTypes() {
+		caps := []string{}
+		if info.SupportsProxy {
+			caps = append(caps, "proxy")
+		}
+		if err := loaders.RegisterBuiltinDescriptor(plugin.ExtensionDescriptor{
+			ID:           "builtin:web_search:" + info.ID,
+			Type:         plugin.ExtensionTypeWebSearch,
+			Name:         info.Name,
+			Description:  info.Description,
+			Capabilities: caps,
+		}); err != nil {
+			return err
+		}
+	}
+	for _, info := range modelprovider.List() {
+		if isBuiltinProvider(info.Name) {
+			caps := make([]string, 0, len(info.ModelTypes))
+			for _, mt := range info.ModelTypes {
+				switch mt {
+				case types.ModelTypeKnowledgeQA:
+					caps = append(caps, "chat")
+				case types.ModelTypeEmbedding:
+					caps = append(caps, "embedding")
+				case types.ModelTypeRerank:
+					caps = append(caps, "rerank")
+				case types.ModelTypeVLLM:
+					caps = append(caps, "vlm")
+				case types.ModelTypeASR:
+					caps = append(caps, "asr")
+				}
+			}
+			if err := loaders.RegisterBuiltinDescriptor(plugin.ExtensionDescriptor{
+				ID:           "builtin:model_provider:" + string(info.Name),
+				Type:         plugin.ExtensionTypeModelProvider,
+				Name:         info.DisplayName,
+				Description:  info.Description,
+				Capabilities: caps,
+			}); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func isBuiltinProvider(name modelprovider.ProviderName) bool {
+	for _, builtin := range modelprovider.AllProviders() {
+		if builtin == name {
+			return true
+		}
+	}
+	return false
 }
 
 // startDataSourceScheduler starts the data source cron scheduler and registers cleanup.

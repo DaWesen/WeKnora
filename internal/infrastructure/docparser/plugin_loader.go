@@ -43,6 +43,9 @@ func (l *PluginLoader) Load(ctx context.Context, manager *plugin.Manager, discov
 	if len(description.GetFileTypes()) == 0 {
 		return fmt.Errorf("document parser plugin %q returned no file types", pluginID)
 	}
+	if err := plugin.ValidateDescribeCapabilities(discovered.Manifest.Spec.Capabilities, description.GetCapabilities()); err != nil {
+		return fmt.Errorf("document parser plugin %q: %w", pluginID, err)
+	}
 	if _, exists := lookupEngine(name); exists {
 		return fmt.Errorf("parser engine %q already registered", name)
 	}

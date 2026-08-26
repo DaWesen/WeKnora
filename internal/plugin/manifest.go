@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"golang.org/x/mod/semver"
 	"gopkg.in/yaml.v3"
 )
 
@@ -19,6 +20,112 @@ const (
 	ExtensionTypeModelProvider  ExtensionType = "model_provider"
 	ExtensionTypeRetriever      ExtensionType = "retriever"
 )
+
+// validCapabilities returns the capability whitelist for one extension type.
+// An empty slice means the type has no predefined capabilities (any non-empty
+// string is accepted). Capabilities that are invalid for a type are rejected
+// at validation time so a misconfigured manifest never reaches a loader.
+func validCapabilities(t ExtensionType) []string {
+	switch t {
+	case ExtensionTypeDataSource:
+		return []string{"sync", "stream", "batch"}
+	case ExtensionTypeDocumentParser:
+		return []string{"url", "stream", "ocr", "table", "audio"}
+	case ExtensionTypeWebSearch:
+		return []string{"proxy", "stream", "date_filter"}
+	case ExtensionTypeModelProvider:
+		return []string{"chat", "embedding", "rerank", "vlm", "asr"}
+	case ExtensionTypeRetriever:
+		return []string{"vector", "keywords", "hybrid", "index"}
+	default:
+		return nil
+	}
+}
+
+// HostVersion is the current WeKnora version used to evaluate manifest ranges.
+// It is set at link time via -ldflags or defaults to a development sentinel.
+var HostVersion = "0.1.0"
+
+// validateVersionRange checks that the manifest's weknoraVersion range is
+// syntactically valid and that the running host satisfies it. Supported
+// forms: ">=X.Y.Z", ">=X.Y.Z <X.Y.Z", or an exact "X.Y.Z".
+func validateVersionRange(rangeSpec string) error {
+	rangeSpec = strings.TrimSpace(rangeSpec)
+	if rangeSpec == "" {
+		return fmt.Errorf("plugin WeKnora version range is required")
+	}
+	host := "v" + strings.TrimPrefix(strings.TrimSpace(HostVersion), "v")
+	if !semver.IsValid(host) {
+		return fmt.Errorf("host version %q is not a valid semver", HostVersion)
+	}
+	for _, part := range strings.Fields(rangeSpec) {
+		switch {
+		case strings.HasPrefix(part, ">="):
+			min := "v" + strings.TrimPrefix(part[2:], "v")
+			if !semver.IsValid(min) {
+				return fmt.Errorf("invalid version constraint %q", part)
+			}
+			if semver.Compare(host, min) < 0 {
+				return fmt.Errorf("host version %s does not satisfy %s", HostVersion, part)
+			}
+		case strings.HasPrefix(part, "<"):
+			max := "v" + strings.TrimPrefix(part[1:], "v")
+			if !semver.IsValid(max) {
+				return fmt.Errorf("invalid version constraint %q", part)
+			}
+			if semver.Compare(host, max) >= 0 {
+				return fmt.Errorf("host version %s does not satisfy %s", HostVersion, part)
+			}
+		case strings.HasPrefix(part, ">"):
+			min := "v" + strings.TrimPrefix(part[1:], "v")
+			if !semver.IsValid(min) {
+				return fmt.Errorf("invalid version constraint %q", part)
+			}
+			if semver.Compare(host, min) <= 0 {
+				return fmt.Errorf("host version %s does not satisfy %s", HostVersion, part)
+			}
+		case semver.IsValid("v" + strings.TrimPrefix(part, "v")):
+			exact := "v" + strings.TrimPrefix(part, "v")
+			if semver.Compare(host, exact) != 0 {
+				return fmt.Errorf("host version %s does not satisfy exact %s", HostVersion, part)
+			}
+		default:
+			return fmt.Errorf("unsupported version constraint %q", part)
+		}
+	}
+	return nil
+}
+
+// validateCapabilities trims, deduplicates, and validates capabilities against
+// the extension-type whitelist. It mutates m.Spec.Capabilities in place so the
+// trimmed values are visible to downstream code.
+func (m *Manifest) validateCapabilities() error {
+	allowed := validCapabilities(m.Spec.ExtensionType)
+	allowedSet := make(map[string]struct{}, len(allowed))
+	for _, cap := range allowed {
+		allowedSet[cap] = struct{}{}
+	}
+	seen := make(map[string]struct{}, len(m.Spec.Capabilities))
+	trimmed := make([]string, 0, len(m.Spec.Capabilities))
+	for _, capability := range m.Spec.Capabilities {
+		capability = strings.TrimSpace(capability)
+		if capability == "" {
+			return fmt.Errorf("plugin capability must not be empty")
+		}
+		if _, exists := seen[capability]; exists {
+			return fmt.Errorf("plugin capability %q is duplicated", capability)
+		}
+		if len(allowedSet) > 0 {
+			if _, ok := allowedSet[capability]; !ok {
+				return fmt.Errorf("plugin capability %q is not valid for extension type %q", capability, m.Spec.ExtensionType)
+			}
+		}
+		seen[capability] = struct{}{}
+		trimmed = append(trimmed, capability)
+	}
+	m.Spec.Capabilities = trimmed
+	return nil
+}
 
 // Manifest is the on-disk declaration for an external WeKnora plugin.
 type Manifest struct {
@@ -134,7 +241,7 @@ func (m Manifest) ValidateConfig(config map[string]string) error {
 	return nil
 }
 
-func (m Manifest) Validate() error {
+func (m *Manifest) Validate() error {
 	if m.APIVersion != APIVersionV1 {
 		return fmt.Errorf("unsupported plugin apiVersion %q", m.APIVersion)
 	}
@@ -149,19 +256,11 @@ func (m Manifest) Validate() error {
 	default:
 		return fmt.Errorf("unsupported extension type %q", m.Spec.ExtensionType)
 	}
-	seenCapabilities := make(map[string]struct{}, len(m.Spec.Capabilities))
-	for _, capability := range m.Spec.Capabilities {
-		capability = strings.TrimSpace(capability)
-		if capability == "" {
-			return fmt.Errorf("plugin capability must not be empty")
-		}
-		if _, exists := seenCapabilities[capability]; exists {
-			return fmt.Errorf("plugin capability %q is duplicated", capability)
-		}
-		seenCapabilities[capability] = struct{}{}
+	if err := m.validateCapabilities(); err != nil {
+		return err
 	}
-	if strings.TrimSpace(m.Spec.WeKnoraVersion) == "" {
-		return fmt.Errorf("plugin WeKnora version range is required")
+	if err := validateVersionRange(m.Spec.WeKnoraVersion); err != nil {
+		return err
 	}
 	if m.Spec.Entrypoint.Type != "process" && m.Spec.Entrypoint.Type != "container" {
 		return fmt.Errorf("plugin entrypoint type must be process or container")

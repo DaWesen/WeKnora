@@ -655,8 +655,16 @@ var ModelProviderPlugin_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	RetrieverPlugin_Describe_FullMethodName = "/weknora.plugin.v1.RetrieverPlugin/Describe"
-	RetrieverPlugin_Retrieve_FullMethodName = "/weknora.plugin.v1.RetrieverPlugin/Retrieve"
+	RetrieverPlugin_Describe_FullMethodName                 = "/weknora.plugin.v1.RetrieverPlugin/Describe"
+	RetrieverPlugin_Retrieve_FullMethodName                 = "/weknora.plugin.v1.RetrieverPlugin/Retrieve"
+	RetrieverPlugin_SaveIndex_FullMethodName                = "/weknora.plugin.v1.RetrieverPlugin/SaveIndex"
+	RetrieverPlugin_BatchSaveIndex_FullMethodName           = "/weknora.plugin.v1.RetrieverPlugin/BatchSaveIndex"
+	RetrieverPlugin_DeleteByChunkIDs_FullMethodName         = "/weknora.plugin.v1.RetrieverPlugin/DeleteByChunkIDs"
+	RetrieverPlugin_DeleteBySourceIDs_FullMethodName        = "/weknora.plugin.v1.RetrieverPlugin/DeleteBySourceIDs"
+	RetrieverPlugin_DeleteByKnowledgeIDs_FullMethodName     = "/weknora.plugin.v1.RetrieverPlugin/DeleteByKnowledgeIDs"
+	RetrieverPlugin_CopyIndices_FullMethodName              = "/weknora.plugin.v1.RetrieverPlugin/CopyIndices"
+	RetrieverPlugin_UpdateChunkEnabledStatus_FullMethodName = "/weknora.plugin.v1.RetrieverPlugin/UpdateChunkEnabledStatus"
+	RetrieverPlugin_UpdateChunkTagID_FullMethodName         = "/weknora.plugin.v1.RetrieverPlugin/UpdateChunkTagID"
 )
 
 // RetrieverPluginClient is the client API for RetrieverPlugin service.
@@ -665,6 +673,14 @@ const (
 type RetrieverPluginClient interface {
 	Describe(ctx context.Context, in *RetrieverDescribeRequest, opts ...grpc.CallOption) (*RetrieverDescribeResponse, error)
 	Retrieve(ctx context.Context, in *RetrieveRequest, opts ...grpc.CallOption) (*RetrieveResponse, error)
+	SaveIndex(ctx context.Context, in *SaveIndexRequest, opts ...grpc.CallOption) (*SaveIndexResponse, error)
+	BatchSaveIndex(ctx context.Context, in *BatchSaveIndexRequest, opts ...grpc.CallOption) (*BatchSaveIndexResponse, error)
+	DeleteByChunkIDs(ctx context.Context, in *DeleteByChunkIDsRequest, opts ...grpc.CallOption) (*DeleteByChunkIDsResponse, error)
+	DeleteBySourceIDs(ctx context.Context, in *DeleteBySourceIDsRequest, opts ...grpc.CallOption) (*DeleteBySourceIDsResponse, error)
+	DeleteByKnowledgeIDs(ctx context.Context, in *DeleteByKnowledgeIDsRequest, opts ...grpc.CallOption) (*DeleteByKnowledgeIDsResponse, error)
+	CopyIndices(ctx context.Context, in *CopyIndicesRequest, opts ...grpc.CallOption) (*CopyIndicesResponse, error)
+	UpdateChunkEnabledStatus(ctx context.Context, in *UpdateChunkEnabledStatusRequest, opts ...grpc.CallOption) (*UpdateChunkEnabledStatusResponse, error)
+	UpdateChunkTagID(ctx context.Context, in *UpdateChunkTagIDRequest, opts ...grpc.CallOption) (*UpdateChunkTagIDResponse, error)
 }
 
 type retrieverPluginClient struct {
@@ -695,12 +711,100 @@ func (c *retrieverPluginClient) Retrieve(ctx context.Context, in *RetrieveReques
 	return out, nil
 }
 
+func (c *retrieverPluginClient) SaveIndex(ctx context.Context, in *SaveIndexRequest, opts ...grpc.CallOption) (*SaveIndexResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SaveIndexResponse)
+	err := c.cc.Invoke(ctx, RetrieverPlugin_SaveIndex_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *retrieverPluginClient) BatchSaveIndex(ctx context.Context, in *BatchSaveIndexRequest, opts ...grpc.CallOption) (*BatchSaveIndexResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchSaveIndexResponse)
+	err := c.cc.Invoke(ctx, RetrieverPlugin_BatchSaveIndex_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *retrieverPluginClient) DeleteByChunkIDs(ctx context.Context, in *DeleteByChunkIDsRequest, opts ...grpc.CallOption) (*DeleteByChunkIDsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteByChunkIDsResponse)
+	err := c.cc.Invoke(ctx, RetrieverPlugin_DeleteByChunkIDs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *retrieverPluginClient) DeleteBySourceIDs(ctx context.Context, in *DeleteBySourceIDsRequest, opts ...grpc.CallOption) (*DeleteBySourceIDsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteBySourceIDsResponse)
+	err := c.cc.Invoke(ctx, RetrieverPlugin_DeleteBySourceIDs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *retrieverPluginClient) DeleteByKnowledgeIDs(ctx context.Context, in *DeleteByKnowledgeIDsRequest, opts ...grpc.CallOption) (*DeleteByKnowledgeIDsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteByKnowledgeIDsResponse)
+	err := c.cc.Invoke(ctx, RetrieverPlugin_DeleteByKnowledgeIDs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *retrieverPluginClient) CopyIndices(ctx context.Context, in *CopyIndicesRequest, opts ...grpc.CallOption) (*CopyIndicesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CopyIndicesResponse)
+	err := c.cc.Invoke(ctx, RetrieverPlugin_CopyIndices_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *retrieverPluginClient) UpdateChunkEnabledStatus(ctx context.Context, in *UpdateChunkEnabledStatusRequest, opts ...grpc.CallOption) (*UpdateChunkEnabledStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateChunkEnabledStatusResponse)
+	err := c.cc.Invoke(ctx, RetrieverPlugin_UpdateChunkEnabledStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *retrieverPluginClient) UpdateChunkTagID(ctx context.Context, in *UpdateChunkTagIDRequest, opts ...grpc.CallOption) (*UpdateChunkTagIDResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateChunkTagIDResponse)
+	err := c.cc.Invoke(ctx, RetrieverPlugin_UpdateChunkTagID_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RetrieverPluginServer is the server API for RetrieverPlugin service.
 // All implementations must embed UnimplementedRetrieverPluginServer
 // for forward compatibility.
 type RetrieverPluginServer interface {
 	Describe(context.Context, *RetrieverDescribeRequest) (*RetrieverDescribeResponse, error)
 	Retrieve(context.Context, *RetrieveRequest) (*RetrieveResponse, error)
+	SaveIndex(context.Context, *SaveIndexRequest) (*SaveIndexResponse, error)
+	BatchSaveIndex(context.Context, *BatchSaveIndexRequest) (*BatchSaveIndexResponse, error)
+	DeleteByChunkIDs(context.Context, *DeleteByChunkIDsRequest) (*DeleteByChunkIDsResponse, error)
+	DeleteBySourceIDs(context.Context, *DeleteBySourceIDsRequest) (*DeleteBySourceIDsResponse, error)
+	DeleteByKnowledgeIDs(context.Context, *DeleteByKnowledgeIDsRequest) (*DeleteByKnowledgeIDsResponse, error)
+	CopyIndices(context.Context, *CopyIndicesRequest) (*CopyIndicesResponse, error)
+	UpdateChunkEnabledStatus(context.Context, *UpdateChunkEnabledStatusRequest) (*UpdateChunkEnabledStatusResponse, error)
+	UpdateChunkTagID(context.Context, *UpdateChunkTagIDRequest) (*UpdateChunkTagIDResponse, error)
 	mustEmbedUnimplementedRetrieverPluginServer()
 }
 
@@ -716,6 +820,30 @@ func (UnimplementedRetrieverPluginServer) Describe(context.Context, *RetrieverDe
 }
 func (UnimplementedRetrieverPluginServer) Retrieve(context.Context, *RetrieveRequest) (*RetrieveResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Retrieve not implemented")
+}
+func (UnimplementedRetrieverPluginServer) SaveIndex(context.Context, *SaveIndexRequest) (*SaveIndexResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SaveIndex not implemented")
+}
+func (UnimplementedRetrieverPluginServer) BatchSaveIndex(context.Context, *BatchSaveIndexRequest) (*BatchSaveIndexResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BatchSaveIndex not implemented")
+}
+func (UnimplementedRetrieverPluginServer) DeleteByChunkIDs(context.Context, *DeleteByChunkIDsRequest) (*DeleteByChunkIDsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteByChunkIDs not implemented")
+}
+func (UnimplementedRetrieverPluginServer) DeleteBySourceIDs(context.Context, *DeleteBySourceIDsRequest) (*DeleteBySourceIDsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteBySourceIDs not implemented")
+}
+func (UnimplementedRetrieverPluginServer) DeleteByKnowledgeIDs(context.Context, *DeleteByKnowledgeIDsRequest) (*DeleteByKnowledgeIDsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteByKnowledgeIDs not implemented")
+}
+func (UnimplementedRetrieverPluginServer) CopyIndices(context.Context, *CopyIndicesRequest) (*CopyIndicesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CopyIndices not implemented")
+}
+func (UnimplementedRetrieverPluginServer) UpdateChunkEnabledStatus(context.Context, *UpdateChunkEnabledStatusRequest) (*UpdateChunkEnabledStatusResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateChunkEnabledStatus not implemented")
+}
+func (UnimplementedRetrieverPluginServer) UpdateChunkTagID(context.Context, *UpdateChunkTagIDRequest) (*UpdateChunkTagIDResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateChunkTagID not implemented")
 }
 func (UnimplementedRetrieverPluginServer) mustEmbedUnimplementedRetrieverPluginServer() {}
 func (UnimplementedRetrieverPluginServer) testEmbeddedByValue()                         {}
@@ -774,6 +902,150 @@ func _RetrieverPlugin_Retrieve_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RetrieverPlugin_SaveIndex_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveIndexRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RetrieverPluginServer).SaveIndex(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RetrieverPlugin_SaveIndex_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RetrieverPluginServer).SaveIndex(ctx, req.(*SaveIndexRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RetrieverPlugin_BatchSaveIndex_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchSaveIndexRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RetrieverPluginServer).BatchSaveIndex(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RetrieverPlugin_BatchSaveIndex_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RetrieverPluginServer).BatchSaveIndex(ctx, req.(*BatchSaveIndexRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RetrieverPlugin_DeleteByChunkIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteByChunkIDsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RetrieverPluginServer).DeleteByChunkIDs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RetrieverPlugin_DeleteByChunkIDs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RetrieverPluginServer).DeleteByChunkIDs(ctx, req.(*DeleteByChunkIDsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RetrieverPlugin_DeleteBySourceIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteBySourceIDsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RetrieverPluginServer).DeleteBySourceIDs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RetrieverPlugin_DeleteBySourceIDs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RetrieverPluginServer).DeleteBySourceIDs(ctx, req.(*DeleteBySourceIDsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RetrieverPlugin_DeleteByKnowledgeIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteByKnowledgeIDsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RetrieverPluginServer).DeleteByKnowledgeIDs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RetrieverPlugin_DeleteByKnowledgeIDs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RetrieverPluginServer).DeleteByKnowledgeIDs(ctx, req.(*DeleteByKnowledgeIDsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RetrieverPlugin_CopyIndices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CopyIndicesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RetrieverPluginServer).CopyIndices(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RetrieverPlugin_CopyIndices_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RetrieverPluginServer).CopyIndices(ctx, req.(*CopyIndicesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RetrieverPlugin_UpdateChunkEnabledStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateChunkEnabledStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RetrieverPluginServer).UpdateChunkEnabledStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RetrieverPlugin_UpdateChunkEnabledStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RetrieverPluginServer).UpdateChunkEnabledStatus(ctx, req.(*UpdateChunkEnabledStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RetrieverPlugin_UpdateChunkTagID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateChunkTagIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RetrieverPluginServer).UpdateChunkTagID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RetrieverPlugin_UpdateChunkTagID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RetrieverPluginServer).UpdateChunkTagID(ctx, req.(*UpdateChunkTagIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RetrieverPlugin_ServiceDesc is the grpc.ServiceDesc for RetrieverPlugin service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -788,6 +1060,38 @@ var RetrieverPlugin_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Retrieve",
 			Handler:    _RetrieverPlugin_Retrieve_Handler,
+		},
+		{
+			MethodName: "SaveIndex",
+			Handler:    _RetrieverPlugin_SaveIndex_Handler,
+		},
+		{
+			MethodName: "BatchSaveIndex",
+			Handler:    _RetrieverPlugin_BatchSaveIndex_Handler,
+		},
+		{
+			MethodName: "DeleteByChunkIDs",
+			Handler:    _RetrieverPlugin_DeleteByChunkIDs_Handler,
+		},
+		{
+			MethodName: "DeleteBySourceIDs",
+			Handler:    _RetrieverPlugin_DeleteBySourceIDs_Handler,
+		},
+		{
+			MethodName: "DeleteByKnowledgeIDs",
+			Handler:    _RetrieverPlugin_DeleteByKnowledgeIDs_Handler,
+		},
+		{
+			MethodName: "CopyIndices",
+			Handler:    _RetrieverPlugin_CopyIndices_Handler,
+		},
+		{
+			MethodName: "UpdateChunkEnabledStatus",
+			Handler:    _RetrieverPlugin_UpdateChunkEnabledStatus_Handler,
+		},
+		{
+			MethodName: "UpdateChunkTagID",
+			Handler:    _RetrieverPlugin_UpdateChunkTagID_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

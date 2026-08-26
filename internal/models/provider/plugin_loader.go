@@ -44,6 +44,9 @@ func (l *PluginLoader) Load(ctx context.Context, manager *plugin.Manager, discov
 	if len(modelTypes) == 0 {
 		return fmt.Errorf("model provider plugin %q returned no supported model types", pluginID)
 	}
+	if err := plugin.ValidateDescribeCapabilities(discovered.Manifest.Spec.Capabilities, description.GetCapabilities()); err != nil {
+		return fmt.Errorf("model provider plugin %q: %w", pluginID, err)
+	}
 	return RegisterExternal(&pluginProvider{info: ProviderInfo{
 		Name:         name,
 		DisplayName:  description.GetDisplayName(),

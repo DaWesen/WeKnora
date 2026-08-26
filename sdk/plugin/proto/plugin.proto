@@ -30,6 +30,14 @@ service ModelProviderPlugin {
 service RetrieverPlugin {
   rpc Describe(RetrieverDescribeRequest) returns (RetrieverDescribeResponse);
   rpc Retrieve(RetrieveRequest) returns (RetrieveResponse);
+  rpc SaveIndex(SaveIndexRequest) returns (SaveIndexResponse);
+  rpc BatchSaveIndex(BatchSaveIndexRequest) returns (BatchSaveIndexResponse);
+  rpc DeleteByChunkIDs(DeleteByChunkIDsRequest) returns (DeleteByChunkIDsResponse);
+  rpc DeleteBySourceIDs(DeleteBySourceIDsRequest) returns (DeleteBySourceIDsResponse);
+  rpc DeleteByKnowledgeIDs(DeleteByKnowledgeIDsRequest) returns (DeleteByKnowledgeIDsResponse);
+  rpc CopyIndices(CopyIndicesRequest) returns (CopyIndicesResponse);
+  rpc UpdateChunkEnabledStatus(UpdateChunkEnabledStatusRequest) returns (UpdateChunkEnabledStatusResponse);
+  rpc UpdateChunkTagID(UpdateChunkTagIDRequest) returns (UpdateChunkTagIDResponse);
 }
 
 service DataSourcePlugin {
@@ -234,3 +242,78 @@ message RetrieveHit {
   double score = 9;
   bool is_enabled = 10;
 }
+
+message IndexRecord {
+  string id = 1;
+  string content = 2;
+  string source_id = 3;
+  string source_type = 4;
+  string chunk_id = 5;
+  string knowledge_id = 6;
+  string knowledge_base_id = 7;
+  string knowledge_type = 8;
+  string tag_id = 9;
+  bool is_enabled = 10;
+  bool is_recommended = 11;
+}
+
+message SaveIndexRequest {
+  map<string, string> config = 1;
+  IndexRecord index = 2;
+  map<string, string> params = 3;
+}
+message SaveIndexResponse {}
+
+message BatchSaveIndexRequest {
+  map<string, string> config = 1;
+  repeated IndexRecord indices = 2;
+  map<string, string> params = 3;
+}
+message BatchSaveIndexResponse {}
+
+message DeleteByChunkIDsRequest {
+  map<string, string> config = 1;
+  repeated string chunk_ids = 2;
+  int32 dimension = 3;
+  string knowledge_type = 4;
+}
+message DeleteByChunkIDsResponse {}
+
+message DeleteBySourceIDsRequest {
+  map<string, string> config = 1;
+  repeated string source_ids = 2;
+  int32 dimension = 3;
+  string knowledge_type = 4;
+}
+message DeleteBySourceIDsResponse {}
+
+message DeleteByKnowledgeIDsRequest {
+  map<string, string> config = 1;
+  repeated string knowledge_ids = 2;
+  int32 dimension = 3;
+  string knowledge_type = 4;
+}
+message DeleteByKnowledgeIDsResponse {}
+
+message CopyIndicesRequest {
+  map<string, string> config = 1;
+  string source_knowledge_base_id = 2;
+  map<string, string> source_to_target_kb_id_map = 3;
+  map<string, string> source_to_target_chunk_id_map = 4;
+  string target_knowledge_base_id = 5;
+  int32 dimension = 6;
+  string knowledge_type = 7;
+}
+message CopyIndicesResponse {}
+
+message UpdateChunkEnabledStatusRequest {
+  map<string, string> config = 1;
+  map<string, bool> chunk_status_map = 2;
+}
+message UpdateChunkEnabledStatusResponse {}
+
+message UpdateChunkTagIDRequest {
+  map<string, string> config = 1;
+  map<string, string> chunk_tag_map = 2;
+}
+message UpdateChunkTagIDResponse {}

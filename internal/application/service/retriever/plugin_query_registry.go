@@ -55,17 +55,20 @@ func (r *PluginQueryRegistry) List() []interfaces.RetrieveEngine {
 	return result
 }
 
-type PluginLoader struct{ registry *PluginQueryRegistry }
+type PluginLoader struct {
+	queryRegistry *PluginQueryRegistry
+	indexRegistry interfaces.RetrieveEngineRegistry
+}
 
-func NewPluginLoader(registry *PluginQueryRegistry) *PluginLoader {
-	return &PluginLoader{registry: registry}
+func NewPluginLoader(queryRegistry *PluginQueryRegistry, indexRegistry interfaces.RetrieveEngineRegistry) *PluginLoader {
+	return &PluginLoader{queryRegistry: queryRegistry, indexRegistry: indexRegistry}
 }
 
 func (*PluginLoader) Type() plugin.ExtensionType { return plugin.ExtensionTypeRetriever }
 
 func (l *PluginLoader) Load(ctx context.Context, manager *plugin.Manager, discovered plugin.Plugin) error {
-	if l.registry == nil {
-		return fmt.Errorf("plugin retriever registry is nil")
+	if l.queryRegistry == nil && l.indexRegistry == nil {
+		return fmt.Errorf("plugin retriever registries are nil")
 	}
 	if discovered.Manifest.Spec.ExtensionType != l.Type() {
 		return fmt.Errorf("expected %q plugin, got %q", l.Type(), discovered.Manifest.Spec.ExtensionType)
@@ -92,9 +95,23 @@ func (l *PluginLoader) Load(ctx context.Context, manager *plugin.Manager, discov
 	if len(support) == 0 {
 		return fmt.Errorf("retriever plugin %q returned no supported retriever types", pluginID)
 	}
-	return l.registry.Register(&pluginRetrieveEngine{
+	if err := plugin.ValidateDescribeCapabilities(discovered.Manifest.Spec.Capabilities, description.GetCapabilities()); err != nil {
+		return fmt.Errorf("retriever plugin %q: %w", pluginID, err)
+	}
+
+	base := pluginRetrieveEngine{
 		manager: manager, pluginID: pluginID, engineType: engineType, support: support,
-	})
+	}
+	if hasIndexCapability(discovered.Manifest.Spec.Capabilities) {
+		if l.indexRegistry == nil {
+			return fmt.Errorf("plugin %q declares index capability but no index registry is available", pluginID)
+		}
+		return l.indexRegistry.Register(newPluginIndexService(base))
+	}
+	if l.queryRegistry == nil {
+		return fmt.Errorf("plugin %q has no index registry and no query registry is available", pluginID)
+	}
+	return l.queryRegistry.Register(&base)
 }
 
 type pluginRetrieveEngine struct {
