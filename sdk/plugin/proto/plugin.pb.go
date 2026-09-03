@@ -3159,8 +3159,12 @@ type IndexRecord struct {
 	TagId           string                 `protobuf:"bytes,9,opt,name=tag_id,json=tagId,proto3" json:"tag_id,omitempty"`
 	IsEnabled       bool                   `protobuf:"varint,10,opt,name=is_enabled,json=isEnabled,proto3" json:"is_enabled,omitempty"`
 	IsRecommended   bool                   `protobuf:"varint,11,opt,name=is_recommended,json=isRecommended,proto3" json:"is_recommended,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Host-computed embedding of `content`. Present only when the knowledge base
+	// indexes with the vector retriever type and the plugin declares the
+	// "embedding" capability; plugins must not treat its absence as an error.
+	Embedding     []float32 `protobuf:"fixed32,12,rep,packed,name=embedding,proto3" json:"embedding,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *IndexRecord) Reset() {
@@ -3268,6 +3272,13 @@ func (x *IndexRecord) GetIsRecommended() bool {
 		return x.IsRecommended
 	}
 	return false
+}
+
+func (x *IndexRecord) GetEmbedding() []float32 {
+	if x != nil {
+		return x.Embedding
+	}
+	return nil
 }
 
 type SaveIndexRequest struct {
@@ -4359,7 +4370,7 @@ const file_sdk_plugin_proto_plugin_proto_rawDesc = "" +
 	"\x05score\x18\t \x01(\x01R\x05score\x12\x1d\n" +
 	"\n" +
 	"is_enabled\x18\n" +
-	" \x01(\bR\tisEnabled\"\xe3\x02\n" +
+	" \x01(\bR\tisEnabled\"\x81\x03\n" +
 	"\vIndexRecord\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12\x1b\n" +
@@ -4374,7 +4385,8 @@ const file_sdk_plugin_proto_plugin_proto_rawDesc = "" +
 	"\n" +
 	"is_enabled\x18\n" +
 	" \x01(\bR\tisEnabled\x12%\n" +
-	"\x0eis_recommended\x18\v \x01(\bR\risRecommended\"\xd0\x02\n" +
+	"\x0eis_recommended\x18\v \x01(\bR\risRecommended\x12\x1c\n" +
+	"\tembedding\x18\f \x03(\x02R\tembedding\"\xd0\x02\n" +
 	"\x10SaveIndexRequest\x12G\n" +
 	"\x06config\x18\x01 \x03(\v2/.weknora.plugin.v1.SaveIndexRequest.ConfigEntryR\x06config\x124\n" +
 	"\x05index\x18\x02 \x01(\v2\x1e.weknora.plugin.v1.IndexRecordR\x05index\x12G\n" +

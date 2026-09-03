@@ -21,7 +21,7 @@
 - 使用容器模式：Linux Docker Engine，并能构建或拉取插件镜像。
 - WeKnora 主程序已启用外部插件框架，且插件目录由 `WEKNORA_PLUGIN_DIR` 指向。
 
-> 示例使用公开的 `sdk/plugin` 协议与服务辅助包。独立 Go 插件可仅依赖 `github.com/Tencent/WeKnora/sdk/plugin/proto` 和 `github.com/Tencent/WeKnora/sdk/plugin/server`，无需引用宿主内部包。
+> 示例使用公开的 `sdk/plugin` 协议与服务辅助包。`sdk/plugin` 是独立 Go module，独立 Go 插件可仅依赖 `github.com/Tencent/WeKnora/sdk/plugin/proto` 和 `github.com/Tencent/WeKnora/sdk/plugin/server`，无需引用宿主内部包。
 
 ## 运行模式
 

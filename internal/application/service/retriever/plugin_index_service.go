@@ -3,6 +3,7 @@ package retriever
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/Tencent/WeKnora/internal/models/embedding"
@@ -25,9 +26,13 @@ func newPluginIndexService(base pluginRetrieveEngine) *pluginIndexService {
 	return &pluginIndexService{pluginRetrieveEngine: base}
 }
 
-func (s *pluginIndexService) Index(ctx context.Context, _ embedding.Embedder, indexInfo *types.IndexInfo, _ []types.RetrieverType) error {
+func (s *pluginIndexService) Index(ctx context.Context, embedder embedding.Embedder, indexInfo *types.IndexInfo, retrieverTypes []types.RetrieverType) error {
 	if indexInfo == nil {
 		return fmt.Errorf("index info is nil")
+	}
+	record := toIndexRecord(indexInfo)
+	if err := embedIndexRecords(ctx, embedder, []*pluginpb.IndexRecord{record}, retrieverTypes); err != nil {
+		return err
 	}
 	if err := s.manager.StartOrRestart(ctx, s.pluginID, nil); err != nil {
 		return err
@@ -38,7 +43,7 @@ func (s *pluginIndexService) Index(ctx context.Context, _ embedding.Embedder, in
 	}
 	defer client.Close()
 	_, err = pluginpb.NewRetrieverPluginClient(client.Conn()).SaveIndex(ctx, &pluginpb.SaveIndexRequest{
-		Index: toIndexRecord(indexInfo),
+		Index: record,
 	})
 	if err != nil {
 		return fmt.Errorf("save index with plugin %s: %w", s.pluginID, err)
@@ -46,10 +51,13 @@ func (s *pluginIndexService) Index(ctx context.Context, _ embedding.Embedder, in
 	return nil
 }
 
-func (s *pluginIndexService) BatchIndex(ctx context.Context, _ embedding.Embedder, indexInfoList []*types.IndexInfo, _ []types.RetrieverType) error {
+func (s *pluginIndexService) BatchIndex(ctx context.Context, embedder embedding.Embedder, indexInfoList []*types.IndexInfo, retrieverTypes []types.RetrieverType) error {
 	records := make([]*pluginpb.IndexRecord, 0, len(indexInfoList))
 	for _, info := range indexInfoList {
 		records = append(records, toIndexRecord(info))
+	}
+	if err := embedIndexRecords(ctx, embedder, records, retrieverTypes); err != nil {
+		return err
 	}
 	if err := s.manager.StartOrRestart(ctx, s.pluginID, nil); err != nil {
 		return err
@@ -212,4 +220,43 @@ func hasIndexCapability(caps []string) bool {
 		}
 	}
 	return false
+}
+
+// embedIndexRecords fills the host-computed embeddings into records when the
+// knowledge base indexes with the vector retriever type. A nil embedder in
+// that case is an error: a plugin index silently filled with text-only records
+// would degrade vector recall with nothing to reveal the cause.
+func embedIndexRecords(ctx context.Context, embedder embedding.Embedder, records []*pluginpb.IndexRecord, retrieverTypes []types.RetrieverType) error {
+	if len(records) == 0 {
+		return nil
+	}
+	if !slices.Contains(retrieverTypes, types.VectorRetrieverType) {
+		return nil
+	}
+	if embedder == nil {
+		return fmt.Errorf("vector indexing requires an embedder: refusing to write records without embeddings")
+	}
+	if len(records) == 1 {
+		vector, err := embedder.Embed(ctx, sanitizeForEmbedding(ctx, records[0].Content))
+		if err != nil {
+			return fmt.Errorf("embed index record %s: %w", records[0].Id, err)
+		}
+		records[0].Embedding = vector
+		return nil
+	}
+	contents := make([]string, 0, len(records))
+	for _, record := range records {
+		contents = append(contents, sanitizeForEmbedding(ctx, record.Content))
+	}
+	vectors, err := batchEmbedWithBackoff(ctx, embedder, contents)
+	if err != nil {
+		return fmt.Errorf("embed %d index records: %w", len(records), err)
+	}
+	if len(vectors) != len(records) {
+		return fmt.Errorf("embedder returned %d vectors for %d index records", len(vectors), len(records))
+	}
+	for i, record := range records {
+		record.Embedding = vectors[i]
+	}
+	return nil
 }

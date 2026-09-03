@@ -150,7 +150,7 @@ permissions:
 
 ## 插件协议与生命周期
 
-公开协议定义在 `sdk/plugin/proto/plugin.proto`。插件需实现 `PluginLifecycle`；datasource 插件还需实现 `DataSourcePlugin`。Go 插件可复用 `sdk/plugin/server` 提供的监听与默认 lifecycle 实现。
+公开协议定义在 `sdk/plugin/proto/plugin.proto`。`sdk/plugin` 是独立版本化的 Go module，插件仓库通过 `go get github.com/Tencent/WeKnora/sdk/plugin` 引用，不依赖宿主模块。插件需实现 `PluginLifecycle`；datasource 插件还需实现 `DataSourcePlugin`。Go 插件可复用 `sdk/plugin/server` 提供的监听与默认 lifecycle 实现。
 
 ```text
 Discover
@@ -196,6 +196,18 @@ FetchAll(datasource_id, config, resource_ids) → Document[]
 `Resource.external_id` 必须稳定，并与保存的 `resource_ids` 完全一致。分层资源应在根请求中返回顶层节点、在非空 `parent_id` 请求中返回直接子节点；`ResolveResourceAncestors` 返回已选节点路径上的父节点。扁平资源可在祖先解析中返回空数组。
 
 `Document.source_resource_id` 应标识所属选择资源。流式 `SyncRequest` 同样携带 `resource_ids`，因此采用流式同步的插件必须按选择过滤 upsert 与 delete，而不能只在 `FetchAll` 中处理选择范围。
+
+### retriever 索引写入与向量
+
+声明 `index` capability 的 retriever 插件会注册为完整索引后端，接收全部索引生命周期 RPC（`SaveIndex`、`BatchSaveIndex`、删除、复制、状态更新）。
+
+向量写入：知识库以 vector 检索类型建索引时，宿主会在 `IndexRecord.embedding` 中携带由宿主 embedder 计算好的向量。插件必须满足：
+
+- Manifest 与 `Describe` 的 capabilities 都声明 `embedding`；
+- 索引后端将向量与记录一起存储，供 `Retrieve` 按向量召回；
+- `embedding` 缺失时不视为错误（keywords-only 索引不带向量）。
+
+Describe 未声明 `embedding` 的插件无法注册为 vector 索引后端——这是防止旧版 SDK 插件静默写入纯文本记录的加载期校验。
 
 ## 配置与权限
 

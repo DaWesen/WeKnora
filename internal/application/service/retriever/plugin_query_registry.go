@@ -3,6 +3,7 @@ package retriever
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -106,6 +107,9 @@ func (l *PluginLoader) Load(ctx context.Context, manager *plugin.Manager, discov
 		if l.indexRegistry == nil {
 			return fmt.Errorf("plugin %q declares index capability but no index registry is available", pluginID)
 		}
+		if err := requireEmbeddingCapability(support, description.GetCapabilities()); err != nil {
+			return fmt.Errorf("retriever plugin %q: %w", pluginID, err)
+		}
 		return l.indexRegistry.Register(newPluginIndexService(base))
 	}
 	if l.queryRegistry == nil {
@@ -176,6 +180,21 @@ func pluginRetrieverTypes(retrieverTypes []string) []types.RetrieverType {
 		}
 	}
 	return result
+}
+
+// requireEmbeddingCapability rejects plugins that would receive vector-retrieval
+// index records without declaring that they accept host-computed embeddings.
+// The IndexRecord embedding field and the "embedding" capability were added to
+// the protocol together; an older plugin whose Describe omits the capability
+// would silently store text-only records and degrade vector recall.
+func requireEmbeddingCapability(support []types.RetrieverType, describeCapabilities []string) error {
+	if !slices.Contains(support, types.VectorRetrieverType) {
+		return nil
+	}
+	if slices.Contains(describeCapabilities, "embedding") {
+		return nil
+	}
+	return fmt.Errorf("plugin supports vector retrieval but its Describe does not declare the %q capability; upgrade the plugin SDK and echo all manifest capabilities from Describe", "embedding")
 }
 
 func pluginSourceType(value string) types.SourceType {

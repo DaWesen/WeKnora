@@ -36,7 +36,7 @@ func validCapabilities(t ExtensionType) []string {
 	case ExtensionTypeModelProvider:
 		return []string{"chat", "embedding", "rerank", "vlm", "asr"}
 	case ExtensionTypeRetriever:
-		return []string{"vector", "keywords", "hybrid", "index"}
+		return []string{"vector", "keywords", "hybrid", "index", "embedding"}
 	default:
 		return nil
 	}

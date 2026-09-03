@@ -255,6 +255,10 @@ message IndexRecord {
   string tag_id = 9;
   bool is_enabled = 10;
   bool is_recommended = 11;
+  // Host-computed embedding of `content`. Present only when the knowledge base
+  // indexes with the vector retriever type and the plugin declares the
+  // "embedding" capability; plugins must not treat its absence as an error.
+  repeated float embedding = 12;
 }
 
 message SaveIndexRequest {

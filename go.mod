@@ -8,6 +8,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.1
 	github.com/PuerkitoBio/goquery v1.12.0
+	github.com/Tencent/WeKnora/sdk/plugin v0.0.0-00010101000000-000000000000
 	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.5.1
 	github.com/asg017/sqlite-vec-go-bindings v0.1.6
@@ -353,3 +354,9 @@ replace go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelg
 // The anydoc Go bindings are not published yet (firecrawl/anydoc#30 is still
 // open), so they are vendored. Drop this replace once upstream tags go/vX.Y.Z.
 replace github.com/firecrawl/anydoc/go => ./third_party/anydoc-go
+
+// The plugin SDK is its own module (sdk/plugin/go.mod) so external plugin
+// repositories can depend on it without the host's dependency graph. The
+// replace stays permanently: host builds always use the in-repo SDK, while
+// external plugins consume the tagged version via `go get`.
+replace github.com/Tencent/WeKnora/sdk/plugin => ./sdk/plugin
