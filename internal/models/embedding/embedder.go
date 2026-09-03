@@ -122,6 +122,21 @@ func newEmbedder(config Config, pooler EmbedderPooler, ollamaService *ollama.Oll
 			providerName = provider.DetectProvider(config.BaseURL)
 		}
 
+		// External model provider plugins register a capability factory that
+		// delegates inference to the plugin's gRPC Embed RPC. Check before the
+		// built-in switch so a plugin provider never silently falls through to
+		// the generic OpenAI-compatible embedder.
+		if factory, ok := provider.GetCapabilityFactory(providerName, types.ModelTypeEmbedding); ok {
+			client, err := factory(config)
+			if err != nil {
+				return nil, fmt.Errorf("plugin embedding factory for %s: %w", providerName, err)
+			}
+			if embedder, ok := client.(Embedder); ok {
+				return embedder, nil
+			}
+			return nil, fmt.Errorf("plugin embedding factory for %s returned %T, not Embedder", providerName, client)
+		}
+
 		// Route to provider-specific embedders
 		switch providerName {
 		case provider.ProviderAliyun:

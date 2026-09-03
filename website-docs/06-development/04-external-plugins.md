@@ -209,6 +209,20 @@ FetchAll(datasource_id, config, resource_ids) → Document[]
 
 Describe 未声明 `embedding` 的插件无法注册为 vector 索引后端——这是防止旧版 SDK 插件静默写入纯文本记录的加载期校验。
 
+### model provider 推理
+
+声明 `chat`、`embedding` 或 `rerank` model type 的 model provider 插件会注册对应的推理能力工厂。当宿主需要创建该 provider 的模型客户端时，会优先查找 `CapabilityRegistry`，命中则返回调用插件 gRPC RPC 的适配器，而非内置 OpenAI-compatible 适配器。
+
+三个推理 RPC：
+
+- `Chat`（server-streaming）：宿主始终以流式调用，非流式请求由适配器内部收集全部 chunk 后聚合返回。`ChatMessage` 支持 `images` 字段（URL 或 base64 data URI），用于 VLM 多模态输入。`ChatChunk` 携带 `content`/`reasoning_content` 增量、`finish_reason` 和 usage。
+- `Embed`（unary）：批量输入，返回 `Embedding[]` 和 `dimensions`。宿主在配置未指定维度时缓存响应中的 `dimensions`。
+- `Rerank`（unary）：输入 query + documents，返回按 `score` 降序的 `RerankResult[]`（含原始 `index`）。
+
+每个 RPC 携带 `map<string,string> config`，由宿主从模型配置（`api_key`/`base_url`/`model_name`/`model_id` + `ExtraConfig` + `CustomHeaders`）构建。VLM 复用 `Chat` RPC（images 在 `ChatMessage` 中传递）；ASR 目前无推理 RPC。
+
+当前限制：`ChatRequest` 不携带 tools/tool_choice，插件无法执行 function calling；`ListModels` 协议已定义但宿主模型列表 UI 仍从 DB 读取。
+
 ## 配置与权限
 
 配置分两层校验：

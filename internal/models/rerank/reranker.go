@@ -137,6 +137,21 @@ func newReranker(config *RerankerConfig) (Reranker, error) {
 		providerName = provider.DetectProvider(config.BaseURL)
 	}
 
+	// External model provider plugins register a capability factory that
+	// delegates inference to the plugin's gRPC Rerank RPC. Check before the
+	// built-in switch so a plugin provider never silently falls through to
+	// the generic OpenAI-compatible reranker.
+	if factory, ok := provider.GetCapabilityFactory(providerName, types.ModelTypeRerank); ok {
+		client, err := factory(config)
+		if err != nil {
+			return nil, fmt.Errorf("plugin rerank factory for %s: %w", providerName, err)
+		}
+		if reranker, ok := client.(Reranker); ok {
+			return reranker, nil
+		}
+		return nil, fmt.Errorf("plugin rerank factory for %s returned %T, not Reranker", providerName, client)
+	}
+
 	var (
 		reranker Reranker
 		err      error

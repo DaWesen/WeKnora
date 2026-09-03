@@ -25,6 +25,14 @@ service WebSearchPlugin {
 service ModelProviderPlugin {
   rpc Describe(ModelProviderDescribeRequest) returns (ModelProviderDescribeResponse);
   rpc ListModels(ListModelsRequest) returns (ListModelsResponse);
+  // Chat performs a streaming chat completion. The host always opens a stream
+  // regardless of whether the user-facing request is streaming, so plugins
+  // only need to implement one RPC. Non-stream callers collect the chunks.
+  rpc Chat(ChatRequest) returns (stream ChatChunk);
+  // Embed computes embeddings for a batch of inputs in one call.
+  rpc Embed(EmbedRequest) returns (EmbedResponse);
+  // Rerank scores documents against a query and returns sorted results.
+  rpc Rerank(RerankRequest) returns (RerankResponse);
 }
 
 service RetrieverPlugin {
@@ -207,6 +215,71 @@ message ModelProviderDescribeResponse {
 message ListModelsRequest { map<string, string> config = 1; }
 message ListModelsResponse { repeated PluginModel models = 1; }
 message PluginModel { string id = 1; string name = 2; repeated string capabilities = 3; }
+
+// --- Model inference ---
+
+message ChatRequest {
+  map<string, string> config = 1;
+  string model = 2;
+  repeated ChatMessage messages = 3;
+  double temperature = 4;
+  double top_p = 5;
+  int32 max_tokens = 6;
+  // seed is an optional deterministic seed; 0 means unset.
+  int32 seed = 7;
+}
+message ChatMessage {
+  string role = 1;
+  string content = 2;
+  // reasoning_content carries the assistant's prior chain-of-thought for
+  // providers that require it to be echoed back in multi-turn dialogue.
+  string reasoning_content = 3;
+  // images carries image URLs or base64 data URIs for multimodal (VLM) input.
+  repeated string images = 4;
+}
+message ChatChunk {
+  // content is the incremental text delta. Empty on the final usage-only chunk.
+  string content = 1;
+  // reasoning_content is the incremental thinking delta, if the model emits one.
+  string reasoning_content = 2;
+  // finish_reason is set only on the last chunk; empty otherwise.
+  string finish_reason = 3;
+  int32 prompt_tokens = 4;
+  int32 completion_tokens = 5;
+  int32 total_tokens = 6;
+  // error, if non-empty, terminates the stream with a provider-side failure.
+  string error = 7;
+}
+
+message EmbedRequest {
+  map<string, string> config = 1;
+  string model = 2;
+  repeated string inputs = 3;
+}
+message EmbedResponse {
+  repeated Embedding embeddings = 1;
+  // dimensions is the vector length; the host caches it to answer
+  // Embedder.GetDimensions without an extra round-trip.
+  int32 dimensions = 2;
+}
+message Embedding { repeated float values = 1; }
+
+message RerankRequest {
+  map<string, string> config = 1;
+  string model = 2;
+  string query = 3;
+  repeated string documents = 4;
+  // top_n limits the number of returned results; 0 means return all.
+  int32 top_n = 5;
+}
+message RerankResponse {
+  repeated RerankResult results = 1;
+}
+message RerankResult {
+  // index is the zero-based position in the input documents slice.
+  int32 index = 1;
+  double score = 2;
+}
 
 message RetrieverDescribeRequest {}
 message RetrieverDescribeResponse {

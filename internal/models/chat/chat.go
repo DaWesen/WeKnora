@@ -165,6 +165,20 @@ func NewRemoteChat(config *ChatConfig) (Chat, error) {
 	if providerName == "" {
 		providerName = provider.DetectProvider(config.BaseURL)
 	}
+	// External model provider plugins register a capability factory that
+	// delegates inference to the plugin's gRPC Chat RPC. Check before the
+	// built-in switch so a plugin provider name never silently falls through
+	// to the generic OpenAI-compatible adapter.
+	if factory, ok := provider.GetCapabilityFactory(providerName, types.ModelTypeKnowledgeQA); ok {
+		client, err := factory(config)
+		if err != nil {
+			return nil, fmt.Errorf("plugin chat factory for %s: %w", providerName, err)
+		}
+		if chatClient, ok := client.(Chat); ok {
+			return chatClient, nil
+		}
+		return nil, fmt.Errorf("plugin chat factory for %s returned %T, not Chat", providerName, client)
+	}
 	if providerName == provider.ProviderAnthropic {
 		return NewAnthropicChat(config)
 	}

@@ -517,6 +517,9 @@ var WebSearchPlugin_ServiceDesc = grpc.ServiceDesc{
 const (
 	ModelProviderPlugin_Describe_FullMethodName   = "/weknora.plugin.v1.ModelProviderPlugin/Describe"
 	ModelProviderPlugin_ListModels_FullMethodName = "/weknora.plugin.v1.ModelProviderPlugin/ListModels"
+	ModelProviderPlugin_Chat_FullMethodName       = "/weknora.plugin.v1.ModelProviderPlugin/Chat"
+	ModelProviderPlugin_Embed_FullMethodName      = "/weknora.plugin.v1.ModelProviderPlugin/Embed"
+	ModelProviderPlugin_Rerank_FullMethodName     = "/weknora.plugin.v1.ModelProviderPlugin/Rerank"
 )
 
 // ModelProviderPluginClient is the client API for ModelProviderPlugin service.
@@ -525,6 +528,14 @@ const (
 type ModelProviderPluginClient interface {
 	Describe(ctx context.Context, in *ModelProviderDescribeRequest, opts ...grpc.CallOption) (*ModelProviderDescribeResponse, error)
 	ListModels(ctx context.Context, in *ListModelsRequest, opts ...grpc.CallOption) (*ListModelsResponse, error)
+	// Chat performs a streaming chat completion. The host always opens a stream
+	// regardless of whether the user-facing request is streaming, so plugins
+	// only need to implement one RPC. Non-stream callers collect the chunks.
+	Chat(ctx context.Context, in *ChatRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChatChunk], error)
+	// Embed computes embeddings for a batch of inputs in one call.
+	Embed(ctx context.Context, in *EmbedRequest, opts ...grpc.CallOption) (*EmbedResponse, error)
+	// Rerank scores documents against a query and returns sorted results.
+	Rerank(ctx context.Context, in *RerankRequest, opts ...grpc.CallOption) (*RerankResponse, error)
 }
 
 type modelProviderPluginClient struct {
@@ -555,12 +566,59 @@ func (c *modelProviderPluginClient) ListModels(ctx context.Context, in *ListMode
 	return out, nil
 }
 
+func (c *modelProviderPluginClient) Chat(ctx context.Context, in *ChatRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChatChunk], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &ModelProviderPlugin_ServiceDesc.Streams[0], ModelProviderPlugin_Chat_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ChatRequest, ChatChunk]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ModelProviderPlugin_ChatClient = grpc.ServerStreamingClient[ChatChunk]
+
+func (c *modelProviderPluginClient) Embed(ctx context.Context, in *EmbedRequest, opts ...grpc.CallOption) (*EmbedResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmbedResponse)
+	err := c.cc.Invoke(ctx, ModelProviderPlugin_Embed_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *modelProviderPluginClient) Rerank(ctx context.Context, in *RerankRequest, opts ...grpc.CallOption) (*RerankResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RerankResponse)
+	err := c.cc.Invoke(ctx, ModelProviderPlugin_Rerank_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ModelProviderPluginServer is the server API for ModelProviderPlugin service.
 // All implementations must embed UnimplementedModelProviderPluginServer
 // for forward compatibility.
 type ModelProviderPluginServer interface {
 	Describe(context.Context, *ModelProviderDescribeRequest) (*ModelProviderDescribeResponse, error)
 	ListModels(context.Context, *ListModelsRequest) (*ListModelsResponse, error)
+	// Chat performs a streaming chat completion. The host always opens a stream
+	// regardless of whether the user-facing request is streaming, so plugins
+	// only need to implement one RPC. Non-stream callers collect the chunks.
+	Chat(*ChatRequest, grpc.ServerStreamingServer[ChatChunk]) error
+	// Embed computes embeddings for a batch of inputs in one call.
+	Embed(context.Context, *EmbedRequest) (*EmbedResponse, error)
+	// Rerank scores documents against a query and returns sorted results.
+	Rerank(context.Context, *RerankRequest) (*RerankResponse, error)
 	mustEmbedUnimplementedModelProviderPluginServer()
 }
 
@@ -576,6 +634,15 @@ func (UnimplementedModelProviderPluginServer) Describe(context.Context, *ModelPr
 }
 func (UnimplementedModelProviderPluginServer) ListModels(context.Context, *ListModelsRequest) (*ListModelsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListModels not implemented")
+}
+func (UnimplementedModelProviderPluginServer) Chat(*ChatRequest, grpc.ServerStreamingServer[ChatChunk]) error {
+	return status.Error(codes.Unimplemented, "method Chat not implemented")
+}
+func (UnimplementedModelProviderPluginServer) Embed(context.Context, *EmbedRequest) (*EmbedResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Embed not implemented")
+}
+func (UnimplementedModelProviderPluginServer) Rerank(context.Context, *RerankRequest) (*RerankResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Rerank not implemented")
 }
 func (UnimplementedModelProviderPluginServer) mustEmbedUnimplementedModelProviderPluginServer() {}
 func (UnimplementedModelProviderPluginServer) testEmbeddedByValue()                             {}
@@ -634,6 +701,53 @@ func _ModelProviderPlugin_ListModels_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ModelProviderPlugin_Chat_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ChatRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ModelProviderPluginServer).Chat(m, &grpc.GenericServerStream[ChatRequest, ChatChunk]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ModelProviderPlugin_ChatServer = grpc.ServerStreamingServer[ChatChunk]
+
+func _ModelProviderPlugin_Embed_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmbedRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ModelProviderPluginServer).Embed(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ModelProviderPlugin_Embed_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ModelProviderPluginServer).Embed(ctx, req.(*EmbedRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ModelProviderPlugin_Rerank_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RerankRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ModelProviderPluginServer).Rerank(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ModelProviderPlugin_Rerank_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ModelProviderPluginServer).Rerank(ctx, req.(*RerankRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ModelProviderPlugin_ServiceDesc is the grpc.ServiceDesc for ModelProviderPlugin service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -649,8 +763,22 @@ var ModelProviderPlugin_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "ListModels",
 			Handler:    _ModelProviderPlugin_ListModels_Handler,
 		},
+		{
+			MethodName: "Embed",
+			Handler:    _ModelProviderPlugin_Embed_Handler,
+		},
+		{
+			MethodName: "Rerank",
+			Handler:    _ModelProviderPlugin_Rerank_Handler,
+		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Chat",
+			Handler:       _ModelProviderPlugin_Chat_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "sdk/plugin/proto/plugin.proto",
 }
 

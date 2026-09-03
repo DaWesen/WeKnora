@@ -2750,6 +2750,598 @@ func (x *PluginModel) GetCapabilities() []string {
 	return nil
 }
 
+type ChatRequest struct {
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	Config      map[string]string      `protobuf:"bytes,1,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Model       string                 `protobuf:"bytes,2,opt,name=model,proto3" json:"model,omitempty"`
+	Messages    []*ChatMessage         `protobuf:"bytes,3,rep,name=messages,proto3" json:"messages,omitempty"`
+	Temperature float64                `protobuf:"fixed64,4,opt,name=temperature,proto3" json:"temperature,omitempty"`
+	TopP        float64                `protobuf:"fixed64,5,opt,name=top_p,json=topP,proto3" json:"top_p,omitempty"`
+	MaxTokens   int32                  `protobuf:"varint,6,opt,name=max_tokens,json=maxTokens,proto3" json:"max_tokens,omitempty"`
+	// seed is an optional deterministic seed; 0 means unset.
+	Seed          int32 `protobuf:"varint,7,opt,name=seed,proto3" json:"seed,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChatRequest) Reset() {
+	*x = ChatRequest{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[43]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChatRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChatRequest) ProtoMessage() {}
+
+func (x *ChatRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[43]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChatRequest.ProtoReflect.Descriptor instead.
+func (*ChatRequest) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{43}
+}
+
+func (x *ChatRequest) GetConfig() map[string]string {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+func (x *ChatRequest) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *ChatRequest) GetMessages() []*ChatMessage {
+	if x != nil {
+		return x.Messages
+	}
+	return nil
+}
+
+func (x *ChatRequest) GetTemperature() float64 {
+	if x != nil {
+		return x.Temperature
+	}
+	return 0
+}
+
+func (x *ChatRequest) GetTopP() float64 {
+	if x != nil {
+		return x.TopP
+	}
+	return 0
+}
+
+func (x *ChatRequest) GetMaxTokens() int32 {
+	if x != nil {
+		return x.MaxTokens
+	}
+	return 0
+}
+
+func (x *ChatRequest) GetSeed() int32 {
+	if x != nil {
+		return x.Seed
+	}
+	return 0
+}
+
+type ChatMessage struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Role    string                 `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
+	Content string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	// reasoning_content carries the assistant's prior chain-of-thought for
+	// providers that require it to be echoed back in multi-turn dialogue.
+	ReasoningContent string `protobuf:"bytes,3,opt,name=reasoning_content,json=reasoningContent,proto3" json:"reasoning_content,omitempty"`
+	// images carries image URLs or base64 data URIs for multimodal (VLM) input.
+	Images        []string `protobuf:"bytes,4,rep,name=images,proto3" json:"images,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChatMessage) Reset() {
+	*x = ChatMessage{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[44]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChatMessage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChatMessage) ProtoMessage() {}
+
+func (x *ChatMessage) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[44]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChatMessage.ProtoReflect.Descriptor instead.
+func (*ChatMessage) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{44}
+}
+
+func (x *ChatMessage) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *ChatMessage) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *ChatMessage) GetReasoningContent() string {
+	if x != nil {
+		return x.ReasoningContent
+	}
+	return ""
+}
+
+func (x *ChatMessage) GetImages() []string {
+	if x != nil {
+		return x.Images
+	}
+	return nil
+}
+
+type ChatChunk struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// content is the incremental text delta. Empty on the final usage-only chunk.
+	Content string `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
+	// reasoning_content is the incremental thinking delta, if the model emits one.
+	ReasoningContent string `protobuf:"bytes,2,opt,name=reasoning_content,json=reasoningContent,proto3" json:"reasoning_content,omitempty"`
+	// finish_reason is set only on the last chunk; empty otherwise.
+	FinishReason     string `protobuf:"bytes,3,opt,name=finish_reason,json=finishReason,proto3" json:"finish_reason,omitempty"`
+	PromptTokens     int32  `protobuf:"varint,4,opt,name=prompt_tokens,json=promptTokens,proto3" json:"prompt_tokens,omitempty"`
+	CompletionTokens int32  `protobuf:"varint,5,opt,name=completion_tokens,json=completionTokens,proto3" json:"completion_tokens,omitempty"`
+	TotalTokens      int32  `protobuf:"varint,6,opt,name=total_tokens,json=totalTokens,proto3" json:"total_tokens,omitempty"`
+	// error, if non-empty, terminates the stream with a provider-side failure.
+	Error         string `protobuf:"bytes,7,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChatChunk) Reset() {
+	*x = ChatChunk{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[45]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChatChunk) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChatChunk) ProtoMessage() {}
+
+func (x *ChatChunk) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[45]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChatChunk.ProtoReflect.Descriptor instead.
+func (*ChatChunk) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *ChatChunk) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *ChatChunk) GetReasoningContent() string {
+	if x != nil {
+		return x.ReasoningContent
+	}
+	return ""
+}
+
+func (x *ChatChunk) GetFinishReason() string {
+	if x != nil {
+		return x.FinishReason
+	}
+	return ""
+}
+
+func (x *ChatChunk) GetPromptTokens() int32 {
+	if x != nil {
+		return x.PromptTokens
+	}
+	return 0
+}
+
+func (x *ChatChunk) GetCompletionTokens() int32 {
+	if x != nil {
+		return x.CompletionTokens
+	}
+	return 0
+}
+
+func (x *ChatChunk) GetTotalTokens() int32 {
+	if x != nil {
+		return x.TotalTokens
+	}
+	return 0
+}
+
+func (x *ChatChunk) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+type EmbedRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Config        map[string]string      `protobuf:"bytes,1,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Model         string                 `protobuf:"bytes,2,opt,name=model,proto3" json:"model,omitempty"`
+	Inputs        []string               `protobuf:"bytes,3,rep,name=inputs,proto3" json:"inputs,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EmbedRequest) Reset() {
+	*x = EmbedRequest{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[46]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EmbedRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EmbedRequest) ProtoMessage() {}
+
+func (x *EmbedRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[46]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EmbedRequest.ProtoReflect.Descriptor instead.
+func (*EmbedRequest) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{46}
+}
+
+func (x *EmbedRequest) GetConfig() map[string]string {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+func (x *EmbedRequest) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *EmbedRequest) GetInputs() []string {
+	if x != nil {
+		return x.Inputs
+	}
+	return nil
+}
+
+type EmbedResponse struct {
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	Embeddings []*Embedding           `protobuf:"bytes,1,rep,name=embeddings,proto3" json:"embeddings,omitempty"`
+	// dimensions is the vector length; the host caches it to answer
+	// Embedder.GetDimensions without an extra round-trip.
+	Dimensions    int32 `protobuf:"varint,2,opt,name=dimensions,proto3" json:"dimensions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EmbedResponse) Reset() {
+	*x = EmbedResponse{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[47]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EmbedResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EmbedResponse) ProtoMessage() {}
+
+func (x *EmbedResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[47]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EmbedResponse.ProtoReflect.Descriptor instead.
+func (*EmbedResponse) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{47}
+}
+
+func (x *EmbedResponse) GetEmbeddings() []*Embedding {
+	if x != nil {
+		return x.Embeddings
+	}
+	return nil
+}
+
+func (x *EmbedResponse) GetDimensions() int32 {
+	if x != nil {
+		return x.Dimensions
+	}
+	return 0
+}
+
+type Embedding struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Values        []float32              `protobuf:"fixed32,1,rep,packed,name=values,proto3" json:"values,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Embedding) Reset() {
+	*x = Embedding{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[48]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Embedding) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Embedding) ProtoMessage() {}
+
+func (x *Embedding) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[48]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Embedding.ProtoReflect.Descriptor instead.
+func (*Embedding) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{48}
+}
+
+func (x *Embedding) GetValues() []float32 {
+	if x != nil {
+		return x.Values
+	}
+	return nil
+}
+
+type RerankRequest struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Config    map[string]string      `protobuf:"bytes,1,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Model     string                 `protobuf:"bytes,2,opt,name=model,proto3" json:"model,omitempty"`
+	Query     string                 `protobuf:"bytes,3,opt,name=query,proto3" json:"query,omitempty"`
+	Documents []string               `protobuf:"bytes,4,rep,name=documents,proto3" json:"documents,omitempty"`
+	// top_n limits the number of returned results; 0 means return all.
+	TopN          int32 `protobuf:"varint,5,opt,name=top_n,json=topN,proto3" json:"top_n,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RerankRequest) Reset() {
+	*x = RerankRequest{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[49]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RerankRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RerankRequest) ProtoMessage() {}
+
+func (x *RerankRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[49]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RerankRequest.ProtoReflect.Descriptor instead.
+func (*RerankRequest) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{49}
+}
+
+func (x *RerankRequest) GetConfig() map[string]string {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+func (x *RerankRequest) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *RerankRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *RerankRequest) GetDocuments() []string {
+	if x != nil {
+		return x.Documents
+	}
+	return nil
+}
+
+func (x *RerankRequest) GetTopN() int32 {
+	if x != nil {
+		return x.TopN
+	}
+	return 0
+}
+
+type RerankResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Results       []*RerankResult        `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RerankResponse) Reset() {
+	*x = RerankResponse{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[50]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RerankResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RerankResponse) ProtoMessage() {}
+
+func (x *RerankResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[50]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RerankResponse.ProtoReflect.Descriptor instead.
+func (*RerankResponse) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{50}
+}
+
+func (x *RerankResponse) GetResults() []*RerankResult {
+	if x != nil {
+		return x.Results
+	}
+	return nil
+}
+
+type RerankResult struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// index is the zero-based position in the input documents slice.
+	Index         int32   `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
+	Score         float64 `protobuf:"fixed64,2,opt,name=score,proto3" json:"score,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RerankResult) Reset() {
+	*x = RerankResult{}
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[51]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RerankResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RerankResult) ProtoMessage() {}
+
+func (x *RerankResult) ProtoReflect() protoreflect.Message {
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[51]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RerankResult.ProtoReflect.Descriptor instead.
+func (*RerankResult) Descriptor() ([]byte, []int) {
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{51}
+}
+
+func (x *RerankResult) GetIndex() int32 {
+	if x != nil {
+		return x.Index
+	}
+	return 0
+}
+
+func (x *RerankResult) GetScore() float64 {
+	if x != nil {
+		return x.Score
+	}
+	return 0
+}
+
 type RetrieverDescribeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -2758,7 +3350,7 @@ type RetrieverDescribeRequest struct {
 
 func (x *RetrieverDescribeRequest) Reset() {
 	*x = RetrieverDescribeRequest{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[43]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2770,7 +3362,7 @@ func (x *RetrieverDescribeRequest) String() string {
 func (*RetrieverDescribeRequest) ProtoMessage() {}
 
 func (x *RetrieverDescribeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[43]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2783,7 +3375,7 @@ func (x *RetrieverDescribeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RetrieverDescribeRequest.ProtoReflect.Descriptor instead.
 func (*RetrieverDescribeRequest) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{43}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{52}
 }
 
 type RetrieverDescribeResponse struct {
@@ -2798,7 +3390,7 @@ type RetrieverDescribeResponse struct {
 
 func (x *RetrieverDescribeResponse) Reset() {
 	*x = RetrieverDescribeResponse{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[44]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2810,7 +3402,7 @@ func (x *RetrieverDescribeResponse) String() string {
 func (*RetrieverDescribeResponse) ProtoMessage() {}
 
 func (x *RetrieverDescribeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[44]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2823,7 +3415,7 @@ func (x *RetrieverDescribeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RetrieverDescribeResponse.ProtoReflect.Descriptor instead.
 func (*RetrieverDescribeResponse) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{44}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *RetrieverDescribeResponse) GetEngineType() string {
@@ -2874,7 +3466,7 @@ type RetrieveRequest struct {
 
 func (x *RetrieveRequest) Reset() {
 	*x = RetrieveRequest{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[45]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2886,7 +3478,7 @@ func (x *RetrieveRequest) String() string {
 func (*RetrieveRequest) ProtoMessage() {}
 
 func (x *RetrieveRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[45]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2899,7 +3491,7 @@ func (x *RetrieveRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RetrieveRequest.ProtoReflect.Descriptor instead.
 func (*RetrieveRequest) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{45}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *RetrieveRequest) GetConfig() map[string]string {
@@ -2995,7 +3587,7 @@ type RetrieveResponse struct {
 
 func (x *RetrieveResponse) Reset() {
 	*x = RetrieveResponse{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[46]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3007,7 +3599,7 @@ func (x *RetrieveResponse) String() string {
 func (*RetrieveResponse) ProtoMessage() {}
 
 func (x *RetrieveResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[46]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3020,7 +3612,7 @@ func (x *RetrieveResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RetrieveResponse.ProtoReflect.Descriptor instead.
 func (*RetrieveResponse) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{46}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *RetrieveResponse) GetResults() []*RetrieveHit {
@@ -3048,7 +3640,7 @@ type RetrieveHit struct {
 
 func (x *RetrieveHit) Reset() {
 	*x = RetrieveHit{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[47]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3060,7 +3652,7 @@ func (x *RetrieveHit) String() string {
 func (*RetrieveHit) ProtoMessage() {}
 
 func (x *RetrieveHit) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[47]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3073,7 +3665,7 @@ func (x *RetrieveHit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RetrieveHit.ProtoReflect.Descriptor instead.
 func (*RetrieveHit) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{47}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *RetrieveHit) GetId() string {
@@ -3169,7 +3761,7 @@ type IndexRecord struct {
 
 func (x *IndexRecord) Reset() {
 	*x = IndexRecord{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[48]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3181,7 +3773,7 @@ func (x *IndexRecord) String() string {
 func (*IndexRecord) ProtoMessage() {}
 
 func (x *IndexRecord) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[48]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3194,7 +3786,7 @@ func (x *IndexRecord) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IndexRecord.ProtoReflect.Descriptor instead.
 func (*IndexRecord) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{48}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *IndexRecord) GetId() string {
@@ -3292,7 +3884,7 @@ type SaveIndexRequest struct {
 
 func (x *SaveIndexRequest) Reset() {
 	*x = SaveIndexRequest{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[49]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3304,7 +3896,7 @@ func (x *SaveIndexRequest) String() string {
 func (*SaveIndexRequest) ProtoMessage() {}
 
 func (x *SaveIndexRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[49]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3317,7 +3909,7 @@ func (x *SaveIndexRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SaveIndexRequest.ProtoReflect.Descriptor instead.
 func (*SaveIndexRequest) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{49}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *SaveIndexRequest) GetConfig() map[string]string {
@@ -3349,7 +3941,7 @@ type SaveIndexResponse struct {
 
 func (x *SaveIndexResponse) Reset() {
 	*x = SaveIndexResponse{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[50]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3361,7 +3953,7 @@ func (x *SaveIndexResponse) String() string {
 func (*SaveIndexResponse) ProtoMessage() {}
 
 func (x *SaveIndexResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[50]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3374,7 +3966,7 @@ func (x *SaveIndexResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SaveIndexResponse.ProtoReflect.Descriptor instead.
 func (*SaveIndexResponse) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{50}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{59}
 }
 
 type BatchSaveIndexRequest struct {
@@ -3388,7 +3980,7 @@ type BatchSaveIndexRequest struct {
 
 func (x *BatchSaveIndexRequest) Reset() {
 	*x = BatchSaveIndexRequest{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[51]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3400,7 +3992,7 @@ func (x *BatchSaveIndexRequest) String() string {
 func (*BatchSaveIndexRequest) ProtoMessage() {}
 
 func (x *BatchSaveIndexRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[51]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3413,7 +4005,7 @@ func (x *BatchSaveIndexRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchSaveIndexRequest.ProtoReflect.Descriptor instead.
 func (*BatchSaveIndexRequest) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{51}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *BatchSaveIndexRequest) GetConfig() map[string]string {
@@ -3445,7 +4037,7 @@ type BatchSaveIndexResponse struct {
 
 func (x *BatchSaveIndexResponse) Reset() {
 	*x = BatchSaveIndexResponse{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[52]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3457,7 +4049,7 @@ func (x *BatchSaveIndexResponse) String() string {
 func (*BatchSaveIndexResponse) ProtoMessage() {}
 
 func (x *BatchSaveIndexResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[52]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3470,7 +4062,7 @@ func (x *BatchSaveIndexResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchSaveIndexResponse.ProtoReflect.Descriptor instead.
 func (*BatchSaveIndexResponse) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{52}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{61}
 }
 
 type DeleteByChunkIDsRequest struct {
@@ -3485,7 +4077,7 @@ type DeleteByChunkIDsRequest struct {
 
 func (x *DeleteByChunkIDsRequest) Reset() {
 	*x = DeleteByChunkIDsRequest{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[53]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3497,7 +4089,7 @@ func (x *DeleteByChunkIDsRequest) String() string {
 func (*DeleteByChunkIDsRequest) ProtoMessage() {}
 
 func (x *DeleteByChunkIDsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[53]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3510,7 +4102,7 @@ func (x *DeleteByChunkIDsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteByChunkIDsRequest.ProtoReflect.Descriptor instead.
 func (*DeleteByChunkIDsRequest) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{53}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *DeleteByChunkIDsRequest) GetConfig() map[string]string {
@@ -3549,7 +4141,7 @@ type DeleteByChunkIDsResponse struct {
 
 func (x *DeleteByChunkIDsResponse) Reset() {
 	*x = DeleteByChunkIDsResponse{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[54]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3561,7 +4153,7 @@ func (x *DeleteByChunkIDsResponse) String() string {
 func (*DeleteByChunkIDsResponse) ProtoMessage() {}
 
 func (x *DeleteByChunkIDsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[54]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3574,7 +4166,7 @@ func (x *DeleteByChunkIDsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteByChunkIDsResponse.ProtoReflect.Descriptor instead.
 func (*DeleteByChunkIDsResponse) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{54}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{63}
 }
 
 type DeleteBySourceIDsRequest struct {
@@ -3589,7 +4181,7 @@ type DeleteBySourceIDsRequest struct {
 
 func (x *DeleteBySourceIDsRequest) Reset() {
 	*x = DeleteBySourceIDsRequest{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[55]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3601,7 +4193,7 @@ func (x *DeleteBySourceIDsRequest) String() string {
 func (*DeleteBySourceIDsRequest) ProtoMessage() {}
 
 func (x *DeleteBySourceIDsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[55]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3614,7 +4206,7 @@ func (x *DeleteBySourceIDsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteBySourceIDsRequest.ProtoReflect.Descriptor instead.
 func (*DeleteBySourceIDsRequest) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{55}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{64}
 }
 
 func (x *DeleteBySourceIDsRequest) GetConfig() map[string]string {
@@ -3653,7 +4245,7 @@ type DeleteBySourceIDsResponse struct {
 
 func (x *DeleteBySourceIDsResponse) Reset() {
 	*x = DeleteBySourceIDsResponse{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[56]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3665,7 +4257,7 @@ func (x *DeleteBySourceIDsResponse) String() string {
 func (*DeleteBySourceIDsResponse) ProtoMessage() {}
 
 func (x *DeleteBySourceIDsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[56]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3678,7 +4270,7 @@ func (x *DeleteBySourceIDsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteBySourceIDsResponse.ProtoReflect.Descriptor instead.
 func (*DeleteBySourceIDsResponse) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{56}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{65}
 }
 
 type DeleteByKnowledgeIDsRequest struct {
@@ -3693,7 +4285,7 @@ type DeleteByKnowledgeIDsRequest struct {
 
 func (x *DeleteByKnowledgeIDsRequest) Reset() {
 	*x = DeleteByKnowledgeIDsRequest{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[57]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3705,7 +4297,7 @@ func (x *DeleteByKnowledgeIDsRequest) String() string {
 func (*DeleteByKnowledgeIDsRequest) ProtoMessage() {}
 
 func (x *DeleteByKnowledgeIDsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[57]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3718,7 +4310,7 @@ func (x *DeleteByKnowledgeIDsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteByKnowledgeIDsRequest.ProtoReflect.Descriptor instead.
 func (*DeleteByKnowledgeIDsRequest) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{57}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{66}
 }
 
 func (x *DeleteByKnowledgeIDsRequest) GetConfig() map[string]string {
@@ -3757,7 +4349,7 @@ type DeleteByKnowledgeIDsResponse struct {
 
 func (x *DeleteByKnowledgeIDsResponse) Reset() {
 	*x = DeleteByKnowledgeIDsResponse{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[58]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3769,7 +4361,7 @@ func (x *DeleteByKnowledgeIDsResponse) String() string {
 func (*DeleteByKnowledgeIDsResponse) ProtoMessage() {}
 
 func (x *DeleteByKnowledgeIDsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[58]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3782,7 +4374,7 @@ func (x *DeleteByKnowledgeIDsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteByKnowledgeIDsResponse.ProtoReflect.Descriptor instead.
 func (*DeleteByKnowledgeIDsResponse) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{58}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{67}
 }
 
 type CopyIndicesRequest struct {
@@ -3800,7 +4392,7 @@ type CopyIndicesRequest struct {
 
 func (x *CopyIndicesRequest) Reset() {
 	*x = CopyIndicesRequest{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[59]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3812,7 +4404,7 @@ func (x *CopyIndicesRequest) String() string {
 func (*CopyIndicesRequest) ProtoMessage() {}
 
 func (x *CopyIndicesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[59]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3825,7 +4417,7 @@ func (x *CopyIndicesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CopyIndicesRequest.ProtoReflect.Descriptor instead.
 func (*CopyIndicesRequest) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{59}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{68}
 }
 
 func (x *CopyIndicesRequest) GetConfig() map[string]string {
@@ -3885,7 +4477,7 @@ type CopyIndicesResponse struct {
 
 func (x *CopyIndicesResponse) Reset() {
 	*x = CopyIndicesResponse{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[60]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3897,7 +4489,7 @@ func (x *CopyIndicesResponse) String() string {
 func (*CopyIndicesResponse) ProtoMessage() {}
 
 func (x *CopyIndicesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[60]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3910,7 +4502,7 @@ func (x *CopyIndicesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CopyIndicesResponse.ProtoReflect.Descriptor instead.
 func (*CopyIndicesResponse) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{60}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{69}
 }
 
 type UpdateChunkEnabledStatusRequest struct {
@@ -3923,7 +4515,7 @@ type UpdateChunkEnabledStatusRequest struct {
 
 func (x *UpdateChunkEnabledStatusRequest) Reset() {
 	*x = UpdateChunkEnabledStatusRequest{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[61]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[70]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3935,7 +4527,7 @@ func (x *UpdateChunkEnabledStatusRequest) String() string {
 func (*UpdateChunkEnabledStatusRequest) ProtoMessage() {}
 
 func (x *UpdateChunkEnabledStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[61]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[70]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3948,7 +4540,7 @@ func (x *UpdateChunkEnabledStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateChunkEnabledStatusRequest.ProtoReflect.Descriptor instead.
 func (*UpdateChunkEnabledStatusRequest) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{61}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{70}
 }
 
 func (x *UpdateChunkEnabledStatusRequest) GetConfig() map[string]string {
@@ -3973,7 +4565,7 @@ type UpdateChunkEnabledStatusResponse struct {
 
 func (x *UpdateChunkEnabledStatusResponse) Reset() {
 	*x = UpdateChunkEnabledStatusResponse{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[62]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[71]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3985,7 +4577,7 @@ func (x *UpdateChunkEnabledStatusResponse) String() string {
 func (*UpdateChunkEnabledStatusResponse) ProtoMessage() {}
 
 func (x *UpdateChunkEnabledStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[62]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[71]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3998,7 +4590,7 @@ func (x *UpdateChunkEnabledStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateChunkEnabledStatusResponse.ProtoReflect.Descriptor instead.
 func (*UpdateChunkEnabledStatusResponse) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{62}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{71}
 }
 
 type UpdateChunkTagIDRequest struct {
@@ -4011,7 +4603,7 @@ type UpdateChunkTagIDRequest struct {
 
 func (x *UpdateChunkTagIDRequest) Reset() {
 	*x = UpdateChunkTagIDRequest{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[63]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[72]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4023,7 +4615,7 @@ func (x *UpdateChunkTagIDRequest) String() string {
 func (*UpdateChunkTagIDRequest) ProtoMessage() {}
 
 func (x *UpdateChunkTagIDRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[63]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[72]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4036,7 +4628,7 @@ func (x *UpdateChunkTagIDRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateChunkTagIDRequest.ProtoReflect.Descriptor instead.
 func (*UpdateChunkTagIDRequest) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{63}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{72}
 }
 
 func (x *UpdateChunkTagIDRequest) GetConfig() map[string]string {
@@ -4061,7 +4653,7 @@ type UpdateChunkTagIDResponse struct {
 
 func (x *UpdateChunkTagIDResponse) Reset() {
 	*x = UpdateChunkTagIDResponse{}
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[64]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[73]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4073,7 +4665,7 @@ func (x *UpdateChunkTagIDResponse) String() string {
 func (*UpdateChunkTagIDResponse) ProtoMessage() {}
 
 func (x *UpdateChunkTagIDResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[64]
+	mi := &file_sdk_plugin_proto_plugin_proto_msgTypes[73]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4086,7 +4678,7 @@ func (x *UpdateChunkTagIDResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateChunkTagIDResponse.ProtoReflect.Descriptor instead.
 func (*UpdateChunkTagIDResponse) Descriptor() ([]byte, []int) {
-	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{64}
+	return file_sdk_plugin_proto_plugin_proto_rawDescGZIP(), []int{73}
 }
 
 var File_sdk_plugin_proto_plugin_proto protoreflect.FileDescriptor
@@ -4330,7 +4922,62 @@ const file_sdk_plugin_proto_plugin_proto_rawDesc = "" +
 	"\vPluginModel\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\"\n" +
-	"\fcapabilities\x18\x03 \x03(\tR\fcapabilities\"\x1a\n" +
+	"\fcapabilities\x18\x03 \x03(\tR\fcapabilities\"\xc8\x02\n" +
+	"\vChatRequest\x12B\n" +
+	"\x06config\x18\x01 \x03(\v2*.weknora.plugin.v1.ChatRequest.ConfigEntryR\x06config\x12\x14\n" +
+	"\x05model\x18\x02 \x01(\tR\x05model\x12:\n" +
+	"\bmessages\x18\x03 \x03(\v2\x1e.weknora.plugin.v1.ChatMessageR\bmessages\x12 \n" +
+	"\vtemperature\x18\x04 \x01(\x01R\vtemperature\x12\x13\n" +
+	"\x05top_p\x18\x05 \x01(\x01R\x04topP\x12\x1d\n" +
+	"\n" +
+	"max_tokens\x18\x06 \x01(\x05R\tmaxTokens\x12\x12\n" +
+	"\x04seed\x18\a \x01(\x05R\x04seed\x1a9\n" +
+	"\vConfigEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x80\x01\n" +
+	"\vChatMessage\x12\x12\n" +
+	"\x04role\x18\x01 \x01(\tR\x04role\x12\x18\n" +
+	"\acontent\x18\x02 \x01(\tR\acontent\x12+\n" +
+	"\x11reasoning_content\x18\x03 \x01(\tR\x10reasoningContent\x12\x16\n" +
+	"\x06images\x18\x04 \x03(\tR\x06images\"\x82\x02\n" +
+	"\tChatChunk\x12\x18\n" +
+	"\acontent\x18\x01 \x01(\tR\acontent\x12+\n" +
+	"\x11reasoning_content\x18\x02 \x01(\tR\x10reasoningContent\x12#\n" +
+	"\rfinish_reason\x18\x03 \x01(\tR\ffinishReason\x12#\n" +
+	"\rprompt_tokens\x18\x04 \x01(\x05R\fpromptTokens\x12+\n" +
+	"\x11completion_tokens\x18\x05 \x01(\x05R\x10completionTokens\x12!\n" +
+	"\ftotal_tokens\x18\x06 \x01(\x05R\vtotalTokens\x12\x14\n" +
+	"\x05error\x18\a \x01(\tR\x05error\"\xbc\x01\n" +
+	"\fEmbedRequest\x12C\n" +
+	"\x06config\x18\x01 \x03(\v2+.weknora.plugin.v1.EmbedRequest.ConfigEntryR\x06config\x12\x14\n" +
+	"\x05model\x18\x02 \x01(\tR\x05model\x12\x16\n" +
+	"\x06inputs\x18\x03 \x03(\tR\x06inputs\x1a9\n" +
+	"\vConfigEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"m\n" +
+	"\rEmbedResponse\x12<\n" +
+	"\n" +
+	"embeddings\x18\x01 \x03(\v2\x1c.weknora.plugin.v1.EmbeddingR\n" +
+	"embeddings\x12\x1e\n" +
+	"\n" +
+	"dimensions\x18\x02 \x01(\x05R\n" +
+	"dimensions\"#\n" +
+	"\tEmbedding\x12\x16\n" +
+	"\x06values\x18\x01 \x03(\x02R\x06values\"\xef\x01\n" +
+	"\rRerankRequest\x12D\n" +
+	"\x06config\x18\x01 \x03(\v2,.weknora.plugin.v1.RerankRequest.ConfigEntryR\x06config\x12\x14\n" +
+	"\x05model\x18\x02 \x01(\tR\x05model\x12\x14\n" +
+	"\x05query\x18\x03 \x01(\tR\x05query\x12\x1c\n" +
+	"\tdocuments\x18\x04 \x03(\tR\tdocuments\x12\x13\n" +
+	"\x05top_n\x18\x05 \x01(\x05R\x04topN\x1a9\n" +
+	"\vConfigEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"K\n" +
+	"\x0eRerankResponse\x129\n" +
+	"\aresults\x18\x01 \x03(\v2\x1f.weknora.plugin.v1.RerankResultR\aresults\":\n" +
+	"\fRerankResult\x12\x14\n" +
+	"\x05index\x18\x01 \x01(\x05R\x05index\x12\x14\n" +
+	"\x05score\x18\x02 \x01(\x01R\x05score\"\x1a\n" +
 	"\x18RetrieverDescribeRequest\"\xab\x01\n" +
 	"\x19RetrieverDescribeResponse\x12\x1f\n" +
 	"\vengine_type\x18\x01 \x01(\tR\n" +
@@ -4488,11 +5135,14 @@ const file_sdk_plugin_proto_plugin_proto_rawDesc = "" +
 	"\x05Parse\x12-.weknora.plugin.v1.DocumentParserParseRequest\x1a..weknora.plugin.v1.DocumentParserParseResponse2\xcd\x01\n" +
 	"\x0fWebSearchPlugin\x12e\n" +
 	"\bDescribe\x12+.weknora.plugin.v1.WebSearchDescribeRequest\x1a,.weknora.plugin.v1.WebSearchDescribeResponse\x12S\n" +
-	"\x06Search\x12#.weknora.plugin.v1.WebSearchRequest\x1a$.weknora.plugin.v1.WebSearchResponse2\xdf\x01\n" +
+	"\x06Search\x12#.weknora.plugin.v1.WebSearchRequest\x1a$.weknora.plugin.v1.WebSearchResponse2\xc2\x03\n" +
 	"\x13ModelProviderPlugin\x12m\n" +
 	"\bDescribe\x12/.weknora.plugin.v1.ModelProviderDescribeRequest\x1a0.weknora.plugin.v1.ModelProviderDescribeResponse\x12Y\n" +
 	"\n" +
-	"ListModels\x12$.weknora.plugin.v1.ListModelsRequest\x1a%.weknora.plugin.v1.ListModelsResponse2\xb3\b\n" +
+	"ListModels\x12$.weknora.plugin.v1.ListModelsRequest\x1a%.weknora.plugin.v1.ListModelsResponse\x12F\n" +
+	"\x04Chat\x12\x1e.weknora.plugin.v1.ChatRequest\x1a\x1c.weknora.plugin.v1.ChatChunk0\x01\x12J\n" +
+	"\x05Embed\x12\x1f.weknora.plugin.v1.EmbedRequest\x1a .weknora.plugin.v1.EmbedResponse\x12M\n" +
+	"\x06Rerank\x12 .weknora.plugin.v1.RerankRequest\x1a!.weknora.plugin.v1.RerankResponse2\xb3\b\n" +
 	"\x0fRetrieverPlugin\x12e\n" +
 	"\bDescribe\x12+.weknora.plugin.v1.RetrieverDescribeRequest\x1a,.weknora.plugin.v1.RetrieverDescribeResponse\x12S\n" +
 	"\bRetrieve\x12\".weknora.plugin.v1.RetrieveRequest\x1a#.weknora.plugin.v1.RetrieveResponse\x12V\n" +
@@ -4524,7 +5174,7 @@ func file_sdk_plugin_proto_plugin_proto_rawDescGZIP() []byte {
 }
 
 var file_sdk_plugin_proto_plugin_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_sdk_plugin_proto_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 94)
+var file_sdk_plugin_proto_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 106)
 var file_sdk_plugin_proto_plugin_proto_goTypes = []any{
 	(SyncErrorCode)(0),                       // 0: weknora.plugin.v1.SyncErrorCode
 	(HealthCheckResponse_Status)(0),          // 1: weknora.plugin.v1.HealthCheckResponse.Status
@@ -4571,162 +5221,186 @@ var file_sdk_plugin_proto_plugin_proto_goTypes = []any{
 	(*ListModelsRequest)(nil),                // 42: weknora.plugin.v1.ListModelsRequest
 	(*ListModelsResponse)(nil),               // 43: weknora.plugin.v1.ListModelsResponse
 	(*PluginModel)(nil),                      // 44: weknora.plugin.v1.PluginModel
-	(*RetrieverDescribeRequest)(nil),         // 45: weknora.plugin.v1.RetrieverDescribeRequest
-	(*RetrieverDescribeResponse)(nil),        // 46: weknora.plugin.v1.RetrieverDescribeResponse
-	(*RetrieveRequest)(nil),                  // 47: weknora.plugin.v1.RetrieveRequest
-	(*RetrieveResponse)(nil),                 // 48: weknora.plugin.v1.RetrieveResponse
-	(*RetrieveHit)(nil),                      // 49: weknora.plugin.v1.RetrieveHit
-	(*IndexRecord)(nil),                      // 50: weknora.plugin.v1.IndexRecord
-	(*SaveIndexRequest)(nil),                 // 51: weknora.plugin.v1.SaveIndexRequest
-	(*SaveIndexResponse)(nil),                // 52: weknora.plugin.v1.SaveIndexResponse
-	(*BatchSaveIndexRequest)(nil),            // 53: weknora.plugin.v1.BatchSaveIndexRequest
-	(*BatchSaveIndexResponse)(nil),           // 54: weknora.plugin.v1.BatchSaveIndexResponse
-	(*DeleteByChunkIDsRequest)(nil),          // 55: weknora.plugin.v1.DeleteByChunkIDsRequest
-	(*DeleteByChunkIDsResponse)(nil),         // 56: weknora.plugin.v1.DeleteByChunkIDsResponse
-	(*DeleteBySourceIDsRequest)(nil),         // 57: weknora.plugin.v1.DeleteBySourceIDsRequest
-	(*DeleteBySourceIDsResponse)(nil),        // 58: weknora.plugin.v1.DeleteBySourceIDsResponse
-	(*DeleteByKnowledgeIDsRequest)(nil),      // 59: weknora.plugin.v1.DeleteByKnowledgeIDsRequest
-	(*DeleteByKnowledgeIDsResponse)(nil),     // 60: weknora.plugin.v1.DeleteByKnowledgeIDsResponse
-	(*CopyIndicesRequest)(nil),               // 61: weknora.plugin.v1.CopyIndicesRequest
-	(*CopyIndicesResponse)(nil),              // 62: weknora.plugin.v1.CopyIndicesResponse
-	(*UpdateChunkEnabledStatusRequest)(nil),  // 63: weknora.plugin.v1.UpdateChunkEnabledStatusRequest
-	(*UpdateChunkEnabledStatusResponse)(nil), // 64: weknora.plugin.v1.UpdateChunkEnabledStatusResponse
-	(*UpdateChunkTagIDRequest)(nil),          // 65: weknora.plugin.v1.UpdateChunkTagIDRequest
-	(*UpdateChunkTagIDResponse)(nil),         // 66: weknora.plugin.v1.UpdateChunkTagIDResponse
-	nil,                                      // 67: weknora.plugin.v1.ValidateConfigRequest.ConfigEntry
-	nil,                                      // 68: weknora.plugin.v1.ValidateCredentialsRequest.ConfigEntry
-	nil,                                      // 69: weknora.plugin.v1.ListResourcesRequest.ConfigEntry
-	nil,                                      // 70: weknora.plugin.v1.ResolveResourceAncestorsRequest.ConfigEntry
-	nil,                                      // 71: weknora.plugin.v1.FetchAllRequest.ConfigEntry
-	nil,                                      // 72: weknora.plugin.v1.Resource.MetadataEntry
-	nil,                                      // 73: weknora.plugin.v1.Document.MetadataEntry
-	nil,                                      // 74: weknora.plugin.v1.SyncRequest.ConfigEntry
-	nil,                                      // 75: weknora.plugin.v1.UpsertDocument.MetadataEntry
-	nil,                                      // 76: weknora.plugin.v1.DocumentParserParseRequest.ConfigEntry
-	nil,                                      // 77: weknora.plugin.v1.DocumentParserParseResponse.MetadataEntry
-	nil,                                      // 78: weknora.plugin.v1.WebSearchRequest.ConfigEntry
-	nil,                                      // 79: weknora.plugin.v1.ModelProviderDescribeResponse.DefaultUrlsEntry
-	nil,                                      // 80: weknora.plugin.v1.ListModelsRequest.ConfigEntry
-	nil,                                      // 81: weknora.plugin.v1.RetrieveRequest.ConfigEntry
-	nil,                                      // 82: weknora.plugin.v1.SaveIndexRequest.ConfigEntry
-	nil,                                      // 83: weknora.plugin.v1.SaveIndexRequest.ParamsEntry
-	nil,                                      // 84: weknora.plugin.v1.BatchSaveIndexRequest.ConfigEntry
-	nil,                                      // 85: weknora.plugin.v1.BatchSaveIndexRequest.ParamsEntry
-	nil,                                      // 86: weknora.plugin.v1.DeleteByChunkIDsRequest.ConfigEntry
-	nil,                                      // 87: weknora.plugin.v1.DeleteBySourceIDsRequest.ConfigEntry
-	nil,                                      // 88: weknora.plugin.v1.DeleteByKnowledgeIDsRequest.ConfigEntry
-	nil,                                      // 89: weknora.plugin.v1.CopyIndicesRequest.ConfigEntry
-	nil,                                      // 90: weknora.plugin.v1.CopyIndicesRequest.SourceToTargetKbIdMapEntry
-	nil,                                      // 91: weknora.plugin.v1.CopyIndicesRequest.SourceToTargetChunkIdMapEntry
-	nil,                                      // 92: weknora.plugin.v1.UpdateChunkEnabledStatusRequest.ConfigEntry
-	nil,                                      // 93: weknora.plugin.v1.UpdateChunkEnabledStatusRequest.ChunkStatusMapEntry
-	nil,                                      // 94: weknora.plugin.v1.UpdateChunkTagIDRequest.ConfigEntry
-	nil,                                      // 95: weknora.plugin.v1.UpdateChunkTagIDRequest.ChunkTagMapEntry
+	(*ChatRequest)(nil),                      // 45: weknora.plugin.v1.ChatRequest
+	(*ChatMessage)(nil),                      // 46: weknora.plugin.v1.ChatMessage
+	(*ChatChunk)(nil),                        // 47: weknora.plugin.v1.ChatChunk
+	(*EmbedRequest)(nil),                     // 48: weknora.plugin.v1.EmbedRequest
+	(*EmbedResponse)(nil),                    // 49: weknora.plugin.v1.EmbedResponse
+	(*Embedding)(nil),                        // 50: weknora.plugin.v1.Embedding
+	(*RerankRequest)(nil),                    // 51: weknora.plugin.v1.RerankRequest
+	(*RerankResponse)(nil),                   // 52: weknora.plugin.v1.RerankResponse
+	(*RerankResult)(nil),                     // 53: weknora.plugin.v1.RerankResult
+	(*RetrieverDescribeRequest)(nil),         // 54: weknora.plugin.v1.RetrieverDescribeRequest
+	(*RetrieverDescribeResponse)(nil),        // 55: weknora.plugin.v1.RetrieverDescribeResponse
+	(*RetrieveRequest)(nil),                  // 56: weknora.plugin.v1.RetrieveRequest
+	(*RetrieveResponse)(nil),                 // 57: weknora.plugin.v1.RetrieveResponse
+	(*RetrieveHit)(nil),                      // 58: weknora.plugin.v1.RetrieveHit
+	(*IndexRecord)(nil),                      // 59: weknora.plugin.v1.IndexRecord
+	(*SaveIndexRequest)(nil),                 // 60: weknora.plugin.v1.SaveIndexRequest
+	(*SaveIndexResponse)(nil),                // 61: weknora.plugin.v1.SaveIndexResponse
+	(*BatchSaveIndexRequest)(nil),            // 62: weknora.plugin.v1.BatchSaveIndexRequest
+	(*BatchSaveIndexResponse)(nil),           // 63: weknora.plugin.v1.BatchSaveIndexResponse
+	(*DeleteByChunkIDsRequest)(nil),          // 64: weknora.plugin.v1.DeleteByChunkIDsRequest
+	(*DeleteByChunkIDsResponse)(nil),         // 65: weknora.plugin.v1.DeleteByChunkIDsResponse
+	(*DeleteBySourceIDsRequest)(nil),         // 66: weknora.plugin.v1.DeleteBySourceIDsRequest
+	(*DeleteBySourceIDsResponse)(nil),        // 67: weknora.plugin.v1.DeleteBySourceIDsResponse
+	(*DeleteByKnowledgeIDsRequest)(nil),      // 68: weknora.plugin.v1.DeleteByKnowledgeIDsRequest
+	(*DeleteByKnowledgeIDsResponse)(nil),     // 69: weknora.plugin.v1.DeleteByKnowledgeIDsResponse
+	(*CopyIndicesRequest)(nil),               // 70: weknora.plugin.v1.CopyIndicesRequest
+	(*CopyIndicesResponse)(nil),              // 71: weknora.plugin.v1.CopyIndicesResponse
+	(*UpdateChunkEnabledStatusRequest)(nil),  // 72: weknora.plugin.v1.UpdateChunkEnabledStatusRequest
+	(*UpdateChunkEnabledStatusResponse)(nil), // 73: weknora.plugin.v1.UpdateChunkEnabledStatusResponse
+	(*UpdateChunkTagIDRequest)(nil),          // 74: weknora.plugin.v1.UpdateChunkTagIDRequest
+	(*UpdateChunkTagIDResponse)(nil),         // 75: weknora.plugin.v1.UpdateChunkTagIDResponse
+	nil,                                      // 76: weknora.plugin.v1.ValidateConfigRequest.ConfigEntry
+	nil,                                      // 77: weknora.plugin.v1.ValidateCredentialsRequest.ConfigEntry
+	nil,                                      // 78: weknora.plugin.v1.ListResourcesRequest.ConfigEntry
+	nil,                                      // 79: weknora.plugin.v1.ResolveResourceAncestorsRequest.ConfigEntry
+	nil,                                      // 80: weknora.plugin.v1.FetchAllRequest.ConfigEntry
+	nil,                                      // 81: weknora.plugin.v1.Resource.MetadataEntry
+	nil,                                      // 82: weknora.plugin.v1.Document.MetadataEntry
+	nil,                                      // 83: weknora.plugin.v1.SyncRequest.ConfigEntry
+	nil,                                      // 84: weknora.plugin.v1.UpsertDocument.MetadataEntry
+	nil,                                      // 85: weknora.plugin.v1.DocumentParserParseRequest.ConfigEntry
+	nil,                                      // 86: weknora.plugin.v1.DocumentParserParseResponse.MetadataEntry
+	nil,                                      // 87: weknora.plugin.v1.WebSearchRequest.ConfigEntry
+	nil,                                      // 88: weknora.plugin.v1.ModelProviderDescribeResponse.DefaultUrlsEntry
+	nil,                                      // 89: weknora.plugin.v1.ListModelsRequest.ConfigEntry
+	nil,                                      // 90: weknora.plugin.v1.ChatRequest.ConfigEntry
+	nil,                                      // 91: weknora.plugin.v1.EmbedRequest.ConfigEntry
+	nil,                                      // 92: weknora.plugin.v1.RerankRequest.ConfigEntry
+	nil,                                      // 93: weknora.plugin.v1.RetrieveRequest.ConfigEntry
+	nil,                                      // 94: weknora.plugin.v1.SaveIndexRequest.ConfigEntry
+	nil,                                      // 95: weknora.plugin.v1.SaveIndexRequest.ParamsEntry
+	nil,                                      // 96: weknora.plugin.v1.BatchSaveIndexRequest.ConfigEntry
+	nil,                                      // 97: weknora.plugin.v1.BatchSaveIndexRequest.ParamsEntry
+	nil,                                      // 98: weknora.plugin.v1.DeleteByChunkIDsRequest.ConfigEntry
+	nil,                                      // 99: weknora.plugin.v1.DeleteBySourceIDsRequest.ConfigEntry
+	nil,                                      // 100: weknora.plugin.v1.DeleteByKnowledgeIDsRequest.ConfigEntry
+	nil,                                      // 101: weknora.plugin.v1.CopyIndicesRequest.ConfigEntry
+	nil,                                      // 102: weknora.plugin.v1.CopyIndicesRequest.SourceToTargetKbIdMapEntry
+	nil,                                      // 103: weknora.plugin.v1.CopyIndicesRequest.SourceToTargetChunkIdMapEntry
+	nil,                                      // 104: weknora.plugin.v1.UpdateChunkEnabledStatusRequest.ConfigEntry
+	nil,                                      // 105: weknora.plugin.v1.UpdateChunkEnabledStatusRequest.ChunkStatusMapEntry
+	nil,                                      // 106: weknora.plugin.v1.UpdateChunkTagIDRequest.ConfigEntry
+	nil,                                      // 107: weknora.plugin.v1.UpdateChunkTagIDRequest.ChunkTagMapEntry
 }
 var file_sdk_plugin_proto_plugin_proto_depIdxs = []int32{
-	1,  // 0: weknora.plugin.v1.HealthCheckResponse.status:type_name -> weknora.plugin.v1.HealthCheckResponse.Status
-	67, // 1: weknora.plugin.v1.ValidateConfigRequest.config:type_name -> weknora.plugin.v1.ValidateConfigRequest.ConfigEntry
-	8,  // 2: weknora.plugin.v1.ValidateConfigResponse.errors:type_name -> weknora.plugin.v1.FieldError
-	68, // 3: weknora.plugin.v1.ValidateCredentialsRequest.config:type_name -> weknora.plugin.v1.ValidateCredentialsRequest.ConfigEntry
-	69, // 4: weknora.plugin.v1.ListResourcesRequest.config:type_name -> weknora.plugin.v1.ListResourcesRequest.ConfigEntry
-	19, // 5: weknora.plugin.v1.ListResourcesResponse.resources:type_name -> weknora.plugin.v1.Resource
-	70, // 6: weknora.plugin.v1.ResolveResourceAncestorsRequest.config:type_name -> weknora.plugin.v1.ResolveResourceAncestorsRequest.ConfigEntry
-	71, // 7: weknora.plugin.v1.FetchAllRequest.config:type_name -> weknora.plugin.v1.FetchAllRequest.ConfigEntry
-	20, // 8: weknora.plugin.v1.FetchAllResponse.documents:type_name -> weknora.plugin.v1.Document
-	72, // 9: weknora.plugin.v1.Resource.metadata:type_name -> weknora.plugin.v1.Resource.MetadataEntry
-	73, // 10: weknora.plugin.v1.Document.metadata:type_name -> weknora.plugin.v1.Document.MetadataEntry
-	74, // 11: weknora.plugin.v1.SyncRequest.config:type_name -> weknora.plugin.v1.SyncRequest.ConfigEntry
-	23, // 12: weknora.plugin.v1.SyncEvent.upsert_document:type_name -> weknora.plugin.v1.UpsertDocument
-	24, // 13: weknora.plugin.v1.SyncEvent.delete_document:type_name -> weknora.plugin.v1.DeleteDocument
-	25, // 14: weknora.plugin.v1.SyncEvent.progress:type_name -> weknora.plugin.v1.Progress
-	26, // 15: weknora.plugin.v1.SyncEvent.checkpoint:type_name -> weknora.plugin.v1.Checkpoint
-	27, // 16: weknora.plugin.v1.SyncEvent.error:type_name -> weknora.plugin.v1.SyncError
-	28, // 17: weknora.plugin.v1.SyncEvent.completed:type_name -> weknora.plugin.v1.Completed
-	75, // 18: weknora.plugin.v1.UpsertDocument.metadata:type_name -> weknora.plugin.v1.UpsertDocument.MetadataEntry
-	0,  // 19: weknora.plugin.v1.SyncError.code:type_name -> weknora.plugin.v1.SyncErrorCode
-	76, // 20: weknora.plugin.v1.DocumentParserParseRequest.config:type_name -> weknora.plugin.v1.DocumentParserParseRequest.ConfigEntry
-	34, // 21: weknora.plugin.v1.DocumentParserParseResponse.images:type_name -> weknora.plugin.v1.ParsedImage
-	77, // 22: weknora.plugin.v1.DocumentParserParseResponse.metadata:type_name -> weknora.plugin.v1.DocumentParserParseResponse.MetadataEntry
-	29, // 23: weknora.plugin.v1.WebSearchDescribeResponse.config_fields:type_name -> weknora.plugin.v1.ExtensionConfigField
-	78, // 24: weknora.plugin.v1.WebSearchRequest.config:type_name -> weknora.plugin.v1.WebSearchRequest.ConfigEntry
-	39, // 25: weknora.plugin.v1.WebSearchResponse.results:type_name -> weknora.plugin.v1.WebSearchResult
-	79, // 26: weknora.plugin.v1.ModelProviderDescribeResponse.default_urls:type_name -> weknora.plugin.v1.ModelProviderDescribeResponse.DefaultUrlsEntry
-	29, // 27: weknora.plugin.v1.ModelProviderDescribeResponse.config_fields:type_name -> weknora.plugin.v1.ExtensionConfigField
-	80, // 28: weknora.plugin.v1.ListModelsRequest.config:type_name -> weknora.plugin.v1.ListModelsRequest.ConfigEntry
-	44, // 29: weknora.plugin.v1.ListModelsResponse.models:type_name -> weknora.plugin.v1.PluginModel
-	81, // 30: weknora.plugin.v1.RetrieveRequest.config:type_name -> weknora.plugin.v1.RetrieveRequest.ConfigEntry
-	49, // 31: weknora.plugin.v1.RetrieveResponse.results:type_name -> weknora.plugin.v1.RetrieveHit
-	82, // 32: weknora.plugin.v1.SaveIndexRequest.config:type_name -> weknora.plugin.v1.SaveIndexRequest.ConfigEntry
-	50, // 33: weknora.plugin.v1.SaveIndexRequest.index:type_name -> weknora.plugin.v1.IndexRecord
-	83, // 34: weknora.plugin.v1.SaveIndexRequest.params:type_name -> weknora.plugin.v1.SaveIndexRequest.ParamsEntry
-	84, // 35: weknora.plugin.v1.BatchSaveIndexRequest.config:type_name -> weknora.plugin.v1.BatchSaveIndexRequest.ConfigEntry
-	50, // 36: weknora.plugin.v1.BatchSaveIndexRequest.indices:type_name -> weknora.plugin.v1.IndexRecord
-	85, // 37: weknora.plugin.v1.BatchSaveIndexRequest.params:type_name -> weknora.plugin.v1.BatchSaveIndexRequest.ParamsEntry
-	86, // 38: weknora.plugin.v1.DeleteByChunkIDsRequest.config:type_name -> weknora.plugin.v1.DeleteByChunkIDsRequest.ConfigEntry
-	87, // 39: weknora.plugin.v1.DeleteBySourceIDsRequest.config:type_name -> weknora.plugin.v1.DeleteBySourceIDsRequest.ConfigEntry
-	88, // 40: weknora.plugin.v1.DeleteByKnowledgeIDsRequest.config:type_name -> weknora.plugin.v1.DeleteByKnowledgeIDsRequest.ConfigEntry
-	89, // 41: weknora.plugin.v1.CopyIndicesRequest.config:type_name -> weknora.plugin.v1.CopyIndicesRequest.ConfigEntry
-	90, // 42: weknora.plugin.v1.CopyIndicesRequest.source_to_target_kb_id_map:type_name -> weknora.plugin.v1.CopyIndicesRequest.SourceToTargetKbIdMapEntry
-	91, // 43: weknora.plugin.v1.CopyIndicesRequest.source_to_target_chunk_id_map:type_name -> weknora.plugin.v1.CopyIndicesRequest.SourceToTargetChunkIdMapEntry
-	92, // 44: weknora.plugin.v1.UpdateChunkEnabledStatusRequest.config:type_name -> weknora.plugin.v1.UpdateChunkEnabledStatusRequest.ConfigEntry
-	93, // 45: weknora.plugin.v1.UpdateChunkEnabledStatusRequest.chunk_status_map:type_name -> weknora.plugin.v1.UpdateChunkEnabledStatusRequest.ChunkStatusMapEntry
-	94, // 46: weknora.plugin.v1.UpdateChunkTagIDRequest.config:type_name -> weknora.plugin.v1.UpdateChunkTagIDRequest.ConfigEntry
-	95, // 47: weknora.plugin.v1.UpdateChunkTagIDRequest.chunk_tag_map:type_name -> weknora.plugin.v1.UpdateChunkTagIDRequest.ChunkTagMapEntry
-	2,  // 48: weknora.plugin.v1.PluginLifecycle.GetInfo:input_type -> weknora.plugin.v1.GetInfoRequest
-	4,  // 49: weknora.plugin.v1.PluginLifecycle.HealthCheck:input_type -> weknora.plugin.v1.HealthCheckRequest
-	6,  // 50: weknora.plugin.v1.PluginLifecycle.ValidateConfig:input_type -> weknora.plugin.v1.ValidateConfigRequest
-	9,  // 51: weknora.plugin.v1.PluginLifecycle.Shutdown:input_type -> weknora.plugin.v1.ShutdownRequest
-	30, // 52: weknora.plugin.v1.DocumentParserPlugin.Describe:input_type -> weknora.plugin.v1.DocumentParserDescribeRequest
-	32, // 53: weknora.plugin.v1.DocumentParserPlugin.Parse:input_type -> weknora.plugin.v1.DocumentParserParseRequest
-	35, // 54: weknora.plugin.v1.WebSearchPlugin.Describe:input_type -> weknora.plugin.v1.WebSearchDescribeRequest
-	37, // 55: weknora.plugin.v1.WebSearchPlugin.Search:input_type -> weknora.plugin.v1.WebSearchRequest
-	40, // 56: weknora.plugin.v1.ModelProviderPlugin.Describe:input_type -> weknora.plugin.v1.ModelProviderDescribeRequest
-	42, // 57: weknora.plugin.v1.ModelProviderPlugin.ListModels:input_type -> weknora.plugin.v1.ListModelsRequest
-	45, // 58: weknora.plugin.v1.RetrieverPlugin.Describe:input_type -> weknora.plugin.v1.RetrieverDescribeRequest
-	47, // 59: weknora.plugin.v1.RetrieverPlugin.Retrieve:input_type -> weknora.plugin.v1.RetrieveRequest
-	51, // 60: weknora.plugin.v1.RetrieverPlugin.SaveIndex:input_type -> weknora.plugin.v1.SaveIndexRequest
-	53, // 61: weknora.plugin.v1.RetrieverPlugin.BatchSaveIndex:input_type -> weknora.plugin.v1.BatchSaveIndexRequest
-	55, // 62: weknora.plugin.v1.RetrieverPlugin.DeleteByChunkIDs:input_type -> weknora.plugin.v1.DeleteByChunkIDsRequest
-	57, // 63: weknora.plugin.v1.RetrieverPlugin.DeleteBySourceIDs:input_type -> weknora.plugin.v1.DeleteBySourceIDsRequest
-	59, // 64: weknora.plugin.v1.RetrieverPlugin.DeleteByKnowledgeIDs:input_type -> weknora.plugin.v1.DeleteByKnowledgeIDsRequest
-	61, // 65: weknora.plugin.v1.RetrieverPlugin.CopyIndices:input_type -> weknora.plugin.v1.CopyIndicesRequest
-	63, // 66: weknora.plugin.v1.RetrieverPlugin.UpdateChunkEnabledStatus:input_type -> weknora.plugin.v1.UpdateChunkEnabledStatusRequest
-	65, // 67: weknora.plugin.v1.RetrieverPlugin.UpdateChunkTagID:input_type -> weknora.plugin.v1.UpdateChunkTagIDRequest
-	11, // 68: weknora.plugin.v1.DataSourcePlugin.ValidateCredentials:input_type -> weknora.plugin.v1.ValidateCredentialsRequest
-	13, // 69: weknora.plugin.v1.DataSourcePlugin.ListResources:input_type -> weknora.plugin.v1.ListResourcesRequest
-	15, // 70: weknora.plugin.v1.DataSourcePlugin.ResolveResourceAncestors:input_type -> weknora.plugin.v1.ResolveResourceAncestorsRequest
-	17, // 71: weknora.plugin.v1.DataSourcePlugin.FetchAll:input_type -> weknora.plugin.v1.FetchAllRequest
-	21, // 72: weknora.plugin.v1.DataSourcePlugin.Sync:input_type -> weknora.plugin.v1.SyncRequest
-	3,  // 73: weknora.plugin.v1.PluginLifecycle.GetInfo:output_type -> weknora.plugin.v1.PluginInfo
-	5,  // 74: weknora.plugin.v1.PluginLifecycle.HealthCheck:output_type -> weknora.plugin.v1.HealthCheckResponse
-	7,  // 75: weknora.plugin.v1.PluginLifecycle.ValidateConfig:output_type -> weknora.plugin.v1.ValidateConfigResponse
-	10, // 76: weknora.plugin.v1.PluginLifecycle.Shutdown:output_type -> weknora.plugin.v1.ShutdownResponse
-	31, // 77: weknora.plugin.v1.DocumentParserPlugin.Describe:output_type -> weknora.plugin.v1.DocumentParserDescribeResponse
-	33, // 78: weknora.plugin.v1.DocumentParserPlugin.Parse:output_type -> weknora.plugin.v1.DocumentParserParseResponse
-	36, // 79: weknora.plugin.v1.WebSearchPlugin.Describe:output_type -> weknora.plugin.v1.WebSearchDescribeResponse
-	38, // 80: weknora.plugin.v1.WebSearchPlugin.Search:output_type -> weknora.plugin.v1.WebSearchResponse
-	41, // 81: weknora.plugin.v1.ModelProviderPlugin.Describe:output_type -> weknora.plugin.v1.ModelProviderDescribeResponse
-	43, // 82: weknora.plugin.v1.ModelProviderPlugin.ListModels:output_type -> weknora.plugin.v1.ListModelsResponse
-	46, // 83: weknora.plugin.v1.RetrieverPlugin.Describe:output_type -> weknora.plugin.v1.RetrieverDescribeResponse
-	48, // 84: weknora.plugin.v1.RetrieverPlugin.Retrieve:output_type -> weknora.plugin.v1.RetrieveResponse
-	52, // 85: weknora.plugin.v1.RetrieverPlugin.SaveIndex:output_type -> weknora.plugin.v1.SaveIndexResponse
-	54, // 86: weknora.plugin.v1.RetrieverPlugin.BatchSaveIndex:output_type -> weknora.plugin.v1.BatchSaveIndexResponse
-	56, // 87: weknora.plugin.v1.RetrieverPlugin.DeleteByChunkIDs:output_type -> weknora.plugin.v1.DeleteByChunkIDsResponse
-	58, // 88: weknora.plugin.v1.RetrieverPlugin.DeleteBySourceIDs:output_type -> weknora.plugin.v1.DeleteBySourceIDsResponse
-	60, // 89: weknora.plugin.v1.RetrieverPlugin.DeleteByKnowledgeIDs:output_type -> weknora.plugin.v1.DeleteByKnowledgeIDsResponse
-	62, // 90: weknora.plugin.v1.RetrieverPlugin.CopyIndices:output_type -> weknora.plugin.v1.CopyIndicesResponse
-	64, // 91: weknora.plugin.v1.RetrieverPlugin.UpdateChunkEnabledStatus:output_type -> weknora.plugin.v1.UpdateChunkEnabledStatusResponse
-	66, // 92: weknora.plugin.v1.RetrieverPlugin.UpdateChunkTagID:output_type -> weknora.plugin.v1.UpdateChunkTagIDResponse
-	12, // 93: weknora.plugin.v1.DataSourcePlugin.ValidateCredentials:output_type -> weknora.plugin.v1.ValidateCredentialsResponse
-	14, // 94: weknora.plugin.v1.DataSourcePlugin.ListResources:output_type -> weknora.plugin.v1.ListResourcesResponse
-	16, // 95: weknora.plugin.v1.DataSourcePlugin.ResolveResourceAncestors:output_type -> weknora.plugin.v1.ResolveResourceAncestorsResponse
-	18, // 96: weknora.plugin.v1.DataSourcePlugin.FetchAll:output_type -> weknora.plugin.v1.FetchAllResponse
-	22, // 97: weknora.plugin.v1.DataSourcePlugin.Sync:output_type -> weknora.plugin.v1.SyncEvent
-	73, // [73:98] is the sub-list for method output_type
-	48, // [48:73] is the sub-list for method input_type
-	48, // [48:48] is the sub-list for extension type_name
-	48, // [48:48] is the sub-list for extension extendee
-	0,  // [0:48] is the sub-list for field type_name
+	1,   // 0: weknora.plugin.v1.HealthCheckResponse.status:type_name -> weknora.plugin.v1.HealthCheckResponse.Status
+	76,  // 1: weknora.plugin.v1.ValidateConfigRequest.config:type_name -> weknora.plugin.v1.ValidateConfigRequest.ConfigEntry
+	8,   // 2: weknora.plugin.v1.ValidateConfigResponse.errors:type_name -> weknora.plugin.v1.FieldError
+	77,  // 3: weknora.plugin.v1.ValidateCredentialsRequest.config:type_name -> weknora.plugin.v1.ValidateCredentialsRequest.ConfigEntry
+	78,  // 4: weknora.plugin.v1.ListResourcesRequest.config:type_name -> weknora.plugin.v1.ListResourcesRequest.ConfigEntry
+	19,  // 5: weknora.plugin.v1.ListResourcesResponse.resources:type_name -> weknora.plugin.v1.Resource
+	79,  // 6: weknora.plugin.v1.ResolveResourceAncestorsRequest.config:type_name -> weknora.plugin.v1.ResolveResourceAncestorsRequest.ConfigEntry
+	80,  // 7: weknora.plugin.v1.FetchAllRequest.config:type_name -> weknora.plugin.v1.FetchAllRequest.ConfigEntry
+	20,  // 8: weknora.plugin.v1.FetchAllResponse.documents:type_name -> weknora.plugin.v1.Document
+	81,  // 9: weknora.plugin.v1.Resource.metadata:type_name -> weknora.plugin.v1.Resource.MetadataEntry
+	82,  // 10: weknora.plugin.v1.Document.metadata:type_name -> weknora.plugin.v1.Document.MetadataEntry
+	83,  // 11: weknora.plugin.v1.SyncRequest.config:type_name -> weknora.plugin.v1.SyncRequest.ConfigEntry
+	23,  // 12: weknora.plugin.v1.SyncEvent.upsert_document:type_name -> weknora.plugin.v1.UpsertDocument
+	24,  // 13: weknora.plugin.v1.SyncEvent.delete_document:type_name -> weknora.plugin.v1.DeleteDocument
+	25,  // 14: weknora.plugin.v1.SyncEvent.progress:type_name -> weknora.plugin.v1.Progress
+	26,  // 15: weknora.plugin.v1.SyncEvent.checkpoint:type_name -> weknora.plugin.v1.Checkpoint
+	27,  // 16: weknora.plugin.v1.SyncEvent.error:type_name -> weknora.plugin.v1.SyncError
+	28,  // 17: weknora.plugin.v1.SyncEvent.completed:type_name -> weknora.plugin.v1.Completed
+	84,  // 18: weknora.plugin.v1.UpsertDocument.metadata:type_name -> weknora.plugin.v1.UpsertDocument.MetadataEntry
+	0,   // 19: weknora.plugin.v1.SyncError.code:type_name -> weknora.plugin.v1.SyncErrorCode
+	85,  // 20: weknora.plugin.v1.DocumentParserParseRequest.config:type_name -> weknora.plugin.v1.DocumentParserParseRequest.ConfigEntry
+	34,  // 21: weknora.plugin.v1.DocumentParserParseResponse.images:type_name -> weknora.plugin.v1.ParsedImage
+	86,  // 22: weknora.plugin.v1.DocumentParserParseResponse.metadata:type_name -> weknora.plugin.v1.DocumentParserParseResponse.MetadataEntry
+	29,  // 23: weknora.plugin.v1.WebSearchDescribeResponse.config_fields:type_name -> weknora.plugin.v1.ExtensionConfigField
+	87,  // 24: weknora.plugin.v1.WebSearchRequest.config:type_name -> weknora.plugin.v1.WebSearchRequest.ConfigEntry
+	39,  // 25: weknora.plugin.v1.WebSearchResponse.results:type_name -> weknora.plugin.v1.WebSearchResult
+	88,  // 26: weknora.plugin.v1.ModelProviderDescribeResponse.default_urls:type_name -> weknora.plugin.v1.ModelProviderDescribeResponse.DefaultUrlsEntry
+	29,  // 27: weknora.plugin.v1.ModelProviderDescribeResponse.config_fields:type_name -> weknora.plugin.v1.ExtensionConfigField
+	89,  // 28: weknora.plugin.v1.ListModelsRequest.config:type_name -> weknora.plugin.v1.ListModelsRequest.ConfigEntry
+	44,  // 29: weknora.plugin.v1.ListModelsResponse.models:type_name -> weknora.plugin.v1.PluginModel
+	90,  // 30: weknora.plugin.v1.ChatRequest.config:type_name -> weknora.plugin.v1.ChatRequest.ConfigEntry
+	46,  // 31: weknora.plugin.v1.ChatRequest.messages:type_name -> weknora.plugin.v1.ChatMessage
+	91,  // 32: weknora.plugin.v1.EmbedRequest.config:type_name -> weknora.plugin.v1.EmbedRequest.ConfigEntry
+	50,  // 33: weknora.plugin.v1.EmbedResponse.embeddings:type_name -> weknora.plugin.v1.Embedding
+	92,  // 34: weknora.plugin.v1.RerankRequest.config:type_name -> weknora.plugin.v1.RerankRequest.ConfigEntry
+	53,  // 35: weknora.plugin.v1.RerankResponse.results:type_name -> weknora.plugin.v1.RerankResult
+	93,  // 36: weknora.plugin.v1.RetrieveRequest.config:type_name -> weknora.plugin.v1.RetrieveRequest.ConfigEntry
+	58,  // 37: weknora.plugin.v1.RetrieveResponse.results:type_name -> weknora.plugin.v1.RetrieveHit
+	94,  // 38: weknora.plugin.v1.SaveIndexRequest.config:type_name -> weknora.plugin.v1.SaveIndexRequest.ConfigEntry
+	59,  // 39: weknora.plugin.v1.SaveIndexRequest.index:type_name -> weknora.plugin.v1.IndexRecord
+	95,  // 40: weknora.plugin.v1.SaveIndexRequest.params:type_name -> weknora.plugin.v1.SaveIndexRequest.ParamsEntry
+	96,  // 41: weknora.plugin.v1.BatchSaveIndexRequest.config:type_name -> weknora.plugin.v1.BatchSaveIndexRequest.ConfigEntry
+	59,  // 42: weknora.plugin.v1.BatchSaveIndexRequest.indices:type_name -> weknora.plugin.v1.IndexRecord
+	97,  // 43: weknora.plugin.v1.BatchSaveIndexRequest.params:type_name -> weknora.plugin.v1.BatchSaveIndexRequest.ParamsEntry
+	98,  // 44: weknora.plugin.v1.DeleteByChunkIDsRequest.config:type_name -> weknora.plugin.v1.DeleteByChunkIDsRequest.ConfigEntry
+	99,  // 45: weknora.plugin.v1.DeleteBySourceIDsRequest.config:type_name -> weknora.plugin.v1.DeleteBySourceIDsRequest.ConfigEntry
+	100, // 46: weknora.plugin.v1.DeleteByKnowledgeIDsRequest.config:type_name -> weknora.plugin.v1.DeleteByKnowledgeIDsRequest.ConfigEntry
+	101, // 47: weknora.plugin.v1.CopyIndicesRequest.config:type_name -> weknora.plugin.v1.CopyIndicesRequest.ConfigEntry
+	102, // 48: weknora.plugin.v1.CopyIndicesRequest.source_to_target_kb_id_map:type_name -> weknora.plugin.v1.CopyIndicesRequest.SourceToTargetKbIdMapEntry
+	103, // 49: weknora.plugin.v1.CopyIndicesRequest.source_to_target_chunk_id_map:type_name -> weknora.plugin.v1.CopyIndicesRequest.SourceToTargetChunkIdMapEntry
+	104, // 50: weknora.plugin.v1.UpdateChunkEnabledStatusRequest.config:type_name -> weknora.plugin.v1.UpdateChunkEnabledStatusRequest.ConfigEntry
+	105, // 51: weknora.plugin.v1.UpdateChunkEnabledStatusRequest.chunk_status_map:type_name -> weknora.plugin.v1.UpdateChunkEnabledStatusRequest.ChunkStatusMapEntry
+	106, // 52: weknora.plugin.v1.UpdateChunkTagIDRequest.config:type_name -> weknora.plugin.v1.UpdateChunkTagIDRequest.ConfigEntry
+	107, // 53: weknora.plugin.v1.UpdateChunkTagIDRequest.chunk_tag_map:type_name -> weknora.plugin.v1.UpdateChunkTagIDRequest.ChunkTagMapEntry
+	2,   // 54: weknora.plugin.v1.PluginLifecycle.GetInfo:input_type -> weknora.plugin.v1.GetInfoRequest
+	4,   // 55: weknora.plugin.v1.PluginLifecycle.HealthCheck:input_type -> weknora.plugin.v1.HealthCheckRequest
+	6,   // 56: weknora.plugin.v1.PluginLifecycle.ValidateConfig:input_type -> weknora.plugin.v1.ValidateConfigRequest
+	9,   // 57: weknora.plugin.v1.PluginLifecycle.Shutdown:input_type -> weknora.plugin.v1.ShutdownRequest
+	30,  // 58: weknora.plugin.v1.DocumentParserPlugin.Describe:input_type -> weknora.plugin.v1.DocumentParserDescribeRequest
+	32,  // 59: weknora.plugin.v1.DocumentParserPlugin.Parse:input_type -> weknora.plugin.v1.DocumentParserParseRequest
+	35,  // 60: weknora.plugin.v1.WebSearchPlugin.Describe:input_type -> weknora.plugin.v1.WebSearchDescribeRequest
+	37,  // 61: weknora.plugin.v1.WebSearchPlugin.Search:input_type -> weknora.plugin.v1.WebSearchRequest
+	40,  // 62: weknora.plugin.v1.ModelProviderPlugin.Describe:input_type -> weknora.plugin.v1.ModelProviderDescribeRequest
+	42,  // 63: weknora.plugin.v1.ModelProviderPlugin.ListModels:input_type -> weknora.plugin.v1.ListModelsRequest
+	45,  // 64: weknora.plugin.v1.ModelProviderPlugin.Chat:input_type -> weknora.plugin.v1.ChatRequest
+	48,  // 65: weknora.plugin.v1.ModelProviderPlugin.Embed:input_type -> weknora.plugin.v1.EmbedRequest
+	51,  // 66: weknora.plugin.v1.ModelProviderPlugin.Rerank:input_type -> weknora.plugin.v1.RerankRequest
+	54,  // 67: weknora.plugin.v1.RetrieverPlugin.Describe:input_type -> weknora.plugin.v1.RetrieverDescribeRequest
+	56,  // 68: weknora.plugin.v1.RetrieverPlugin.Retrieve:input_type -> weknora.plugin.v1.RetrieveRequest
+	60,  // 69: weknora.plugin.v1.RetrieverPlugin.SaveIndex:input_type -> weknora.plugin.v1.SaveIndexRequest
+	62,  // 70: weknora.plugin.v1.RetrieverPlugin.BatchSaveIndex:input_type -> weknora.plugin.v1.BatchSaveIndexRequest
+	64,  // 71: weknora.plugin.v1.RetrieverPlugin.DeleteByChunkIDs:input_type -> weknora.plugin.v1.DeleteByChunkIDsRequest
+	66,  // 72: weknora.plugin.v1.RetrieverPlugin.DeleteBySourceIDs:input_type -> weknora.plugin.v1.DeleteBySourceIDsRequest
+	68,  // 73: weknora.plugin.v1.RetrieverPlugin.DeleteByKnowledgeIDs:input_type -> weknora.plugin.v1.DeleteByKnowledgeIDsRequest
+	70,  // 74: weknora.plugin.v1.RetrieverPlugin.CopyIndices:input_type -> weknora.plugin.v1.CopyIndicesRequest
+	72,  // 75: weknora.plugin.v1.RetrieverPlugin.UpdateChunkEnabledStatus:input_type -> weknora.plugin.v1.UpdateChunkEnabledStatusRequest
+	74,  // 76: weknora.plugin.v1.RetrieverPlugin.UpdateChunkTagID:input_type -> weknora.plugin.v1.UpdateChunkTagIDRequest
+	11,  // 77: weknora.plugin.v1.DataSourcePlugin.ValidateCredentials:input_type -> weknora.plugin.v1.ValidateCredentialsRequest
+	13,  // 78: weknora.plugin.v1.DataSourcePlugin.ListResources:input_type -> weknora.plugin.v1.ListResourcesRequest
+	15,  // 79: weknora.plugin.v1.DataSourcePlugin.ResolveResourceAncestors:input_type -> weknora.plugin.v1.ResolveResourceAncestorsRequest
+	17,  // 80: weknora.plugin.v1.DataSourcePlugin.FetchAll:input_type -> weknora.plugin.v1.FetchAllRequest
+	21,  // 81: weknora.plugin.v1.DataSourcePlugin.Sync:input_type -> weknora.plugin.v1.SyncRequest
+	3,   // 82: weknora.plugin.v1.PluginLifecycle.GetInfo:output_type -> weknora.plugin.v1.PluginInfo
+	5,   // 83: weknora.plugin.v1.PluginLifecycle.HealthCheck:output_type -> weknora.plugin.v1.HealthCheckResponse
+	7,   // 84: weknora.plugin.v1.PluginLifecycle.ValidateConfig:output_type -> weknora.plugin.v1.ValidateConfigResponse
+	10,  // 85: weknora.plugin.v1.PluginLifecycle.Shutdown:output_type -> weknora.plugin.v1.ShutdownResponse
+	31,  // 86: weknora.plugin.v1.DocumentParserPlugin.Describe:output_type -> weknora.plugin.v1.DocumentParserDescribeResponse
+	33,  // 87: weknora.plugin.v1.DocumentParserPlugin.Parse:output_type -> weknora.plugin.v1.DocumentParserParseResponse
+	36,  // 88: weknora.plugin.v1.WebSearchPlugin.Describe:output_type -> weknora.plugin.v1.WebSearchDescribeResponse
+	38,  // 89: weknora.plugin.v1.WebSearchPlugin.Search:output_type -> weknora.plugin.v1.WebSearchResponse
+	41,  // 90: weknora.plugin.v1.ModelProviderPlugin.Describe:output_type -> weknora.plugin.v1.ModelProviderDescribeResponse
+	43,  // 91: weknora.plugin.v1.ModelProviderPlugin.ListModels:output_type -> weknora.plugin.v1.ListModelsResponse
+	47,  // 92: weknora.plugin.v1.ModelProviderPlugin.Chat:output_type -> weknora.plugin.v1.ChatChunk
+	49,  // 93: weknora.plugin.v1.ModelProviderPlugin.Embed:output_type -> weknora.plugin.v1.EmbedResponse
+	52,  // 94: weknora.plugin.v1.ModelProviderPlugin.Rerank:output_type -> weknora.plugin.v1.RerankResponse
+	55,  // 95: weknora.plugin.v1.RetrieverPlugin.Describe:output_type -> weknora.plugin.v1.RetrieverDescribeResponse
+	57,  // 96: weknora.plugin.v1.RetrieverPlugin.Retrieve:output_type -> weknora.plugin.v1.RetrieveResponse
+	61,  // 97: weknora.plugin.v1.RetrieverPlugin.SaveIndex:output_type -> weknora.plugin.v1.SaveIndexResponse
+	63,  // 98: weknora.plugin.v1.RetrieverPlugin.BatchSaveIndex:output_type -> weknora.plugin.v1.BatchSaveIndexResponse
+	65,  // 99: weknora.plugin.v1.RetrieverPlugin.DeleteByChunkIDs:output_type -> weknora.plugin.v1.DeleteByChunkIDsResponse
+	67,  // 100: weknora.plugin.v1.RetrieverPlugin.DeleteBySourceIDs:output_type -> weknora.plugin.v1.DeleteBySourceIDsResponse
+	69,  // 101: weknora.plugin.v1.RetrieverPlugin.DeleteByKnowledgeIDs:output_type -> weknora.plugin.v1.DeleteByKnowledgeIDsResponse
+	71,  // 102: weknora.plugin.v1.RetrieverPlugin.CopyIndices:output_type -> weknora.plugin.v1.CopyIndicesResponse
+	73,  // 103: weknora.plugin.v1.RetrieverPlugin.UpdateChunkEnabledStatus:output_type -> weknora.plugin.v1.UpdateChunkEnabledStatusResponse
+	75,  // 104: weknora.plugin.v1.RetrieverPlugin.UpdateChunkTagID:output_type -> weknora.plugin.v1.UpdateChunkTagIDResponse
+	12,  // 105: weknora.plugin.v1.DataSourcePlugin.ValidateCredentials:output_type -> weknora.plugin.v1.ValidateCredentialsResponse
+	14,  // 106: weknora.plugin.v1.DataSourcePlugin.ListResources:output_type -> weknora.plugin.v1.ListResourcesResponse
+	16,  // 107: weknora.plugin.v1.DataSourcePlugin.ResolveResourceAncestors:output_type -> weknora.plugin.v1.ResolveResourceAncestorsResponse
+	18,  // 108: weknora.plugin.v1.DataSourcePlugin.FetchAll:output_type -> weknora.plugin.v1.FetchAllResponse
+	22,  // 109: weknora.plugin.v1.DataSourcePlugin.Sync:output_type -> weknora.plugin.v1.SyncEvent
+	82,  // [82:110] is the sub-list for method output_type
+	54,  // [54:82] is the sub-list for method input_type
+	54,  // [54:54] is the sub-list for extension type_name
+	54,  // [54:54] is the sub-list for extension extendee
+	0,   // [0:54] is the sub-list for field type_name
 }
 
 func init() { file_sdk_plugin_proto_plugin_proto_init() }
@@ -4748,7 +5422,7 @@ func file_sdk_plugin_proto_plugin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_sdk_plugin_proto_plugin_proto_rawDesc), len(file_sdk_plugin_proto_plugin_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   94,
+			NumMessages:   106,
 			NumExtensions: 0,
 			NumServices:   6,
 		},

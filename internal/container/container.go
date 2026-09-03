@@ -77,6 +77,7 @@ import (
 	"github.com/Tencent/WeKnora/internal/im/wecom"
 	"github.com/Tencent/WeKnora/internal/im/yunzhijia"
 	"github.com/Tencent/WeKnora/internal/infrastructure/docparser"
+	infra_model_provider "github.com/Tencent/WeKnora/internal/infrastructure/model_provider"
 	infra_web_search "github.com/Tencent/WeKnora/internal/infrastructure/web_search"
 	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/mcp"
@@ -1736,7 +1737,7 @@ func loadExternalPlugins(
 		{name: "datasource", loader: datasource.NewDataSourceLoader(connectors)},
 		{name: "document parser", loader: docparser.NewPluginLoader()},
 		{name: "web search", loader: infra_web_search.NewPluginLoader(webSearch)},
-		{name: "model provider", loader: modelprovider.NewPluginLoader()},
+		{name: "model provider", loader: infra_model_provider.NewPluginLoader()},
 		{name: "retriever", loader: retriever.NewPluginLoader(pluginRetrievers, retrieveEngineRegistry)},
 	}
 	for _, registration := range registrations {

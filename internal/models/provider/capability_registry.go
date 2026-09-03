@@ -10,8 +10,11 @@ import (
 
 // CapabilityFactory creates a model client for one capability of one provider.
 // Built-in providers register concrete factories; external providers register
-// a factory that delegates inference to the plugin gRPC protocol.
-type CapabilityFactory func(config *Config) (any, error)
+// a factory that delegates inference to the plugin gRPC protocol. The config
+// argument is the domain-specific config (*chat.ChatConfig, embedding.Config,
+// *rerank.RerankerConfig); the caller casts the returned value to the matching
+// interface (chat.Chat, embedding.Embedder, rerank.Reranker).
+type CapabilityFactory func(config any) (any, error)
 
 // capabilityKey uniquely identifies a (provider, model-type) pair.
 type capabilityKey struct {
