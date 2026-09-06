@@ -32,6 +32,7 @@ examples/local-files-plugin/
 - [DuckDuckGo Search 示例](https://github.com/Tencent/WeKnora/tree/main/examples/web-search-plugin)（web_search 扩展）：基于 DuckDuckGo Instant Answer API 的真实搜索插件，无需 API key。实现 `Describe` + `Search` 两个 RPC，支持 `base_url` / `proxy_url` 配置，演示 web search 扩展的完整开发流程。
 - [Deterministic Models 示例](https://github.com/Tencent/WeKnora/tree/main/examples/model-provider-plugin)（model_provider 扩展）：完全离线的确定性模型 provider——echo 流式 Chat、hashing trick 向量 Embed、词重叠评分 Rerank，无需网络与 API key。演示 model provider 三个推理 RPC（`Chat`/`Embed`/`Rerank`）的完整实现与流式协议形状。
 - [Memory Vector Retriever 示例](https://github.com/Tencent/WeKnora/tree/main/examples/retriever-plugin)（retriever 扩展）：进程内内存向量检索引擎，实现完整索引生命周期全部 9 个 RPC（写入/删除/拷贝/状态更新/查询）。接收宿主计算的 embedding 并按余弦相似度召回，演示声明 `index` capability 的检索插件如何注册为完整索引后端。
+- [Markdown & Plain Text Parser 示例](https://github.com/Tencent/WeKnora/tree/main/examples/document-parser-plugin)（document_parser 扩展）：Markdown/纯文本解析引擎，零第三方依赖——换行归一、YAML front matter 提取为 metadata、标题提升、纯文本分段转 Markdown。演示 document parser 扩展的完整开发流程。
 
 按照示例 README 构建程序或镜像，将单个插件放入插件根目录的子目录，并设置：
 

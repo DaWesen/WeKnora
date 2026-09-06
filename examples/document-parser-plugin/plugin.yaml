@@ -1,0 +1,28 @@
+apiVersion: weknora.plugin/v1
+metadata:
+  id: com.weknora.parser-markdown-plain
+  name: Markdown & Plain Text Parser
+  description: Markdown and plain text parser with line-ending normalization, front matter extraction, and heading promotion. Fully offline.
+spec:
+  extensionType: document_parser
+  weknoraVersion: ">=0.1.0"
+  capabilities: []
+  entrypoint:
+    type: process
+    command: ["./document-parser-plugin"]
+    grpcAddress: unix:///tmp/weknora-docparser.sock
+  permissions:
+    network:
+      enabled: false
+    filesystem: {}
+  healthCheck:
+    interval: 30s
+    timeout: 10s
+  restartPolicy:
+    enabled: true
+    maxAttempts: 3
+    windowSeconds: 300
+    backoffMillis: 5000
+  configSchema:
+    type: object
+    properties: {}
