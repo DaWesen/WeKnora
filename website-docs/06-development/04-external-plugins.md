@@ -33,6 +33,7 @@ examples/local-files-plugin/
 - [Deterministic Models 示例](https://github.com/Tencent/WeKnora/tree/main/examples/model-provider-plugin)（model_provider 扩展）：完全离线的确定性模型 provider——echo 流式 Chat、hashing trick 向量 Embed、词重叠评分 Rerank，无需网络与 API key。演示 model provider 三个推理 RPC（`Chat`/`Embed`/`Rerank`）的完整实现与流式协议形状。
 - [Memory Vector Retriever 示例](https://github.com/Tencent/WeKnora/tree/main/examples/retriever-plugin)（retriever 扩展）：进程内内存向量检索引擎，实现完整索引生命周期全部 9 个 RPC（写入/删除/拷贝/状态更新/查询）。接收宿主计算的 embedding 并按余弦相似度召回，演示声明 `index` capability 的检索插件如何注册为完整索引后端。
 - [Markdown & Plain Text Parser 示例](https://github.com/Tencent/WeKnora/tree/main/examples/document-parser-plugin)（document_parser 扩展）：Markdown/纯文本解析引擎，零第三方依赖——换行归一、YAML front matter 提取为 metadata、标题提升、纯文本分段转 Markdown。演示 document parser 扩展的完整开发流程。
+- [Standalone Repo 示例](https://github.com/Tencent/WeKnora/tree/main/examples/standalone-repo/local-files)（独立仓库形态）：以独立 Go module 的形式实现 local-files 数据源插件，不 import 主仓任何包、仅依赖 `sdk/plugin`，并附增量同步测试。配合下方"从零构建一个插件"教程使用。
 
 按照示例 README 构建程序或镜像，将单个插件放入插件根目录的子目录，并设置：
 
@@ -278,6 +279,138 @@ docker compose up -d app
 ```
 
 默认 Compose **不会**挂载 `/var/run/docker.sock`。这是刻意的安全选择：Docker socket 常常意味着高等级宿主控制权限。容器插件部署应显式选择受控 Docker runtime、socket proxy 或独立插件执行节点，并先完成最小权限评估；不要为了启用插件而直接对公网或多租户 app 容器开放 Docker daemon。
+
+## 从零构建一个插件（逐步教程）
+
+本节演示如何在一个**全新目录**中从零写出一个最小可运行的 WeKnora datasource 插件，不 clone 主仓、不修改主仓代码。完整代码见 [standalone-repo 示例](https://github.com/Tencent/WeKnora/tree/main/examples/standalone-repo/local-files)。
+
+### 第 1 步：创建模块
+
+```bash
+mkdir weknora-plugin-demo && cd weknora-plugin-demo
+go mod init github.com/yourname/weknora-plugin-demo
+```
+
+在 SDK 子模块 tag 发布前，添加临时 replace 指向本地 SDK 检出；发布后删除此块即可直接 `go get`：
+
+```bash
+go mod edit -require=github.com/Tencent/WeKnora/sdk/plugin@v0.1.0 \
+           -replace=github.com/Tencent/WeKnora/sdk/plugin=/path/to/WeKnora/sdk/plugin
+```
+
+### 第 2 步：实现插件
+
+创建 `main.go`，嵌入 SDK 提供的 `Lifecycle`（自动实现 GetInfo / HealthCheck / Shutdown），并实现扩展服务的 RPC。以 datasource 为例：
+
+```go
+package main
+
+import (
+    "context"
+    "os"
+    "time"
+
+    pluginpb "github.com/Tencent/WeKnora/sdk/plugin/proto"
+    pluginsdk "github.com/Tencent/WeKnora/sdk/plugin/server"
+)
+
+type server struct {
+    pluginsdk.Lifecycle                              // 生命周期四件套
+    pluginpb.UnimplementedDataSourcePluginServer     // 只覆写需要的 RPC
+}
+
+// ValidateConfig 校验宿主传入的配置，拒绝则启动失败
+func (s *server) ValidateConfig(_ context.Context, req *pluginpb.ValidateConfigRequest) (*pluginpb.ValidateConfigResponse, error) {
+    if _, err := os.Stat(req.Config["rootPath"]); err != nil {
+        return &pluginpb.ValidateConfigResponse{Valid: false, Errors: []*pluginpb.FieldError{
+            {Field: "rootPath", Message: "must exist"},
+        }}, nil
+    }
+    return &pluginpb.ValidateConfigResponse{Valid: true}, nil
+}
+
+// Sync 增量同步：对比 cursor 中记录的内容哈希，仅输出变更文件
+func (s *server) Sync(req *pluginpb.SyncRequest, stream pluginpb.DataSourcePlugin_SyncServer) error {
+    // ... 扫描目录，逐个 stream.Send(&pluginpb.SyncEvent{...}) ...
+    return stream.Send(&pluginpb.SyncEvent{Payload: &pluginpb.SyncEvent_Completed{
+        Completed: &pluginpb.Completed{Cursor: newCursor},
+    }})
+}
+
+func main() {
+    impl := &server{Lifecycle: pluginsdk.Lifecycle{
+        Metadata: pluginsdk.Metadata{
+            ID: "com.yourname.demo", Version: "0.1.0",
+            ExtensionTypes: []string{"datasource"},   // 必须与 plugin.yaml 一致
+        },
+    }}
+    ctx, stop := pluginsdk.ContextWithSignals(context.Background())
+    defer stop()
+    panic(pluginsdk.ServeContext(ctx, impl, pluginsdk.Options{
+        Address: pluginsdk.Address(),               // 读 WEKNORA_PLUGIN_GRPC_ADDRESS
+    }, pluginsdk.DataSourceService(impl)))
+}
+```
+
+其他扩展类型同理：换嵌入 `UnimplementedWebSearchPluginServer` / `UnimplementedModelProviderPluginServer` / `UnimplementedRetrieverPluginServer` / `UnimplementedDocumentParserPluginServer`，并在 `main()` 换用对应的 `WebSearchService(...)` 等注册器。
+
+### 第 3 步：编写 manifest
+
+创建 `plugin.yaml`（字段含义见上文 Manifest 一节）：
+
+```yaml
+apiVersion: weknora.plugin/v1
+kind: Plugin
+metadata:
+  id: com.yourname.demo            # 与 GetInfo 返回的 ID 一致
+  name: Demo Datasource
+  version: 0.1.0
+spec:
+  extensionType: datasource
+  weknoraVersion: ">=0.1.0"
+  capabilities: [sync]
+  entrypoint:
+    type: process
+    command: ["./weknora-plugin-demo"]
+    grpcAddress: "unix:///tmp/weknora-demo.sock"
+  configSchema:
+    type: object
+    required: [rootPath]
+    properties:
+      rootPath: { type: string }
+  permissions:
+    network: { enabled: false }    # 本地目录插件不需要网络
+    filesystem: { readOnly: [] }
+```
+
+### 第 4 步：构建并安装
+
+```bash
+go build -o weknora-plugin-demo .
+
+# 安装到插件目录（目录名任意，一个子目录一个插件）
+mkdir -p /var/lib/weknora/plugins/demo
+cp plugin.yaml weknora-plugin-demo /var/lib/weknora/plugins/demo/
+
+# 启动宿主
+export WEKNORA_PLUGIN_DIR=/var/lib/weknora/plugins
+./weknora
+```
+
+宿主日志出现 `discovered 1 external plugins` 即装载成功。在管理界面创建数据源时会出现你的插件类型。
+
+### 第 5 步：验证增量语义
+
+课题验收要求"源端仅变更一个文件时，只有该文件被重新处理"。在 `Sync` 中实现内容哈希对比并把全量状态序列化进 cursor，即可满足：
+
+```go
+type fileState struct{ Hash string }
+type syncCursor struct{ Files map[string]fileState }
+// 下次同步时 parseCursor(req.Cursor) 取回上次状态，
+// 哈希未变的文件跳过 upsert，消失的文件发 DeleteDocument。
+```
+
+standalone-repo 示例的 `main_test.go` 展示了完整断言写法。
 
 ## 开发检查清单
 

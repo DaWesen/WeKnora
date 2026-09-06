@@ -1,0 +1,36 @@
+apiVersion: weknora.plugin/v1
+kind: Plugin
+metadata:
+  id: com.example.local-files
+  name: Local Files (Standalone Repo)
+  version: 0.1.0
+  description: Sync markdown and text files from an explicitly configured directory. Built in a standalone repository.
+spec:
+  extensionType: datasource
+  weknoraVersion: ">=0.1.0"
+  capabilities: [sync, stream]
+  entrypoint:
+    type: process
+    command: ["./weknora-plugin-local-files"]
+    grpcAddress: "unix:///tmp/weknora-local-files.sock"
+  configSchema:
+    type: object
+    required: [rootPath]
+    properties:
+      rootPath:
+        type: string
+        description: Absolute path to the directory to sync.
+  permissions:
+    network:
+      enabled: false
+    filesystem:
+      readOnly: []
+  healthCheck:
+    intervalSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  restartPolicy:
+    enabled: true
+    maxAttempts: 3
+    windowSeconds: 300
+    backoffMillis: 5000
