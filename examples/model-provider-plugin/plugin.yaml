@@ -1,0 +1,28 @@
+apiVersion: weknora.plugin/v1
+metadata:
+  id: com.weknora.model-provider-deterministic
+  name: Deterministic (Offline) Models
+  description: Fully offline deterministic chat, embedding, and rerank models. No API key, no network.
+spec:
+  extensionType: model_provider
+  weknoraVersion: ">=0.1.0"
+  capabilities: [chat, embedding, rerank]
+  entrypoint:
+    type: process
+    command: ["./model-provider-plugin"]
+    grpcAddress: unix:///tmp/weknora-model-provider.sock
+  permissions:
+    network:
+      enabled: false
+    filesystem: {}
+  healthCheck:
+    interval: 30s
+    timeout: 10s
+  restartPolicy:
+    enabled: true
+    maxAttempts: 3
+    windowSeconds: 300
+    backoffMillis: 5000
+  configSchema:
+    type: object
+    properties: {}
