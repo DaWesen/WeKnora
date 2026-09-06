@@ -1,0 +1,36 @@
+apiVersion: weknora.plugin/v1
+metadata:
+  id: com.weknora.web-search-ddg
+  name: DuckDuckGo Search
+  description: Web search via the DuckDuckGo Instant Answer API. No API key required.
+spec:
+  extensionType: web_search
+  weknoraVersion: ">=0.1.0"
+  capabilities: []
+  entrypoint:
+    type: process
+    command: ["./web-search-plugin"]
+    grpcAddress: unix:///tmp/weknora-web-search.sock
+  permissions:
+    network:
+      enabled: true
+      hosts: ["api.duckduckgo.com"]
+    filesystem: {}
+  healthCheck:
+    interval: 30s
+    timeout: 10s
+  restartPolicy:
+    enabled: true
+    maxAttempts: 3
+    windowSeconds: 300
+    backoffMillis: 5000
+  configSchema:
+    type: object
+    properties:
+      base_url:
+        type: string
+        default: "https://api.duckduckgo.com/"
+        description: "DuckDuckGo API base URL (optional override)"
+      proxy_url:
+        type: string
+        description: "HTTP proxy URL for outbound requests (optional)"

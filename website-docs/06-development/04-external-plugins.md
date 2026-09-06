@@ -17,7 +17,9 @@ WeKnora 外部插件用于在**不修改主仓、不中断主程序**的前提�
 
 ## 快速开始
 
-仓库提供了可运行的 [Local Files 示例](https://github.com/Tencent/WeKnora/tree/main/examples/local-files-plugin)：
+仓库提供了两个可运行示例：
+
+- [Local Files 示例](https://github.com/Tencent/WeKnora/tree/main/examples/local-files-plugin)（datasource 扩展）：
 
 ```text
 examples/local-files-plugin/
@@ -26,6 +28,8 @@ examples/local-files-plugin/
 ├── plugin.container.yaml    # 禁网容器模式 manifest
 └── Dockerfile
 ```
+
+- [DuckDuckGo Search 示例](https://github.com/Tencent/WeKnora/tree/main/examples/web-search-plugin)（web_search 扩展）：基于 DuckDuckGo Instant Answer API 的真实搜索插件，无需 API key。实现 `Describe` + `Search` 两个 RPC，支持 `base_url` / `proxy_url` 配置，演示 web search 扩展的完整开发流程。
 
 按照示例 README 构建程序或镜像，将单个插件放入插件根目录的子目录，并设置：
 
