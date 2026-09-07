@@ -1,8 +1,10 @@
 apiVersion: weknora.plugin/v1
+kind: Plugin
 metadata:
   id: com.weknora.web-search-ddg
   name: DuckDuckGo Search
   description: Web search via the DuckDuckGo Instant Answer API. No API key required.
+  version: 0.1.0
 spec:
   extensionType: web_search
   weknoraVersion: ">=0.1.0"
@@ -17,8 +19,8 @@ spec:
       hosts: ["api.duckduckgo.com"]
     filesystem: {}
   healthCheck:
-    interval: 30s
-    timeout: 10s
+    intervalSeconds: 30
+    timeoutSeconds: 10
   restartPolicy:
     enabled: true
     maxAttempts: 3

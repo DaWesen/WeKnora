@@ -22,7 +22,9 @@ spec:
         description: Absolute path to the directory to sync.
   permissions:
     network:
-      enabled: false
+      # Process plugins cannot declare network disabled — the host only
+      # enforces isolation under a container runtime.
+      enabled: true
     filesystem:
       readOnly: []
   healthCheck:

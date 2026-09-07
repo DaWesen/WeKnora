@@ -240,6 +240,53 @@ unary `Parse` 受 gRPC 默认单条消息大小限制（4MB）。声明 `stream`
 
 宿主在加载时记录插件的 `stream` 能力位：声明则 `Read` 走 `ParseStream`，否则走 unary `Parse`——旧插件无需改动。实现要点：分块重组后与 unary 共用同一解析管线；缺 header 的首条消息会被拒绝。
 
+## 脚手架与契约测试（weknora-plugin CLI）
+
+`weknora-plugin` 是插件开发者工具，提供三个子命令，把"从零建插件"压缩到一条命令：
+
+```bash
+go install github.com/Tencent/WeKnora/cmd/weknora-plugin@latest
+```
+
+### init——生成插件骨架
+
+```bash
+weknora-plugin init --type document_parser --id com.example.my-parser --out ./my-parser
+```
+
+在 `--out` 目录生成四个文件：`plugin.yaml`（可通过宿主校验的最小 manifest）、`main.go`（含 `Describe` 元数据与返回 `Unimplemented` 的业务 RPC 桩，开箱即可启动）、`go.mod`、`README.md`。`--type` 支持全部五类扩展。
+
+本地开发期可加 `--sdk-path <WeKnora 检出路径>`，生成的 `go.mod` 会带指向本地 `sdk/plugin` 的 replace（路径含空格会自动加引号）；默认生成依赖已发布模块的版本，发布插件前删除 replace 即可。其他 flag：`--module`（Go module 路径）、`--bin`（二进制名）、`--grpc-addr`（监听地址）。
+
+### lint——校验 manifest
+
+```bash
+weknora-plugin lint plugin.yaml
+```
+
+复用宿主的 `ParseManifest` 校验（apiVersion/kind/metadata/extensionType/capability 白名单/semver 范围/entrypoint/权限/健康检查/重启策略），通过 lint 的 manifest 保证被宿主装载器接受。
+
+注意宿主规则：**进程模式插件不能声明 `network.enabled: false`**——隔离只在容器运行时下可强制。离线插件应提供 `plugin.container.yaml`（见 document-parser-plugin 示例）。
+
+### test-contract——启动插件并比对运行时与 manifest
+
+```bash
+weknora-plugin test-contract .
+```
+
+按 `<dir>/plugin.yaml` 启动插件进程，拨号其 gRPC 地址，然后检查：
+
+- `GetInfo().id == manifest metadata.id`、`GetInfo().version == manifest metadata.version`；
+- `GetInfo().extensionTypes` 包含 `spec.extensionType`；
+- `HealthCheck` 返回 `STATUS_SERVING`；
+- 有 `Describe` RPC 的四类扩展：Describe 成功，且 **Describe capabilities 必须是 manifest capabilities 的子集**（与宿主 loader 注册期同一规则）；datasource 无 Describe RPC，改测 `ValidateCredentials` 应答。
+
+发现漂移时逐项打印 `field: manifest=... runtime=...` 并以非零码退出。Windows 上 unix socket 入口不受支持，契约测试请用 TCP `grpcAddress`。
+
+### 修复记录（2026-09-07）
+
+引入 lint 后发现并修复了 8 个示例 manifest 的三类问题：缺 `kind: Plugin`、缺 `metadata.version`、`healthCheck` 使用了不存在的 `interval/timeout` 字符串字段（正确为 `intervalSeconds`/`timeoutSeconds` 整数）；另修复 4 个进程模式 manifest 声明 `network.enabled: false` 与宿主"进程禁网必须容器运行时"规则冲突的问题（进程版改为 enabled: true 并注释说明，容器版保持禁网）。全部 11 个示例 manifest 现已通过 lint。
+
 ## 配置与权限
 
 配置分两层校验：

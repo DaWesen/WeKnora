@@ -1,8 +1,10 @@
 apiVersion: weknora.plugin/v1
+kind: Plugin
 metadata:
   id: com.weknora.model-provider-deterministic
   name: Deterministic (Offline) Models
   description: Fully offline deterministic chat, embedding, and rerank models. No API key, no network.
+  version: 0.1.0
 spec:
   extensionType: model_provider
   weknoraVersion: ">=0.1.0"
@@ -13,11 +15,13 @@ spec:
     grpcAddress: unix:///tmp/weknora-model-provider.sock
   permissions:
     network:
-      enabled: false
+      # Process plugins cannot declare network disabled — the host only
+      # enforces isolation under a container runtime (see plugin.container.yaml).
+      enabled: true
     filesystem: {}
   healthCheck:
-    interval: 30s
-    timeout: 10s
+    intervalSeconds: 30
+    timeoutSeconds: 10
   restartPolicy:
     enabled: true
     maxAttempts: 3

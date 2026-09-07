@@ -1,8 +1,10 @@
 apiVersion: weknora.plugin/v1
+kind: Plugin
 metadata:
   id: com.weknora.retriever-memory
   name: Memory Vector Retriever
   description: In-memory vector retriever with cosine similarity ranking. Index state is process-local and lost on restart.
+  version: 0.1.0
 spec:
   extensionType: retriever
   weknoraVersion: ">=0.1.0"
@@ -18,8 +20,8 @@ spec:
       enabled: false
     filesystem: {}
   healthCheck:
-    interval: 30s
-    timeout: 10s
+    intervalSeconds: 30
+    timeoutSeconds: 10
   restartPolicy:
     enabled: true
     maxAttempts: 3

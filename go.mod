@@ -55,6 +55,7 @@ require (
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/sirupsen/logrus v1.9.4
 	github.com/slack-go/slack v0.23.1
+	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/files v1.0.1
@@ -92,6 +93,8 @@ require (
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.1
 )
+
+require github.com/inconshreveable/mousetrap v1.1.0 // indirect
 
 require (
 	cloud.google.com/go/auth v0.20.0 // indirect
