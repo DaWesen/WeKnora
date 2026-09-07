@@ -15,6 +15,10 @@ service PluginLifecycle {
 service DocumentParserPlugin {
   rpc Describe(DocumentParserDescribeRequest) returns (DocumentParserDescribeResponse);
   rpc Parse(DocumentParserParseRequest) returns (DocumentParserParseResponse);
+  // ParseStream uploads the document in chunks and streams parse events back,
+  // bypassing the unary message-size limit. Plugins that declare the "stream"
+  // capability must implement it; the host falls back to unary Parse otherwise.
+  rpc ParseStream(stream DocumentParserStreamChunk) returns (stream DocumentParserStreamEvent);
 }
 
 service WebSearchPlugin {
@@ -173,6 +177,32 @@ message ParsedImage {
   string storage_key = 4;
   bytes image_data = 5;
   bool is_original = 6;
+}
+
+// --- Parser streaming ---
+
+// DocumentParserStreamChunk is one client message of ParseStream. The first
+// message must carry the header (request metadata); subsequent messages carry
+// file data slices. seq is zero-based and increases by one; the upload ends
+// with last = true.
+message DocumentParserStreamChunk {
+  DocumentParserParseRequest header = 1;
+  bytes data = 2;
+  int32 seq = 3;
+  bool last = 4;
+}
+// DocumentParserStreamEvent is one server message of ParseStream. Progress
+// events are optional; the stream terminates with exactly one result event.
+message DocumentParserStreamEvent {
+  oneof payload {
+    DocumentParserParseProgress progress = 1;
+    DocumentParserParseResponse result = 2;
+  }
+}
+message DocumentParserParseProgress {
+  int64 received_bytes = 1;
+  int32 received_chunks = 2;
+  int64 total_bytes = 3;
 }
 
 message WebSearchDescribeRequest {}

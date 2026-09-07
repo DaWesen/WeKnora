@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
+	"strings"
 	"testing"
 	"unicode/utf8"
 
@@ -50,6 +52,7 @@ func TestDescribeDeclaresMarkdownEngine(t *testing.T) {
 	assert.Equal(t, "markdown-plain", response.GetEngineName())
 	assert.Contains(t, response.GetFileTypes(), "md")
 	assert.Contains(t, response.GetFileTypes(), "txt")
+	assert.Equal(t, []string{"stream"}, response.GetCapabilities())
 }
 
 func TestParseRejectsUnsupportedFileType(t *testing.T) {
@@ -185,3 +188,103 @@ func TestParseTitleOverrideRecordedInMetadata(t *testing.T) {
 }
 
 func startsWith(s, prefix string) bool { return len(s) >= len(prefix) && s[:len(prefix)] == prefix }
+
+func TestParseStreamReassemblesChunkedDocument(t *testing.T) {
+	client, cleanup := startTestServer(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	// Build a document larger than the chunk size used by the plugin's
+	// progress reporting, split into 3 uneven chunks.
+	body := strings.Repeat("paragraph text.\n\n", 150_000) // ~2.4 MB
+	document := "# Title\n\n" + body
+	full := []byte(document)
+	chunks := [][]byte{full[:1<<20], full[1<<20 : 2<<20], full[2<<20:]}
+
+	stream, err := client.ParseStream(ctx)
+	require.NoError(t, err)
+
+	header := &pluginpb.DocumentParserParseRequest{
+		FileName: "big.md", FileType: "md", Title: "Big",
+	}
+	for i, data := range chunks {
+		chunk := &pluginpb.DocumentParserStreamChunk{
+			Data: data, Seq: int32(i), Last: i == len(chunks)-1,
+		}
+		if i == 0 {
+			chunk.Header = header
+		}
+		require.NoError(t, stream.Send(chunk))
+	}
+	require.NoError(t, stream.CloseSend())
+
+	var progressEvents int
+	var result *pluginpb.DocumentParserParseResponse
+	for {
+		event, recvErr := stream.Recv()
+		if recvErr == io.EOF {
+			break
+		}
+		require.NoError(t, recvErr)
+		if p := event.GetProgress(); p != nil {
+			progressEvents++
+			assert.Positive(t, p.GetReceivedBytes())
+			assert.Positive(t, p.GetReceivedChunks())
+		}
+		if r := event.GetResult(); r != nil {
+			result = r
+		}
+	}
+	require.NotNil(t, result, "stream must terminate with exactly one result event")
+	assert.GreaterOrEqual(t, progressEvents, 1, "at least one progress event expected")
+	assert.Contains(t, result.GetMarkdownContent(), "# Title")
+	assert.Equal(t, "big.md", result.GetMetadata()["source_file"])
+	assert.Equal(t, fmt.Sprintf("%d", len(full)), result.GetMetadata()["bytes"])
+	assert.Equal(t, "Big", result.GetMetadata()["title_override"])
+}
+
+func TestParseStreamRejectsMissingHeader(t *testing.T) {
+	client, cleanup := startTestServer(t)
+	defer cleanup()
+
+	stream, err := client.ParseStream(context.Background())
+	require.NoError(t, err)
+	require.NoError(t, stream.Send(&pluginpb.DocumentParserStreamChunk{
+		Data: []byte("data"), Seq: 0, Last: true, // no header
+	}))
+	require.NoError(t, stream.CloseSend())
+
+	_, err = stream.Recv()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "header")
+}
+
+func TestParseStreamSingleChunk(t *testing.T) {
+	client, cleanup := startTestServer(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	stream, err := client.ParseStream(ctx)
+	require.NoError(t, err)
+	require.NoError(t, stream.Send(&pluginpb.DocumentParserStreamChunk{
+		Header: &pluginpb.DocumentParserParseRequest{FileName: "one.md", FileType: "md"},
+		Data:   []byte("## Solo\n\nsingle chunk"),
+		Seq:    0, Last: true,
+	}))
+	require.NoError(t, stream.CloseSend())
+
+	var result *pluginpb.DocumentParserParseResponse
+	for {
+		event, recvErr := stream.Recv()
+		if recvErr == io.EOF {
+			break
+		}
+		require.NoError(t, recvErr)
+		if r := event.GetResult(); r != nil {
+			result = r
+		}
+	}
+	require.NotNil(t, result)
+	assert.Contains(t, result.GetMarkdownContent(), "# Solo")
+	assert.Equal(t, "one.md", result.GetMetadata()["source_file"])
+}

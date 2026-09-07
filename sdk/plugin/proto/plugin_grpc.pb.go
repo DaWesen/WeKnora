@@ -235,8 +235,9 @@ var PluginLifecycle_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	DocumentParserPlugin_Describe_FullMethodName = "/weknora.plugin.v1.DocumentParserPlugin/Describe"
-	DocumentParserPlugin_Parse_FullMethodName    = "/weknora.plugin.v1.DocumentParserPlugin/Parse"
+	DocumentParserPlugin_Describe_FullMethodName    = "/weknora.plugin.v1.DocumentParserPlugin/Describe"
+	DocumentParserPlugin_Parse_FullMethodName       = "/weknora.plugin.v1.DocumentParserPlugin/Parse"
+	DocumentParserPlugin_ParseStream_FullMethodName = "/weknora.plugin.v1.DocumentParserPlugin/ParseStream"
 )
 
 // DocumentParserPluginClient is the client API for DocumentParserPlugin service.
@@ -245,6 +246,10 @@ const (
 type DocumentParserPluginClient interface {
 	Describe(ctx context.Context, in *DocumentParserDescribeRequest, opts ...grpc.CallOption) (*DocumentParserDescribeResponse, error)
 	Parse(ctx context.Context, in *DocumentParserParseRequest, opts ...grpc.CallOption) (*DocumentParserParseResponse, error)
+	// ParseStream uploads the document in chunks and streams parse events back,
+	// bypassing the unary message-size limit. Plugins that declare the "stream"
+	// capability must implement it; the host falls back to unary Parse otherwise.
+	ParseStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[DocumentParserStreamChunk, DocumentParserStreamEvent], error)
 }
 
 type documentParserPluginClient struct {
@@ -275,12 +280,29 @@ func (c *documentParserPluginClient) Parse(ctx context.Context, in *DocumentPars
 	return out, nil
 }
 
+func (c *documentParserPluginClient) ParseStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[DocumentParserStreamChunk, DocumentParserStreamEvent], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &DocumentParserPlugin_ServiceDesc.Streams[0], DocumentParserPlugin_ParseStream_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[DocumentParserStreamChunk, DocumentParserStreamEvent]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type DocumentParserPlugin_ParseStreamClient = grpc.BidiStreamingClient[DocumentParserStreamChunk, DocumentParserStreamEvent]
+
 // DocumentParserPluginServer is the server API for DocumentParserPlugin service.
 // All implementations must embed UnimplementedDocumentParserPluginServer
 // for forward compatibility.
 type DocumentParserPluginServer interface {
 	Describe(context.Context, *DocumentParserDescribeRequest) (*DocumentParserDescribeResponse, error)
 	Parse(context.Context, *DocumentParserParseRequest) (*DocumentParserParseResponse, error)
+	// ParseStream uploads the document in chunks and streams parse events back,
+	// bypassing the unary message-size limit. Plugins that declare the "stream"
+	// capability must implement it; the host falls back to unary Parse otherwise.
+	ParseStream(grpc.BidiStreamingServer[DocumentParserStreamChunk, DocumentParserStreamEvent]) error
 	mustEmbedUnimplementedDocumentParserPluginServer()
 }
 
@@ -296,6 +318,9 @@ func (UnimplementedDocumentParserPluginServer) Describe(context.Context, *Docume
 }
 func (UnimplementedDocumentParserPluginServer) Parse(context.Context, *DocumentParserParseRequest) (*DocumentParserParseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Parse not implemented")
+}
+func (UnimplementedDocumentParserPluginServer) ParseStream(grpc.BidiStreamingServer[DocumentParserStreamChunk, DocumentParserStreamEvent]) error {
+	return status.Error(codes.Unimplemented, "method ParseStream not implemented")
 }
 func (UnimplementedDocumentParserPluginServer) mustEmbedUnimplementedDocumentParserPluginServer() {}
 func (UnimplementedDocumentParserPluginServer) testEmbeddedByValue()                              {}
@@ -354,6 +379,13 @@ func _DocumentParserPlugin_Parse_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DocumentParserPlugin_ParseStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(DocumentParserPluginServer).ParseStream(&grpc.GenericServerStream[DocumentParserStreamChunk, DocumentParserStreamEvent]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type DocumentParserPlugin_ParseStreamServer = grpc.BidiStreamingServer[DocumentParserStreamChunk, DocumentParserStreamEvent]
+
 // DocumentParserPlugin_ServiceDesc is the grpc.ServiceDesc for DocumentParserPlugin service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -370,7 +402,14 @@ var DocumentParserPlugin_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DocumentParserPlugin_Parse_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "ParseStream",
+			Handler:       _DocumentParserPlugin_ParseStream_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "sdk/plugin/proto/plugin.proto",
 }
 

@@ -6,7 +6,7 @@ metadata:
 spec:
   extensionType: document_parser
   weknoraVersion: ">=0.1.0"
-  capabilities: []
+  capabilities: [stream]
   entrypoint:
     type: container
     image: weknora/parser-markdown-plain:0.1.0

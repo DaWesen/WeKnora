@@ -32,7 +32,7 @@ examples/local-files-plugin/
 - [DuckDuckGo Search 示例](https://github.com/Tencent/WeKnora/tree/main/examples/web-search-plugin)（web_search 扩展）：基于 DuckDuckGo Instant Answer API 的真实搜索插件，无需 API key。实现 `Describe` + `Search` 两个 RPC，支持 `base_url` / `proxy_url` 配置，演示 web search 扩展的完整开发流程。
 - [Deterministic Models 示例](https://github.com/Tencent/WeKnora/tree/main/examples/model-provider-plugin)（model_provider 扩展）：完全离线的确定性模型 provider——echo 流式 Chat、hashing trick 向量 Embed、词重叠评分 Rerank，无需网络与 API key。演示 model provider 三个推理 RPC（`Chat`/`Embed`/`Rerank`）的完整实现与流式协议形状。
 - [Memory Vector Retriever 示例](https://github.com/Tencent/WeKnora/tree/main/examples/retriever-plugin)（retriever 扩展）：进程内内存向量检索引擎，实现完整索引生命周期全部 9 个 RPC（写入/删除/拷贝/状态更新/查询）。接收宿主计算的 embedding 并按余弦相似度召回，演示声明 `index` capability 的检索插件如何注册为完整索引后端。
-- [Markdown & Plain Text Parser 示例](https://github.com/Tencent/WeKnora/tree/main/examples/document-parser-plugin)（document_parser 扩展）：Markdown/纯文本解析引擎，零第三方依赖——换行归一、YAML front matter 提取为 metadata、标题提升、纯文本分段转 Markdown。演示 document parser 扩展的完整开发流程。
+- [Markdown & Plain Text Parser 示例](https://github.com/Tencent/WeKnora/tree/main/examples/document-parser-plugin)（document_parser 扩展）：Markdown/纯文本解析引擎，零第三方依赖——换行归一、YAML front matter 提取为 metadata、标题提升、纯文本分段转 Markdown。演示 document parser 扩展的完整开发流程，含 `ParseStream` 分块上传实现（声明 `stream` capability 后大文件不再受 unary 4MB 限制）。
 - [Standalone Repo 示例](https://github.com/Tencent/WeKnora/tree/main/examples/standalone-repo/local-files)（独立仓库形态）：以独立 Go module 的形式实现 local-files 数据源插件，不 import 主仓任何包、仅依赖 `sdk/plugin`，并附增量同步测试。配合下方"从零构建一个插件"教程使用。
 
 按照示例 README 构建程序或镜像，将单个插件放入插件根目录的子目录，并设置：
@@ -230,6 +230,15 @@ Describe 未声明 `embedding` 的插件无法注册为 vector 索引后端—�
 每个 RPC 携带 `map<string,string> config`，由宿主从模型配置（`api_key`/`base_url`/`model_name`/`model_id` + `ExtraConfig` + `CustomHeaders`）构建。VLM 复用 `Chat` RPC（images 在 `ChatMessage` 中传递）；ASR 目前无推理 RPC。
 
 当前限制：`ChatRequest` 不携带 tools/tool_choice，插件无法执行 function calling；`ListModels` 协议已定义但宿主模型列表 UI 仍从 DB 读取。
+
+### document parser 流式上传
+
+unary `Parse` 受 gRPC 默认单条消息大小限制（4MB）。声明 `stream` capability 的插件可同时实现 `ParseStream`（双向流）：
+
+- **上传方向**（client-streaming）：首条消息携带 `header`（完整 `DocumentParserParseRequest` 元数据），后续消息携带 `data` 分块，`seq` 从 0 递增，`last = true` 结束。宿主以 1 MiB 分块发送。
+- **响应方向**（server-streaming）：任意数量的 `progress` 事件（`received_bytes`/`received_chunks`，信息性），随后**恰好一条** `result` 事件（完整 `DocumentParserParseResponse`）终止流。
+
+宿主在加载时记录插件的 `stream` 能力位：声明则 `Read` 走 `ParseStream`，否则走 unary `Parse`——旧插件无需改动。实现要点：分块重组后与 unary 共用同一解析管线；缺 header 的首条消息会被拒绝。
 
 ## 配置与权限
 

@@ -8,9 +8,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"google.golang.org/protobuf/proto"
 
 	pluginpb "github.com/Tencent/WeKnora/sdk/plugin/proto"
 	pluginsdk "github.com/Tencent/WeKnora/sdk/plugin/server"
@@ -33,13 +36,66 @@ type server struct {
 func (s *server) Describe(context.Context, *pluginpb.DocumentParserDescribeRequest) (*pluginpb.DocumentParserDescribeResponse, error) {
 	return &pluginpb.DocumentParserDescribeResponse{
 		EngineName:   engineName,
-		Description:  "Markdown and plain text parser: line-ending normalization, front matter extraction, heading promotion. Fully offline.",
+		Description:  "Markdown and plain text parser: line-ending normalization, front matter extraction, heading promotion. Fully offline. Supports chunked upload via ParseStream.",
 		FileTypes:    []string{"md", "markdown", "txt", "text"},
-		Capabilities: []string{},
+		Capabilities: []string{"stream"},
 	}, nil
 }
 
 func (s *server) Parse(_ context.Context, request *pluginpb.DocumentParserParseRequest) (*pluginpb.DocumentParserParseResponse, error) {
+	return parseContent(request)
+}
+
+// ParseStream accepts a chunked upload: the first message carries the request
+// header, subsequent messages carry file data. Progress events report
+// cumulative receipt; exactly one result event terminates the stream. The
+// assembled document goes through the same parseContent path as unary Parse.
+func (s *server) ParseStream(stream pluginpb.DocumentParserPlugin_ParseStreamServer) error {
+	var header *pluginpb.DocumentParserParseRequest
+	var assembled []byte
+	chunks := 0
+	for {
+		chunk, err := stream.Recv()
+		if err == io.EOF {
+			return fmt.Errorf("upload ended without a final chunk")
+		}
+		if err != nil {
+			return fmt.Errorf("receive upload chunk: %w", err)
+		}
+		if header == nil {
+			header = chunk.GetHeader()
+			if header == nil {
+				return fmt.Errorf("first stream chunk must carry the request header")
+			}
+		} else if chunk.GetHeader() != nil {
+			return fmt.Errorf("duplicate header in stream chunk %d", chunk.GetSeq())
+		}
+		assembled = append(assembled, chunk.GetData()...)
+		chunks++
+		if progress := int64(len(assembled)) % (1 << 20); progress == 0 || chunk.GetLast() {
+			if err := stream.Send(&pluginpb.DocumentParserStreamEvent{Payload: &pluginpb.DocumentParserStreamEvent_Progress{
+				Progress: &pluginpb.DocumentParserParseProgress{
+					ReceivedBytes: int64(len(assembled)), ReceivedChunks: int32(chunks),
+				},
+			}}); err != nil {
+				return fmt.Errorf("send progress event: %w", err)
+			}
+		}
+		if chunk.GetLast() {
+			break
+		}
+	}
+	request := proto.Clone(header).(*pluginpb.DocumentParserParseRequest)
+	request.FileContent = assembled
+	result, err := parseContent(request)
+	if err != nil {
+		return err
+	}
+	return stream.Send(&pluginpb.DocumentParserStreamEvent{Payload: &pluginpb.DocumentParserStreamEvent_Result{Result: result}})
+}
+
+// parseContent is the shared parse pipeline used by both Parse and ParseStream.
+func parseContent(request *pluginpb.DocumentParserParseRequest) (*pluginpb.DocumentParserParseResponse, error) {
 	fileType := strings.ToLower(strings.TrimSpace(request.GetFileType()))
 	if !supportedTypes[fileType] {
 		return nil, fmt.Errorf(unsupportedMsg, request.GetFileType())

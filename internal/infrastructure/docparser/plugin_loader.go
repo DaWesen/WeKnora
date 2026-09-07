@@ -3,6 +3,7 @@ package docparser
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/Tencent/WeKnora/internal/plugin"
@@ -52,20 +53,22 @@ func (l *PluginLoader) Load(ctx context.Context, manager *plugin.Manager, discov
 
 	RegisterEngine(&pluginEngine{
 		manager:     manager,
-		pluginID:    pluginID,
-		name:        name,
-		description: description.GetDescription(),
-		fileTypes:   append([]string(nil), description.GetFileTypes()...),
+		pluginID:     pluginID,
+		name:         name,
+		description:  description.GetDescription(),
+		fileTypes:    append([]string(nil), description.GetFileTypes()...),
+		supportsStream: slices.Contains(description.GetCapabilities(), "stream"),
 	})
 	return nil
 }
 
 type pluginEngine struct {
-	manager     *plugin.Manager
-	pluginID    string
-	name        string
-	description string
-	fileTypes   []string
+	manager        *plugin.Manager
+	pluginID       string
+	name           string
+	description    string
+	fileTypes      []string
+	supportsStream bool
 }
 
 func (e *pluginEngine) Name() string        { return e.name }
@@ -78,16 +81,18 @@ func (e *pluginEngine) CheckAvailable(bool, map[string]string) (bool, string) {
 }
 func (e *pluginEngine) NewReader(_ context.Context, deps ReaderDeps) (interfaces.DocReader, error) {
 	return &pluginDocumentReader{
-		manager:  e.manager,
-		pluginID: e.pluginID,
-		config:   cloneStringMap(deps.Overrides),
+		manager:        e.manager,
+		pluginID:       e.pluginID,
+		config:         cloneStringMap(deps.Overrides),
+		supportsStream: e.supportsStream,
 	}, nil
 }
 
 type pluginDocumentReader struct {
-	manager  *plugin.Manager
-	pluginID string
-	config   map[string]string
+	manager        *plugin.Manager
+	pluginID       string
+	config         map[string]string
+	supportsStream bool
 }
 
 func (r *pluginDocumentReader) Read(ctx context.Context, request *types.ReadRequest) (*types.ReadResult, error) {
@@ -103,17 +108,26 @@ func (r *pluginDocumentReader) Read(ctx context.Context, request *types.ReadRequ
 		return nil, err
 	}
 	defer client.Close()
-	response, err := pluginpb.NewDocumentParserPluginClient(client.Conn()).Parse(ctx, &pluginpb.DocumentParserParseRequest{
-		Config:      config,
-		FileContent: request.FileContent,
-		FileName:    request.FileName,
-		FileType:    request.FileType,
-		Url:         request.URL,
-		Title:       request.Title,
-		RequestId:   request.RequestID,
-	})
+	parserClient := pluginpb.NewDocumentParserPluginClient(client.Conn())
+	var response *pluginpb.DocumentParserParseResponse
+	if r.supportsStream {
+		response, err = r.parseStream(ctx, parserClient, config, request)
+	} else {
+		response, err = parserClient.Parse(ctx, &pluginpb.DocumentParserParseRequest{
+			Config:      config,
+			FileContent: request.FileContent,
+			FileName:    request.FileName,
+			FileType:    request.FileType,
+			Url:         request.URL,
+			Title:       request.Title,
+			RequestId:   request.RequestID,
+		})
+		if err != nil {
+			err = fmt.Errorf("parse document with plugin %s: %w", r.pluginID, err)
+		}
+	}
 	if err != nil {
-		return nil, fmt.Errorf("parse document with plugin %s: %w", r.pluginID, err)
+		return nil, err
 	}
 	images := make([]types.ImageRef, 0, len(response.Images))
 	for _, image := range response.Images {
@@ -131,6 +145,60 @@ func (r *pluginDocumentReader) Read(ctx context.Context, request *types.ReadRequ
 		IsAudio:         response.IsAudio,
 		AudioData:       response.AudioData,
 	}, nil
+}
+
+// parseStream uploads the document in chunks over ParseStream, falling back to
+// unary Parse when the plugin does not declare the stream capability. Chunk
+// size stays well below the default gRPC message limit so large documents no
+// longer hit the 4MB unary ceiling.
+const streamChunkSize = 1 << 20 // 1 MiB
+
+func (r *pluginDocumentReader) parseStream(
+	ctx context.Context,
+	client pluginpb.DocumentParserPluginClient,
+	config map[string]string,
+	request *types.ReadRequest,
+) (*pluginpb.DocumentParserParseResponse, error) {
+	stream, err := client.ParseStream(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("open parse stream with plugin %s: %w", r.pluginID, err)
+	}
+	headerSent := false
+	total := len(request.FileContent)
+	for offset := 0; offset < total || (!headerSent && total == 0); offset += streamChunkSize {
+		end := offset + streamChunkSize
+		if end > total {
+			end = total
+		}
+		chunk := &pluginpb.DocumentParserStreamChunk{
+			Data: request.FileContent[offset:end],
+			Seq:  int32(offset / streamChunkSize),
+			Last: end == total,
+		}
+		if !headerSent {
+			chunk.Header = &pluginpb.DocumentParserParseRequest{
+				Config: config, FileName: request.FileName, FileType: request.FileType,
+				Url: request.URL, Title: request.Title, RequestId: request.RequestID,
+			}
+			headerSent = true
+		}
+		if err := stream.Send(chunk); err != nil {
+			return nil, fmt.Errorf("upload chunk %d to plugin %s: %w", chunk.GetSeq(), r.pluginID, err)
+		}
+	}
+	if err := stream.CloseSend(); err != nil {
+		return nil, fmt.Errorf("finish upload to plugin %s: %w", r.pluginID, err)
+	}
+	for {
+		event, recvErr := stream.Recv()
+		if recvErr != nil {
+			return nil, fmt.Errorf("receive parse events from plugin %s: %w", r.pluginID, recvErr)
+		}
+		if result := event.GetResult(); result != nil {
+			return result, nil
+		}
+		// Progress events are informational; keep draining until the result.
+	}
 }
 
 func cloneStringMap(input map[string]string) map[string]string {
