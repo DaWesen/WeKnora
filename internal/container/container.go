@@ -1654,6 +1654,17 @@ func initPluginManager(auditSvc interfaces.AuditLogService) (*plugin.Manager, er
 		root = "plugins"
 	}
 	manager := plugin.NewManagerWithAudit(root, auditSvc)
+	// When the operator configures a trusted-keys directory, manifests must
+	// carry a valid signature under a known keyId; otherwise every manifest
+	// is accepted (development default).
+	if trustedDir := os.Getenv("WEKNORA_PLUGIN_TRUSTED_KEYS"); trustedDir != "" {
+		ring, err := plugin.LoadKeyRing(trustedDir)
+		if err != nil {
+			return nil, fmt.Errorf("load trusted plugin keys from %s: %w", trustedDir, err)
+		}
+		manager.SetTrustRoot(ring)
+		logger.Infof(context.Background(), "[Container] plugin signature enforcement enabled with %d trusted key(s)", len(ring.Keys()))
+	}
 	if err := manager.Discover(); err != nil {
 		return nil, err
 	}

@@ -38,6 +38,7 @@ const (
 	AuditActionPluginRuntimeFailed     = "plugin.runtime_failed"
 	AuditActionPluginRestarted         = "plugin.restarted"
 	AuditActionPluginRestartDenied     = "plugin.restart_denied"
+	AuditActionPluginSignatureInvalid  = "plugin.signature_invalid"
 )
 
 const defaultAuditEventLimit = 512

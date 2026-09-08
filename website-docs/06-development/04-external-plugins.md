@@ -287,6 +287,44 @@ weknora-plugin test-contract .
 
 引入 lint 后发现并修复了 8 个示例 manifest 的三类问题：缺 `kind: Plugin`、缺 `metadata.version`、`healthCheck` 使用了不存在的 `interval/timeout` 字符串字段（正确为 `intervalSeconds`/`timeoutSeconds` 整数）；另修复 4 个进程模式 manifest 声明 `network.enabled: false` 与宿主"进程禁网必须容器运行时"规则冲突的问题（进程版改为 enabled: true 并注释说明，容器版保持禁网）。全部 11 个示例 manifest 现已通过 lint。
 
+## 插件签名与信任根
+
+宿主可以要求插件 manifest 带有发布者签名：`WEKNORA_PLUGIN_TRUSTED_KEYS` 指向一个包含 `*.pub` 公钥文件的目录（文件名即 keyId），启用后每个 `plugin.yaml` 必须带有效 `signature` 块才会被装载；**未配置该变量时签名校验完全关闭**（开发模式默认），不影响本地开发。
+
+### 签名流程
+
+```bash
+# 1. 生成密钥对并签名（一次性引导信任根）
+weknora-plugin sign --gen-key ./keys --key-id release-2026 ./my-parser/plugin.yaml
+#    ./keys/release-2026.pub → 分发到宿主信任目录；.key 私钥妥善保管
+
+# 2. 之后更新 manifest 内容后重新签名（复用私钥）
+weknora-plugin sign --key ./keys/release-2026.key --key-id release-2026 ./my-parser/plugin.yaml
+
+# 3. 宿主启用校验
+export WEKNORA_PLUGIN_TRUSTED_KEYS=/etc/weknora/plugin-keys
+#    将 release-2026.pub 拷入该目录即可
+```
+
+manifest 中生成的签名块：
+
+```yaml
+signature:
+  algorithm: ed25519
+  keyId: release-2026
+  sig: <base64 的 64 字节 ed25519 签名>
+```
+
+签名覆盖 manifest 全部内容（剔除 `signature` 块本身后重新序列化再哈希），因此**任何字段被篡改都会导致验签失败**。`--key` 模式接受 32 字节原始私钥文件；`.pub` 公钥文件支持 raw 32 字节或 base64（允许一个尾换行）两种格式。
+
+### 宿主行为
+
+- 信任目录配置后，**未签名 / 签名不匹配 / keyId 未知 / 算法不支持**的插件在 Discover 阶段被跳过（不阻断其他插件装载），并落 `plugin.signature_invalid` 审计事件（含 manifest 路径与失败原因）；
+- 信任目录不存在或为空 → 校验关闭；
+- 信任目录中有格式非法的公钥文件 → 宿主启动报错（fail-fast，防止误配信任根静默放行一切）。
+
+注意：签名保证 manifest 的**来源与完整性**，不保证插件二进制本身——进程插件仍依赖操作系统权限保护插件目录；容器镜像的完整性应由镜像签名（cosign 等）另行覆盖，这是刻意不越界的职责划分。
+
 ## 配置与权限
 
 配置分两层校验：

@@ -129,10 +129,24 @@ func (m *Manifest) validateCapabilities() error {
 
 // Manifest is the on-disk declaration for an external WeKnora plugin.
 type Manifest struct {
-	APIVersion string   `yaml:"apiVersion"`
-	Kind       string   `yaml:"kind"`
-	Metadata   Metadata `yaml:"metadata"`
-	Spec       Spec     `yaml:"spec"`
+	APIVersion string     `yaml:"apiVersion"`
+	Kind       string     `yaml:"kind"`
+	Metadata   Metadata   `yaml:"metadata"`
+	Spec       Spec       `yaml:"spec"`
+	Signature  *Signature `yaml:"signature,omitempty"`
+}
+
+// Signature carries an ed25519 signature over the manifest content (the
+// Signature field itself excluded from the signed payload). When the host
+// has a trust root configured (WEKNORA_PLUGIN_TRUSTED_KEYS), a manifest
+// without a valid Signature is rejected at discovery time; with no trust
+// root configured, Signature is ignored and validation degrades to the
+// pre-signature behaviour.
+type Signature struct {
+	Algorithm string `yaml:"algorithm"`
+	KeyID     string `yaml:"keyId"`
+	// Sig is the base64-standard-encoded 64-byte ed25519 signature.
+	Sig string `yaml:"sig"`
 }
 
 type Metadata struct {

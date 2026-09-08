@@ -111,6 +111,7 @@ type Manager struct {
 	runtime         *Runtime
 	audit           *AuditLog
 	persistentAudit auditSink
+	keyRing         *KeyRing
 	mu              sync.RWMutex
 	byID            map[string]*Plugin
 	restarts        map[string]*restartState
@@ -143,6 +144,16 @@ func NewManagerWithAudit(root string, persistentAudit auditSink) *Manager {
 	}
 	manager.runtime.SetProcessExitHandler(manager.handleRuntimeFailure)
 	return manager
+}
+
+// SetTrustRoot configures the key ring used to verify manifest signatures at
+// discovery time. An empty ring (or nil) disables signature enforcement
+// entirely — the development default. Callers should load the ring from
+// WEKNORA_PLUGIN_TRUSTED_KEYS before invoking Discover.
+func (m *Manager) SetTrustRoot(ring *KeyRing) {
+	m.mu.Lock()
+	m.keyRing = ring
+	m.mu.Unlock()
 }
 
 // AuditEvents returns bounded, structured lifecycle and security events.
@@ -938,6 +949,24 @@ func (m *Manager) Discover() error {
 		manifest, parseErr := ParseManifest(data)
 		if parseErr != nil {
 			return fmt.Errorf("invalid plugin manifest %s: %w", manifestPath, parseErr)
+		}
+		// Signature is checked after structural validation so that a malformed
+		// manifest is reported as a parse error, not a signature failure.
+		m.mu.RLock()
+		ring := m.keyRing
+		m.mu.RUnlock()
+		if verifyErr := VerifySignature(data, manifest, ring); verifyErr != nil {
+			pluginID := manifest.Metadata.ID
+			if pluginID == "" {
+				pluginID = filepath.Base(directory)
+			}
+			m.recordAudit(pluginID, AuditActionPluginSignatureInvalid, "denied", filepath.Base(directory), verifyErr.Error(), map[string]string{
+				"manifest": manifestPath,
+			})
+			// Skip the plugin but continue discovering others. A bad signature
+			// on one plugin must not prevent the rest from loading.
+			logger.Warnf(context.Background(), "[Plugin] signature check failed id=%s manifest=%s: %v", pluginID, manifestPath, verifyErr)
+			continue
 		}
 		if _, exists := discovered[manifest.Metadata.ID]; exists {
 			return fmt.Errorf("duplicate plugin id %q", manifest.Metadata.ID)
