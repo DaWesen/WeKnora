@@ -1,0 +1,36 @@
+apiVersion: weknora.plugin/v1
+kind: Plugin
+metadata:
+  id: com.weknora.parser-wasm-markdown
+  name: Wasm Markdown Normalizer
+  description: TinyGo wasm document parser — line-ending normalization (CRLF/CR -> LF) with zero dependencies. Runs embedded in the host via wazero, no process or container.
+  version: 0.1.0
+spec:
+  extensionType: document_parser
+  weknoraVersion: ">=0.1.0"
+  capabilities: []
+  entrypoint:
+    # wasm: the host compiles parser.wasm with wazero and fronts it with a
+    # gRPC facade, so this plugin reuses the exact same lifecycle, identity
+    # verification, health monitoring, and audit chain as process/container
+    # plugins — without spawning a separate process.
+    type: wasm
+    wasmModule: parser.wasm
+    grpcAddress: "127.0.0.1:50081"
+  permissions:
+    network:
+      # wasm plugins cannot request network: the embedded runtime provides
+      # no host networking. This is enforced at manifest validation time.
+      enabled: false
+    filesystem: {}
+  healthCheck:
+    intervalSeconds: 30
+    timeoutSeconds: 10
+  restartPolicy:
+    enabled: true
+    maxAttempts: 3
+    windowSeconds: 300
+    backoffMillis: 5000
+  configSchema:
+    type: object
+    properties: {}

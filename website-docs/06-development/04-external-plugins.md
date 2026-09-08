@@ -156,6 +156,51 @@ permissions:
 
 运行时使用 Docker 的只读文件系统、能力收缩、禁止权限提升、PID/内存/CPU 限额和受限 `/tmp`。只读目录会在真实路径解析后挂载，以减少符号链接绕过授权边界的风险。
 
+### Wasm 运行时
+
+wasm 入口把插件编译为 `.wasm` 模块，由宿主用 [wazero](https://wazero.io)（纯 Go、无 CGO）嵌入执行。它面向**轻量纯计算插件**——为一个 50 行的 markdown 归一化起一个进程或容器开销过重。wasm 模块与进程/容器插件共用同一份 lifecycle、身份核验、健康监测与审计链路，但**没有进程派生、没有容器开销、没有网络面**。
+
+```yaml
+entrypoint:
+  type: wasm
+  wasmModule: parser.wasm          # 相对插件目录的 .wasm 路径
+  grpcAddress: "127.0.0.1:50081"
+permissions:
+  network:
+    enabled: false                  # wasm 模块天然无网络，声明 true 会被 manifest 校验拒绝
+```
+
+宿主启动 wasm 插件时：用 wazero 编译 `wasmModule` 指向的 `.wasm`，实例化后用一个进程内 gRPC facade 暴露其导出函数。后续调用链与进程插件完全一致——`GetInfo` 身份核验、周期 `HealthCheck`、`Describe`/`Parse` 业务 RPC、审计事件。Loader 不感知入口类型差异。
+
+#### 三种入口的取舍
+
+| 插件形态 | 推荐入口 | 原因 |
+| --- | --- | --- |
+| 重计算、联网 I/O、模型推理 | `process` / `container` | 真隔离、完整语言运行时 |
+| 需要容器级隔离（网络/能力限制） | `container` | Docker `--cap-drop ALL`、`--network none`、资源限额 |
+| 纯数据变换、<1000 行、无 I/O | `wasm` | 嵌入式、无派生开销、默认禁网 |
+
+#### 模块 ABI
+
+模块导出四个函数，线性内存由 TinyGo wasm target 自动导出为 `memory`。所有字符串以 NUL 结尾、存活于模块内存中，宿主不释放。
+
+| 导出 | 签名 | 返回 |
+| --- | --- | --- |
+| `describe` | `() -> ptr` | NUL 结尾 JSON：`{"engine_name","description","file_types","capabilities"}` |
+| `input_buffer` | `() -> ptr` | 宿主写入输入字节的缓冲区地址（调用 `parse` 前） |
+| `parse` | `(len) -> ptr` | 从 `input_buffer` 读取 `len` 字节解析后，返回 NUL 结尾 JSON `{"markdown_content","metadata"}` |
+| `health_check` | `() -> ptr` | 状态令牌；`"serving"` 视为健康，其他映射为 NOT_SERVING |
+
+`health_check` **可选**：未导出该函数的模块由 facade 代答 `SERVING`，保证旧模块向前兼容。
+
+完整 wasm 插件示例见 [`examples/wasm-parser-plugin`](https://github.com/Tencent/WeKnora/tree/main/examples/wasm-parser-plugin)：用 TinyGo 编译的 markdown 换行归一化器，与 [`examples/document-parser-plugin`](https://github.com/Tencent/WeKnora/tree/main/examples/document-parser-plugin)（进程版完整 parser）形成对照。
+
+#### 能力边界
+
+- **默认禁网、禁文件系统**：wasm 模块只有线性内存，本迭代不提供网络或文件 host function。manifest 声明 `network.enabled: true` 会被校验拒绝——声明与实际能力一致。
+- **首批只支持无状态扩展**：当前 facade 实现 `DocumentParserPlugin`；`web_search` 纯计算路径可后续补齐。datasource 的文件 I/O 与 model_provider 的长连接暂不支持 wasm 形态。
+- **串行执行**：wazero 单实例串行，适合低 QPS 场景。并发请求需在 facade 层排队。
+
 ## 插件协议与生命周期
 
 公开协议定义在 `sdk/plugin/proto/plugin.proto`。`sdk/plugin` 是独立版本化的 Go module，插件仓库通过 `go get github.com/Tencent/WeKnora/sdk/plugin` 引用，不依赖宿主模块。插件需实现 `PluginLifecycle`；datasource 插件还需实现 `DataSourcePlugin`。Go 插件可复用 `sdk/plugin/server` 提供的监听与默认 lifecycle 实现。
@@ -354,6 +399,51 @@ filesystem:
 - 应用既有 `audit_logs`，方便长期查询。
 
 持久化审计只保留受控的插件 ID、动作、结果和 details；潜在敏感的目标地址与错误消息不会写入 durable audit。审计库短暂不可用也不会阻塞插件启动、停止、同步或恢复。
+
+## 指标上报
+
+插件可通过 SDK 上报运行期指标（counter / gauge / histogram），宿主在每次健康检查成功后拉取并缓存，便于运维查询"一次同步处理了多少文档、失败原因、耗时分布"等运行期数据。
+
+**SDK 用法**（`sdk/plugin/server/metrics.go`）：
+
+```go
+registry := pluginsdk.NewMetricsRegistry()
+registry.Counter("documents_parsed", map[string]string{"type": "md"}).Add(3)
+registry.Gauge("queue_depth", nil).Set(7)
+registry.Histogram("parse_seconds", nil).Observe(0.25)
+
+lifecycle := &pluginsdk.Lifecycle{
+    Metadata: pluginsdk.Metadata{ID: "my-parser", Version: "0.1.0", ExtensionTypes: []string{"document_parser"}},
+    Metrics:  registry,  // 不设置时 GetMetrics RPC 返回 Unimplemented
+}
+```
+
+**宿主行为**：
+
+- 健康检查成功后调用 `GetMetrics` RPC，结果缓存到 `MetricsSnapshot`（最近一次采样）
+- 插件返回 `codes.Unimplemented`（旧 SDK 或未设置 `Metrics`）时标记 `unavailable: true`，不视为故障
+- 拉取失败只记 debug 日志，不影响插件状态——指标是 advisory
+- 管理 API `GET /api/plugins/{id}/metrics` 返回缓存的快照
+
+旧插件无需改动：不实现 `GetMetrics` 的插件由 SDK 基类返回 `Unimplemented`，宿主标记"无指标"而非报错。
+
+## 升级与回滚
+
+插件升级靠"停旧进程、换二进制、启新进程"，框架为此提供 last-known-good 快照与自动回滚，避免升级失败后插件不可用且无回滚路径。
+
+**快照建立**：插件首次成功启动时，宿主拷贝当前 manifest 与 entrypoint 到插件目录下的 `.weknora/rollback/<id>/<version>/`。后续启动保留原始快照（不覆盖），确保升级链路上始终能回到 last-known-good。
+
+**自动回滚触发**：当插件进入 `failed` 状态且重启预算（`restartPolicy.maxAttempts`）在滑动窗口内耗尽时，`scheduleAutomaticRecovery` 调用 `maybeAutoRollback`：
+
+1. 检查是否存在快照（`HasRollbackSnapshot`）——无则放弃，保持 failed
+2. 恢复备份 manifest 到插件目录
+3. 停止当前（新版）进程/容器/wasm
+4. 用旧 manifest 重启
+5. 落 `plugin.rolled_back`（成功）或 `plugin.rollback_failed`（失败）审计
+
+**手动触发**：`weknora plugin rollback <id>` CLI 命令规划中，当前由自动路径覆盖核心场景。
+
+**信任边界**：签名（见"插件签名与信任根"）保证 manifest 来源与完整性，但**不覆盖插件二进制/容器镜像**——后者由发布管道保证。回滚恢复的是快照时的 manifest 与 entrypoint 路径，不验证二进制是否被篡改。
 
 ## Compose 部署
 
