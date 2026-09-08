@@ -112,6 +112,7 @@ type Manager struct {
 	audit           *AuditLog
 	persistentAudit auditSink
 	keyRing         *KeyRing
+	metrics         map[string]MetricsSnapshot
 	mu              sync.RWMutex
 	byID            map[string]*Plugin
 	restarts        map[string]*restartState
@@ -248,6 +249,9 @@ func (m *Manager) StartWithConfig(ctx context.Context, id string, config map[str
 	}
 	m.rememberRestartConfig(id, config)
 	m.resetHealthState(id)
+	// First successful start snapshots this version as last-known-good; later
+	// starts keep the original snapshot so upgrades stay rollback-able.
+	m.ensureRollbackSnapshot(*plugin)
 	m.recordAudit(id, AuditActionPluginStarted, "success", "", "plugin started", map[string]string{
 		"extension_type":  string(plugin.Manifest.Spec.ExtensionType),
 		"network_enabled": fmt.Sprintf("%t", plugin.Manifest.Spec.Permissions.Network.Enabled),
@@ -450,6 +454,10 @@ func (m *Manager) startHealthMonitor(id string) {
 					m.handleHealthCheckFailure(id, monitor, err)
 					return
 				}
+				if err == nil {
+					// Metrics ride the health cadence; failures are advisory.
+					m.metricsPoller(id)(ctx)
+				}
 			}
 		}
 	}()
@@ -569,6 +577,10 @@ func (m *Manager) scheduleAutomaticRecovery(id string) {
 			if !canRetry {
 				if budgetExhausted {
 					m.recordAudit(id, AuditActionPluginRestartDenied, "denied", "", "restart budget exhausted", nil)
+					// A last-known-good snapshot beats giving up: upgrades that
+					// exhaust the restart budget roll back automatically. The
+					// rollback itself audits success or failure.
+					m.maybeAutoRollback(id)
 				}
 				return
 			}

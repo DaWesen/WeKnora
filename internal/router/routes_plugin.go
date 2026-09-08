@@ -19,11 +19,19 @@ func RegisterPluginRoutes(r *gin.RouterGroup, handler *handler.PluginHandler, g 
 	readRoutes.GET("", handler.List)
 	readRoutes.GET("/:id", handler.Get)
 	readRoutes.GET("/:id/audit", handler.ListAudit)
+	readRoutes.GET("/:id/metrics", handler.Metrics)
 	g.apiKeyRoute(
 		plugins,
 		http.MethodPost,
 		"/:id/restart",
 		apiKeyPlatform(types.APIKeyCapabilitySystemRuntimeManage),
 		handler.Restart,
+	)
+	g.apiKeyRoute(
+		plugins,
+		http.MethodPost,
+		"/:id/rollback",
+		apiKeyPlatform(types.APIKeyCapabilitySystemRuntimeManage),
+		handler.Rollback,
 	)
 }

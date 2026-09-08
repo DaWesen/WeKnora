@@ -66,6 +66,13 @@ func (c *Client) Shutdown(ctx context.Context) error {
 	return err
 }
 
+// GetMetrics fetches the plugin's current metric samples. A plugin that
+// predates metrics support answers codes.Unimplemented; callers treat that as
+// "no metrics" rather than an error.
+func (c *Client) GetMetrics(ctx context.Context) (*pluginpb.GetMetricsResponse, error) {
+	return c.lifecycle.GetMetrics(ctx, &pluginpb.GetMetricsRequest{})
+}
+
 // CheckHealth verifies that a plugin endpoint is reachable and reports serving.
 func CheckHealth(ctx context.Context, address string, timeout time.Duration) error {
 	checkCtx, cancel := context.WithTimeout(ctx, timeout)

@@ -164,6 +164,43 @@ func (h *PluginHandler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": pluginForResponse(h.manager, *value)})
 }
 
+// Metrics returns the plugin's most recent cached metric samples. The cache
+// refreshes at the plugin's health-check cadence; a plugin that does not
+// implement GetMetrics reports unavailable=true rather than an error.
+func (h *PluginHandler) Metrics(c *gin.Context) {
+	id := c.Param("id")
+	if _, ok := h.manager.Get(id); !ok {
+		c.Error(apperrors.NewNotFoundError("plugin not found"))
+		return
+	}
+	snapshot, ok := h.manager.MetricsSnapshot(id)
+	if !ok {
+		snapshot = plugin.MetricsSnapshot{PluginID: id, Unavailable: true, Reason: "metrics have not been collected yet"}
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": snapshot})
+}
+
+// Rollback restores a plugin to its last-known-good snapshot (the version
+// that first started successfully after the last rollback or fresh install)
+// and restarts it with the retained runtime configuration.
+func (h *PluginHandler) Rollback(c *gin.Context) {
+	id := c.Param("id")
+	if _, ok := h.manager.Get(id); !ok {
+		c.Error(apperrors.NewNotFoundError("plugin not found"))
+		return
+	}
+	if err := h.manager.Rollback(c.Request.Context(), id); err != nil {
+		if errors.Is(err, plugin.ErrNoRollbackSnapshot) {
+			c.Error(apperrors.NewValidationError("plugin has no rollback snapshot"))
+			return
+		}
+		c.Error(apperrors.NewInternalServerError("rollback plugin"))
+		return
+	}
+	value, _ := h.manager.Get(id)
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": pluginForResponse(h.manager, *value)})
+}
+
 // ListAudit returns durable system-scope plugin events. Target and Message are
 // never persisted, so runtime addresses and downstream error text stay out of
 // this control-plane response even after an application restart.

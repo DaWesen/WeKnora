@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"google.golang.org/grpc"
 )
 
 const (
@@ -32,6 +34,11 @@ type startedPlugin struct {
 	command                 *exec.Cmd
 	containerName           string
 	filesystemPermissionKey string
+	// wasm runtime (entrypoint.type == "wasm"): the embedded module and the
+	// gRPC facade server fronting it.
+	wasmEngine wasmEngine
+	wasmServer *grpc.Server
+	wasmServe  chan error
 }
 
 func NewRuntime() *Runtime {
@@ -71,6 +78,8 @@ func (r *Runtime) Start(ctx context.Context, plugin Plugin, config map[string]st
 		startedPluginInstance, startErr = startProcess(ctx, plugin)
 	case "container":
 		startedPluginInstance, startErr = startContainer(ctx, plugin, config)
+	case "wasm":
+		startedPluginInstance, startErr = startWasmEngine(ctx, plugin)
 	default:
 		startErr = fmt.Errorf("unsupported plugin runtime %q", plugin.Manifest.Spec.Entrypoint.Type)
 	}
@@ -152,6 +161,11 @@ func (r *Runtime) Stop(ctx context.Context, id string) error {
 	if started.containerName != "" {
 		if output, err := exec.CommandContext(ctx, "docker", "rm", "-f", started.containerName).CombinedOutput(); err != nil {
 			return fmt.Errorf("stop plugin container %q: %w: %s", id, err, strings.TrimSpace(string(output)))
+		}
+	}
+	if started.wasmServer != nil || started.wasmEngine != nil {
+		if err := started.stopWasm(); err != nil {
+			return fmt.Errorf("stop wasm plugin %q: %w", id, err)
 		}
 	}
 	return nil

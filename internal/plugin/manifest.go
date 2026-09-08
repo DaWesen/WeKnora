@@ -173,6 +173,10 @@ type Entrypoint struct {
 	Image                string   `yaml:"image,omitempty"`
 	GRPCAddress          string   `yaml:"grpcAddress"`
 	ContainerGRPCAddress string   `yaml:"containerGrpcAddress,omitempty"`
+	// WasmModule is the path (relative to the plugin directory) of the
+	// .wasm binary instantiated by the host's embedded runtime. Only
+	// meaningful for type "wasm".
+	WasmModule string `yaml:"wasmModule,omitempty"`
 }
 
 type Permissions struct {
@@ -276,8 +280,17 @@ func (m *Manifest) Validate() error {
 	if err := validateVersionRange(m.Spec.WeKnoraVersion); err != nil {
 		return err
 	}
-	if m.Spec.Entrypoint.Type != "process" && m.Spec.Entrypoint.Type != "container" {
-		return fmt.Errorf("plugin entrypoint type must be process or container")
+	if m.Spec.Entrypoint.Type != "process" && m.Spec.Entrypoint.Type != "container" && m.Spec.Entrypoint.Type != "wasm" {
+		return fmt.Errorf("plugin entrypoint type must be process, container, or wasm")
+	}
+	if m.Spec.Entrypoint.Type == "wasm" && strings.TrimSpace(m.Spec.Entrypoint.WasmModule) == "" {
+		return fmt.Errorf("wasm plugin entrypoint wasmModule is required")
+	}
+	// Wasm modules run embedded in the host process with no sandboxed network
+	// or filesystem access by construction, so a wasm plugin declaring network
+	// permissions is a manifest error: nothing would enforce it.
+	if m.Spec.Entrypoint.Type == "wasm" && m.Spec.Permissions.Network.Enabled {
+		return fmt.Errorf("wasm plugins cannot request network permission: the embedded runtime provides no host networking")
 	}
 	if strings.TrimSpace(m.Spec.Entrypoint.GRPCAddress) == "" {
 		return fmt.Errorf("plugin gRPC address is required")
