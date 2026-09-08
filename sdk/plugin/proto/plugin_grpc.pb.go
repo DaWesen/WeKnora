@@ -23,6 +23,7 @@ const (
 	PluginLifecycle_HealthCheck_FullMethodName    = "/weknora.plugin.v1.PluginLifecycle/HealthCheck"
 	PluginLifecycle_ValidateConfig_FullMethodName = "/weknora.plugin.v1.PluginLifecycle/ValidateConfig"
 	PluginLifecycle_Shutdown_FullMethodName       = "/weknora.plugin.v1.PluginLifecycle/Shutdown"
+	PluginLifecycle_GetMetrics_FullMethodName     = "/weknora.plugin.v1.PluginLifecycle/GetMetrics"
 )
 
 // PluginLifecycleClient is the client API for PluginLifecycle service.
@@ -33,6 +34,10 @@ type PluginLifecycleClient interface {
 	HealthCheck(ctx context.Context, in *HealthCheckRequest, opts ...grpc.CallOption) (*HealthCheckResponse, error)
 	ValidateConfig(ctx context.Context, in *ValidateConfigRequest, opts ...grpc.CallOption) (*ValidateConfigResponse, error)
 	Shutdown(ctx context.Context, in *ShutdownRequest, opts ...grpc.CallOption) (*ShutdownResponse, error)
+	// GetMetrics returns the plugin's current metric samples. Plugins built
+	// against older SDKs answer Unimplemented; the host treats that as
+	// "no metrics" and skips collection for that plugin.
+	GetMetrics(ctx context.Context, in *GetMetricsRequest, opts ...grpc.CallOption) (*GetMetricsResponse, error)
 }
 
 type pluginLifecycleClient struct {
@@ -83,6 +88,16 @@ func (c *pluginLifecycleClient) Shutdown(ctx context.Context, in *ShutdownReques
 	return out, nil
 }
 
+func (c *pluginLifecycleClient) GetMetrics(ctx context.Context, in *GetMetricsRequest, opts ...grpc.CallOption) (*GetMetricsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetMetricsResponse)
+	err := c.cc.Invoke(ctx, PluginLifecycle_GetMetrics_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PluginLifecycleServer is the server API for PluginLifecycle service.
 // All implementations must embed UnimplementedPluginLifecycleServer
 // for forward compatibility.
@@ -91,6 +106,10 @@ type PluginLifecycleServer interface {
 	HealthCheck(context.Context, *HealthCheckRequest) (*HealthCheckResponse, error)
 	ValidateConfig(context.Context, *ValidateConfigRequest) (*ValidateConfigResponse, error)
 	Shutdown(context.Context, *ShutdownRequest) (*ShutdownResponse, error)
+	// GetMetrics returns the plugin's current metric samples. Plugins built
+	// against older SDKs answer Unimplemented; the host treats that as
+	// "no metrics" and skips collection for that plugin.
+	GetMetrics(context.Context, *GetMetricsRequest) (*GetMetricsResponse, error)
 	mustEmbedUnimplementedPluginLifecycleServer()
 }
 
@@ -112,6 +131,9 @@ func (UnimplementedPluginLifecycleServer) ValidateConfig(context.Context, *Valid
 }
 func (UnimplementedPluginLifecycleServer) Shutdown(context.Context, *ShutdownRequest) (*ShutdownResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Shutdown not implemented")
+}
+func (UnimplementedPluginLifecycleServer) GetMetrics(context.Context, *GetMetricsRequest) (*GetMetricsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetMetrics not implemented")
 }
 func (UnimplementedPluginLifecycleServer) mustEmbedUnimplementedPluginLifecycleServer() {}
 func (UnimplementedPluginLifecycleServer) testEmbeddedByValue()                         {}
@@ -206,6 +228,24 @@ func _PluginLifecycle_Shutdown_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PluginLifecycle_GetMetrics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetMetricsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PluginLifecycleServer).GetMetrics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PluginLifecycle_GetMetrics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PluginLifecycleServer).GetMetrics(ctx, req.(*GetMetricsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PluginLifecycle_ServiceDesc is the grpc.ServiceDesc for PluginLifecycle service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -228,6 +268,10 @@ var PluginLifecycle_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Shutdown",
 			Handler:    _PluginLifecycle_Shutdown_Handler,
+		},
+		{
+			MethodName: "GetMetrics",
+			Handler:    _PluginLifecycle_GetMetrics_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

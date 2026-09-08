@@ -15,6 +15,8 @@ import (
 
 	pluginpb "github.com/Tencent/WeKnora/sdk/plugin/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -34,6 +36,10 @@ type Lifecycle struct {
 	Metadata         Metadata
 	OnValidateConfig func(context.Context, map[string]string) []*pluginpb.FieldError
 	OnShutdown       func(context.Context) error
+	// Metrics, when set, is polled by the host through GetMetrics. Plugins
+	// that predate metrics support leave it nil and the RPC answers
+	// Unimplemented, which the host treats as "no metrics".
+	Metrics *MetricsRegistry
 }
 
 func (s Lifecycle) GetInfo(context.Context, *pluginpb.GetInfoRequest) (*pluginpb.PluginInfo, error) {
@@ -67,6 +73,16 @@ func (s Lifecycle) Shutdown(ctx context.Context, _ *pluginpb.ShutdownRequest) (*
 		}
 	}
 	return &pluginpb.ShutdownResponse{}, nil
+}
+
+// GetMetrics reports the plugin's metric samples. A nil registry answers
+// Unimplemented so old hosts (and hosts talking to plugins without metrics)
+// degrade gracefully.
+func (s Lifecycle) GetMetrics(context.Context, *pluginpb.GetMetricsRequest) (*pluginpb.GetMetricsResponse, error) {
+	if s.Metrics == nil {
+		return nil, status.Error(codes.Unimplemented, "plugin does not report metrics")
+	}
+	return &pluginpb.GetMetricsResponse{Samples: s.Metrics.Snapshot()}, nil
 }
 
 func Address() string {

@@ -9,6 +9,10 @@ service PluginLifecycle {
   rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
   rpc ValidateConfig(ValidateConfigRequest) returns (ValidateConfigResponse);
   rpc Shutdown(ShutdownRequest) returns (ShutdownResponse);
+  // GetMetrics returns the plugin's current metric samples. Plugins built
+  // against older SDKs answer Unimplemented; the host treats that as
+  // "no metrics" and skips collection for that plugin.
+  rpc GetMetrics(GetMetricsRequest) returns (GetMetricsResponse);
 }
 
 
@@ -85,6 +89,28 @@ message ValidateConfigResponse { bool valid = 1; repeated FieldError errors = 2;
 message FieldError { string field = 1; string message = 2; }
 message ShutdownRequest {}
 message ShutdownResponse {}
+
+// --- Plugin metrics ---
+
+message GetMetricsRequest {}
+message GetMetricsResponse {
+  repeated MetricSample samples = 1;
+}
+// MetricSample is one observation. kind selects the semantics:
+//   "counter"    — monotonically increasing value;
+//   "gauge"      — point-in-time value;
+//   "histogram"  — bucket_bounds/bucket_counts describe the distribution.
+message MetricSample {
+  string name = 1;
+  string kind = 2;
+  double value = 3;
+  map<string, string> labels = 4;
+  int64 timestamp_unix_millis = 5;
+  // For histograms: ascending inclusive-upper-bound values; bucket_counts
+  // is parallel and its last element is the +Inf bucket.
+  repeated double bucket_bounds = 6;
+  repeated uint64 bucket_counts = 7;
+}
 message ValidateCredentialsRequest { map<string, string> config = 1; }
 message ValidateCredentialsResponse { bool valid = 1; string message = 2; }
 message ListResourcesRequest { map<string, string> config = 1; string parent_id = 2; }
