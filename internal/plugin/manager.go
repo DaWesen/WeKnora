@@ -950,6 +950,14 @@ func (m *Manager) Discover() error {
 			continue
 		}
 		directory := filepath.Join(m.root, entry.Name())
+		// Keep the plugin directory absolute. os/exec resolves a relative
+		// Cmd.Path against Cmd.Dir, so a relative root (for example "plugins")
+		// makes startProcess look for "<pluginDir>/<pluginDir>/<binary>" and
+		// fail with ENOENT. Container deployments always used an absolute
+		// plugin dir, which is why this only shows up for relative roots.
+		if abs, absErr := filepath.Abs(directory); absErr == nil {
+			directory = abs
+		}
 		manifestPath := filepath.Join(directory, ManifestFileName)
 		data, readErr := os.ReadFile(manifestPath)
 		if readErr != nil {

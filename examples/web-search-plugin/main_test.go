@@ -47,8 +47,8 @@ func TestDescribeReturnsDuckDuckGoMetadata(t *testing.T) {
 
 	response, err := client.Describe(context.Background(), &pluginpb.WebSearchDescribeRequest{})
 	require.NoError(t, err)
-	assert.Equal(t, "duckduckgo", response.GetProviderType())
-	assert.Equal(t, "DuckDuckGo", response.GetDisplayName())
+	assert.Equal(t, "duckduckgo-plugin", response.GetProviderType())
+	assert.Equal(t, "DuckDuckGo (Plugin)", response.GetDisplayName())
 	assert.False(t, response.GetRequiresApiKey())
 	assert.True(t, response.GetSupportsProxy())
 }

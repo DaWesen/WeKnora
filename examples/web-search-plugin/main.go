@@ -23,8 +23,8 @@ type server struct {
 
 func (s *server) Describe(context.Context, *pluginpb.WebSearchDescribeRequest) (*pluginpb.WebSearchDescribeResponse, error) {
 	return &pluginpb.WebSearchDescribeResponse{
-		ProviderType:  "duckduckgo",
-		DisplayName:  "DuckDuckGo",
+		ProviderType:  "duckduckgo-plugin",
+		DisplayName:   "DuckDuckGo (Plugin)",
 		Description:   "Web search via the DuckDuckGo Instant Answer API. No API key required.",
 		RequiresApiKey: false,
 		SupportsProxy: true,

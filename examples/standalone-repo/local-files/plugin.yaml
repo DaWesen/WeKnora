@@ -2,9 +2,9 @@ apiVersion: weknora.plugin/v1
 kind: Plugin
 metadata:
   id: com.example.local-files
-  name: Local Files (Standalone Repo)
+  name: 本地文件目录（独立仓库插件）
   version: 0.1.0
-  description: Sync markdown and text files from an explicitly configured directory. Built in a standalone repository.
+  description: 从显式配置的本地目录同步 Markdown 与纯文本文件。该插件位于主仓之外的独立仓库，仅依赖 sdk/plugin。
 spec:
   extensionType: datasource
   weknoraVersion: ">=0.1.0"
@@ -19,7 +19,8 @@ spec:
     properties:
       rootPath:
         type: string
-        description: Absolute path to the directory to sync.
+        title: 同步根目录
+        description: 要同步的目录绝对路径。插件与宿主运行在同一台机器上，因此需填宿主可见的路径（WSL 路径，例如 /tmp/weknora-e2e-files 或 /mnt/c/Users/<你>/Desktop/xxx）。
   permissions:
     network:
       # Process plugins cannot declare network disabled — the host only

@@ -84,7 +84,11 @@ func newWazeroEngine(ctx context.Context, wasmPath string) (*wazeroEngine, error
 	// WASI is enabled so TinyGo modules can run their runtime init; the
 	// module still gets no host capabilities beyond memory.
 	wasi.MustInstantiate(ctx, runtime)
-	module, err := runtime.Instantiate(ctx, wasmBytes)
+	// The default ModuleConfig invokes `_start` on instantiation. TinyGo's
+	// wasi `_start` runs main() and then proc_exit(0), which would close the
+	// module before the host can call describe/parse. We are driving the
+	// module purely through exported functions, so start no entrypoint.
+	module, err := runtime.InstantiateWithConfig(ctx, wasmBytes, wazero.NewModuleConfig().WithStartFunctions())
 	if err != nil {
 		runtime.Close(ctx)
 		return nil, fmt.Errorf("instantiate wasm module %s: %w", wasmPath, err)
@@ -225,12 +229,12 @@ func readFileAll(path string) ([]byte, error) {
 // process/container plugins: the host dials it like any other plugin.
 type wasmFacade struct {
 	pluginpb.UnimplementedDocumentParserPluginServer
-	engine         wasmEngine
-	mu             sync.Mutex
-	descriptor     *wasmDescriptor
-	manifestID     string
-	manifestVer    string
-	startedAtUnix  int64
+	engine        wasmEngine
+	mu            sync.Mutex
+	descriptor    *wasmDescriptor
+	manifestID    string
+	manifestVer   string
+	startedAtUnix int64
 }
 
 func newWasmFacade(manifestID, manifestVersion string, engine wasmEngine) *wasmFacade {

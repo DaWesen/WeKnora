@@ -80,11 +80,14 @@ func parse(length uint32) uint32 {
 	var b strings.Builder
 	b.WriteString(`{"markdown_content":`)
 	writeJSONString(&b, normalized)
-	b.WriteString(`,"metadata":{"source_bytes":`)
+	// metadata must be string->string: the host's wasmParseResult.Metadata
+	// and the gRPC DocumentParserParseResponse.metadata are both
+	// map<string, string>, so byte counts are quoted.
+	b.WriteString(`,"metadata":{"source_bytes":"`)
 	writeInt(&b, int64(len(content)))
-	b.WriteString(`,"normalized_bytes":`)
+	b.WriteString(`","normalized_bytes":"`)
 	writeInt(&b, int64(len(normalized)))
-	b.WriteString(`,"line_endings":"lf"}}`)
+	b.WriteString(`","line_endings":"lf"}}`)
 	return writeOutput(b.String() + "\x00")
 }
 
