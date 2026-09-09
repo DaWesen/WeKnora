@@ -47,6 +47,9 @@ type ParserEngineInfo struct {
 	FileTypes         []string
 	Available         bool
 	UnavailableReason string
+	// Source marks engines provided by external plugins ("plugin").
+	// Empty for built-in engines, so the UI can badge plugin engines.
+	Source string `json:"Source"`
 }
 
 // --- Internal types used by chunking pipeline ---

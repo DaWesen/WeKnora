@@ -45,6 +45,22 @@ type ReaderDeps struct {
 // order — which is also the order the engine list is shown in.
 var localEngines []EngineRegistration
 
+// pluginEngineNames tracks parser engines provided by external plugins, so the
+// engine list can badge them. Populated by the plugin loader via
+// MarkEngineAsPlugin; registrations happen once at startup.
+var pluginEngineNames = make(map[string]struct{})
+
+// MarkEngineAsPlugin records that name is backed by an external plugin.
+func MarkEngineAsPlugin(name string) {
+	pluginEngineNames[name] = struct{}{}
+}
+
+// isPluginEngine reports whether name was registered by an external plugin.
+func isPluginEngine(name string) bool {
+	_, ok := pluginEngineNames[name]
+	return ok
+}
+
 // RegisterEngine adds an engine to the local registry. Called from init().
 func RegisterEngine(e EngineRegistration) {
 	localEngines = append(localEngines, e)
@@ -125,12 +141,17 @@ func ListAllEngines(
 		}
 
 		available, reason := e.CheckAvailable(docreaderConnected, overrides)
+		source := ""
+		if isPluginEngine(name) {
+			source = "plugin"
+		}
 		result = append(result, types.ParserEngineInfo{
 			Name:              name,
 			Description:       description,
 			FileTypes:         fileTypes,
 			Available:         available,
 			UnavailableReason: reason,
+			Source:            source,
 		})
 	}
 

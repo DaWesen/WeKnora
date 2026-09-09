@@ -14,6 +14,22 @@ import (
 	pluginpb "github.com/Tencent/WeKnora/sdk/plugin/proto"
 )
 
+// pluginEngineTypes tracks retriever engine types provided by external plugins
+// (whether they land in PluginQueryRegistry or RetrieveEngineRegistry), so the
+// engine type list can badge them. Populated by the plugin loader at startup.
+var pluginEngineTypes = make(map[types.RetrieverEngineType]struct{})
+
+// MarkPluginEngineType records that engineType is backed by an external plugin.
+func MarkPluginEngineType(engineType types.RetrieverEngineType) {
+	pluginEngineTypes[engineType] = struct{}{}
+}
+
+// IsPluginEngineType reports whether engineType was provided by an external plugin.
+func IsPluginEngineType(engineType types.RetrieverEngineType) bool {
+	_, ok := pluginEngineTypes[engineType]
+	return ok
+}
+
 // PluginQueryRegistry holds read-only external retrievers. They are deliberately
 // separate from RetrieveEngineRegistry because the plugin protocol has no index lifecycle RPCs.
 type PluginQueryRegistry struct {
@@ -103,6 +119,9 @@ func (l *PluginLoader) Load(ctx context.Context, manager *plugin.Manager, discov
 	base := pluginRetrieveEngine{
 		manager: manager, pluginID: pluginID, engineType: engineType, support: support,
 	}
+	// Badge the engine type regardless of which registry it lands in, so the
+	// UI can distinguish plugin-provided engines from built-ins.
+	MarkPluginEngineType(engineType)
 	if hasIndexCapability(discovered.Manifest.Spec.Capabilities) {
 		if l.indexRegistry == nil {
 			return fmt.Errorf("plugin %q declares index capability but no index registry is available", pluginID)

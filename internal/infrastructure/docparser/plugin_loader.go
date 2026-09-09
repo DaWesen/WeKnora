@@ -52,13 +52,14 @@ func (l *PluginLoader) Load(ctx context.Context, manager *plugin.Manager, discov
 	}
 
 	RegisterEngine(&pluginEngine{
-		manager:     manager,
-		pluginID:     pluginID,
-		name:         name,
-		description:  description.GetDescription(),
-		fileTypes:    append([]string(nil), description.GetFileTypes()...),
+		manager:        manager,
+		pluginID:       pluginID,
+		name:           name,
+		description:    description.GetDescription(),
+		fileTypes:      append([]string(nil), description.GetFileTypes()...),
 		supportsStream: slices.Contains(description.GetCapabilities(), "stream"),
 	})
+	MarkEngineAsPlugin(name)
 	return nil
 }
 

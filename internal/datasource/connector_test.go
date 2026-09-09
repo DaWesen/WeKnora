@@ -149,14 +149,32 @@ func TestRegisterPluginConnectorMetadata(t *testing.T) {
 	delete(ConnectorMetadataRegistry, pluginID)
 	t.Cleanup(func() { delete(ConnectorMetadataRegistry, pluginID) })
 
-	if err := RegisterPluginConnectorMetadata(pluginID, "Test Plugin", "External test datasource"); err != nil {
+	schema := map[string]any{
+		"type":     "object",
+		"required": []any{"rootPath"},
+		"properties": map[string]any{
+			"rootPath": map[string]any{"type": "string", "description": "Root directory"},
+		},
+	}
+	if err := RegisterPluginConnectorMetadata(pluginID, "Test Plugin", "External test datasource", schema); err != nil {
 		t.Fatal(err)
 	}
 	metadata := ConnectorMetadataRegistry[pluginID]
 	if metadata.Name != "Test Plugin" || metadata.AuthType != "none" {
 		t.Fatalf("unexpected plugin metadata: %#v", metadata)
 	}
-	if err := RegisterPluginConnectorMetadata(pluginID, "Test Plugin", "External test datasource"); err == nil {
+	// The declared settings schema must reach the UI through the connector list.
+	properties, ok := metadata.ConfigSchema["properties"].(map[string]any)
+	if !ok || properties["rootPath"] == nil {
+		t.Fatalf("plugin config schema not exposed: %#v", metadata.ConfigSchema)
+	}
+	// ...and it must be a deep copy: mutating the manifest schema afterwards
+	// must not be visible through the registry.
+	delete(schema["properties"].(map[string]any), "rootPath")
+	if ConnectorMetadataRegistry[pluginID].ConfigSchema["properties"].(map[string]any)["rootPath"] == nil {
+		t.Fatal("exposed config schema aliases the plugin manifest")
+	}
+	if err := RegisterPluginConnectorMetadata(pluginID, "Test Plugin", "External test datasource", nil); err == nil {
 		t.Fatal("expected duplicate metadata registration to fail")
 	}
 }

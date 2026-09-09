@@ -701,6 +701,7 @@ type ModelProviderDTO struct {
 	Description string            `json:"description"` // 描述
 	DefaultURLs map[string]string `json:"defaultUrls"` // 按模型类型区分的默认 URL
 	ModelTypes  []string          `json:"modelTypes"`  // 支持的模型类型
+	Source      string            `json:"source"`      // 来源："plugin" 表示由外部插件提供
 }
 
 // modelTypeToFrontend 将后端 ModelType 转换为前端兼容的字符串
@@ -790,6 +791,7 @@ func (h *ModelHandler) ListModelProviders(c *gin.Context) {
 			Description: p.Description,
 			DefaultURLs: defaultURLs,
 			ModelTypes:  modelTypes,
+			Source:      p.Source,
 		})
 	}
 

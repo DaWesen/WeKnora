@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/Tencent/WeKnora/internal/application/service/retriever"
 	"github.com/Tencent/WeKnora/internal/errors"
 	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/types"
@@ -16,14 +17,22 @@ import (
 type VectorStoreHandler struct {
 	repo    interfaces.VectorStoreRepository
 	service interfaces.VectorStoreService
+	// retrieveRegistry holds built-in and plugin-provided engine services
+	// (plugins with the "index" capability land here).
+	retrieveRegistry interfaces.RetrieveEngineRegistry
+	// pluginRetrievers lists read-only retriever engines provided by external
+	// plugins (no index lifecycle).
+	pluginRetrievers *retriever.PluginQueryRegistry
 }
 
 // NewVectorStoreHandler creates a new handler
 func NewVectorStoreHandler(
 	repo interfaces.VectorStoreRepository,
 	service interfaces.VectorStoreService,
+	retrieveRegistry interfaces.RetrieveEngineRegistry,
+	pluginRetrievers *retriever.PluginQueryRegistry,
 ) *VectorStoreHandler {
-	return &VectorStoreHandler{repo: repo, service: service}
+	return &VectorStoreHandler{repo: repo, service: service, retrieveRegistry: retrieveRegistry, pluginRetrievers: pluginRetrievers}
 }
 
 // --- request DTOs ---
@@ -346,9 +355,40 @@ func (h *VectorStoreHandler) DeleteStore(c *gin.Context) {
 // @Success      200  {object}  map[string]interface{}   "List of engine types with config schemas"
 // @Router       /vector-stores/types [get]
 func (h *VectorStoreHandler) ListStoreTypes(c *gin.Context) {
+	result := types.GetVectorStoreTypes()
+	seen := make(map[string]struct{}, len(result))
+	for _, t := range result {
+		seen[t.Type] = struct{}{}
+	}
+	appendPluginEngine := func(engineType types.RetrieverEngineType) {
+		name := string(engineType)
+		if _, ok := seen[name]; ok {
+			return
+		}
+		seen[name] = struct{}{}
+		result = append(result, types.VectorStoreTypeInfo{
+			Type:        name,
+			DisplayName: name,
+			Source:      "plugin",
+		})
+	}
+	// Plugins with the "index" capability register into the engine registry.
+	if h.retrieveRegistry != nil {
+		for _, engine := range h.retrieveRegistry.GetAllRetrieveEngineServices() {
+			if retriever.IsPluginEngineType(engine.EngineType()) {
+				appendPluginEngine(engine.EngineType())
+			}
+		}
+	}
+	// Read-only plugin retrievers (no index lifecycle) live in the query registry.
+	if h.pluginRetrievers != nil {
+		for _, engine := range h.pluginRetrievers.List() {
+			appendPluginEngine(engine.EngineType())
+		}
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    types.GetVectorStoreTypes(),
+		"data":    result,
 	})
 }
 

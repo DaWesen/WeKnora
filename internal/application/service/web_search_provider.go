@@ -12,12 +12,25 @@ import (
 
 // webSearchProviderService implements interfaces.WebSearchProviderService
 type webSearchProviderService struct {
-	repo interfaces.WebSearchProviderRepository
+	repo     interfaces.WebSearchProviderRepository
+	registry *infra_web_search.Registry
 }
 
 // NewWebSearchProviderService creates a new web search provider service
-func NewWebSearchProviderService(repo interfaces.WebSearchProviderRepository) interfaces.WebSearchProviderService {
-	return &webSearchProviderService{repo: repo}
+func NewWebSearchProviderService(
+	repo interfaces.WebSearchProviderRepository,
+	registry *infra_web_search.Registry,
+) interfaces.WebSearchProviderService {
+	return &webSearchProviderService{repo: repo, registry: registry}
+}
+
+// isSupportedProviderType accepts built-in types and any type registered by an
+// external plugin (which lives in the registry rather than the static whitelist).
+func (s *webSearchProviderService) isSupportedProviderType(provider types.WebSearchProviderType) bool {
+	if isValidProviderType(provider) {
+		return true
+	}
+	return s.registry != nil && s.registry.HasType(string(provider))
 }
 
 // CreateProvider creates a new web search provider configuration.
@@ -26,7 +39,7 @@ func (s *webSearchProviderService) CreateProvider(ctx context.Context, provider 
 		return fmt.Errorf("tenant ID is required")
 	}
 
-	if !isValidProviderType(provider.Provider) {
+	if !s.isSupportedProviderType(provider.Provider) {
 		return fmt.Errorf("invalid provider type: %s", provider.Provider)
 	}
 
@@ -51,7 +64,7 @@ func (s *webSearchProviderService) UpdateProvider(ctx context.Context, provider 
 	}
 
 	// Validate provider type if set
-	if provider.Provider != "" && !isValidProviderType(provider.Provider) {
+	if provider.Provider != "" && !s.isSupportedProviderType(provider.Provider) {
 		return fmt.Errorf("invalid provider type: %s", provider.Provider)
 	}
 

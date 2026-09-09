@@ -613,6 +613,9 @@ type VectorStoreTypeInfo struct {
 	DisplayName      string                 `json:"display_name"`
 	ConnectionFields []VectorStoreFieldInfo `json:"connection_fields"`
 	IndexFields      []VectorStoreFieldInfo `json:"index_fields,omitempty"`
+	// Source marks engine types provided by external plugins ("plugin").
+	// Empty for built-in engines, so the UI can badge plugin engines.
+	Source string `json:"source,omitempty"`
 }
 
 func resolveTencentVectorDBReplicaNumber(lookup EnvLookupFunc) int {

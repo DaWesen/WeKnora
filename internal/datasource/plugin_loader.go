@@ -33,7 +33,7 @@ func (l *DataSourceLoader) Load(_ context.Context, manager *plugin.Manager, disc
 	if err := l.connectors.Register(NewPluginConnector(manager, pluginID)); err != nil {
 		return fmt.Errorf("register connector: %w", err)
 	}
-	if err := RegisterPluginConnectorMetadata(pluginID, discovered.Manifest.Metadata.Name, discovered.Manifest.Metadata.Description); err != nil {
+	if err := RegisterPluginConnectorMetadata(pluginID, discovered.Manifest.Metadata.Name, discovered.Manifest.Metadata.Description, discovered.Manifest.Spec.ConfigSchema); err != nil {
 		return fmt.Errorf("register connector metadata: %w", err)
 	}
 	return nil

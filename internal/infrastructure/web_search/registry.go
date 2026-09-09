@@ -52,6 +52,9 @@ func (r *Registry) RegisterWithInfo(id string, info types.WebSearchProviderTypeI
 		return fmt.Errorf("web search provider type %q already registered", id)
 	}
 	info.ID = id
+	// RegisterWithInfo is only used by the plugin loader; badge these provider
+	// types so the UI can distinguish plugin-provided types from built-ins.
+	info.Source = "plugin"
 	r.factories[id] = factory
 	r.infos[id] = cloneProviderTypeInfo(info)
 	return nil
@@ -74,6 +77,15 @@ func (r *Registry) AllProviderTypes() []types.WebSearchProviderTypeInfo {
 	result = append(result, r.ProviderTypes()...)
 	sort.Slice(result, func(i, j int) bool { return result[i].ID < result[j].ID })
 	return result
+}
+
+// HasType reports whether a provider type (built-in or plugin-provided) is
+// registered in this registry.
+func (r *Registry) HasType(providerType string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	_, ok := r.factories[providerType]
+	return ok
 }
 
 func cloneProviderTypeInfo(info types.WebSearchProviderTypeInfo) types.WebSearchProviderTypeInfo {

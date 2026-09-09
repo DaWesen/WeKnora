@@ -107,6 +107,9 @@ type ProviderInfo struct {
 	ModelTypes   []types.ModelType          // 支持的模型类型
 	RequiresAuth bool                       // 是否需要 API key
 	ExtraFields  []ExtraFieldConfig         // 额外配置字段
+	// Source marks providers registered by external plugins ("plugin").
+	// Empty for built-in providers, so the UI can badge plugin providers.
+	Source string
 }
 
 // GetDefaultURL 获取指定模型类型的默认 URL
@@ -183,8 +186,23 @@ func RegisterExternal(p Provider) error {
 	if _, exists := registry[info.Name]; exists {
 		return fmt.Errorf("provider %q already registered", info.Name)
 	}
-	registry[info.Name] = p
+	// Badge externally-registered providers so the UI can distinguish
+	// plugin-provided vendors from built-ins.
+	info.Source = "plugin"
+	registry[info.Name] = externalPluginProvider{Provider: p, info: info}
 	return nil
+}
+
+// externalPluginProvider wraps a plugin-provided provider so its Info() always
+// reports Source="plugin", regardless of how the underlying provider
+// implements Info(). Method calls still delegate to the wrapped provider.
+type externalPluginProvider struct {
+	Provider
+	info ProviderInfo
+}
+
+func (e externalPluginProvider) Info() ProviderInfo {
+	return e.info
 }
 
 // Get 通过名称从注册表中获取提供者
@@ -229,24 +247,41 @@ func List() []ProviderInfo {
 	return append(result, external...)
 }
 
-// ListByModelType 返回所有支持指定模型类型的提供者（按 AllProviders 定义的顺序）
+// ListByModelType 返回所有支持指定模型类型的提供者。
+// 内置提供者按 AllProviders 定义的顺序排列；插件注册的外部提供者追加在后
+// （与 List 一致），否则厂商下拉按类型过滤时会漏掉插件 provider。
 func ListByModelType(modelType types.ModelType) []ProviderInfo {
 	registryMu.RLock()
 	defer registryMu.RUnlock()
 
-	result := make([]ProviderInfo, 0)
+	result := make([]ProviderInfo, 0, len(registry))
+	seen := make(map[ProviderName]struct{}, len(registry))
 	for _, name := range AllProviders() {
 		if p, ok := registry[name]; ok {
 			info := p.Info()
 			for _, t := range info.ModelTypes {
 				if t == modelType {
 					result = append(result, info)
+					seen[name] = struct{}{}
 					break
 				}
 			}
 		}
 	}
-	return result
+	external := make([]ProviderInfo, 0, len(registry)-len(seen))
+	for name, p := range registry {
+		if _, exists := seen[name]; !exists {
+			info := p.Info()
+			for _, t := range info.ModelTypes {
+				if t == modelType {
+					external = append(external, info)
+					break
+				}
+			}
+		}
+	}
+	sort.Slice(external, func(i, j int) bool { return external[i].Name < external[j].Name })
+	return append(result, external...)
 }
 
 // DetectProvider 通过 BaseURL 检测服务商

@@ -136,6 +136,12 @@ func (r *ConnectorRegistry) List() []string {
 	return types
 }
 
+// Where a connector implementation comes from.
+const (
+	ConnectorSourceBuiltin = "builtin"
+	ConnectorSourcePlugin  = "plugin"
+)
+
 // ConnectorMetadata provides metadata about available connectors
 type ConnectorMetadata struct {
 	Type         string   `json:"type"`
@@ -145,6 +151,16 @@ type ConnectorMetadata struct {
 	Priority     int      `json:"priority"`     // Priority order for UI display (lower = higher priority)
 	AuthType     string   `json:"auth_type"`    // "oauth2", "api_key", "token", etc.
 	Capabilities []string `json:"capabilities"` // "incremental", "webhook", "deletion_sync", etc.
+	// ConfigSchema carries the external plugin's declared settings schema so the
+	// UI can render configuration fields for connectors it knows nothing about.
+	// Built-in connectors leave it empty — their fields are hardcoded in the UI.
+	ConfigSchema map[string]any `json:"config_schema,omitempty"`
+	// Source distinguishes connectors implemented in-tree from ones provided by
+	// an external plugin ("builtin" when empty, "plugin" when registered from a
+	// discovered plugin manifest). The UI must not assume that an unfamiliar
+	// type is a plugin — several built-in connectors simply have no hardcoded
+	// form yet.
+	Source string `json:"source"`
 }
 
 // GetConnectorMetadata returns metadata for all available connectors
@@ -290,7 +306,7 @@ var ConnectorMetadataRegistry = map[string]ConnectorMetadata{
 
 // RegisterPluginConnectorMetadata exposes a discovered external datasource plugin
 // through the existing connector types endpoint.
-func RegisterPluginConnectorMetadata(pluginID, name, description string) error {
+func RegisterPluginConnectorMetadata(pluginID, name, description string, configSchema map[string]any) error {
 	if _, exists := ConnectorMetadataRegistry[pluginID]; exists {
 		return fmt.Errorf("connector metadata already registered for %q", pluginID)
 	}
@@ -301,8 +317,38 @@ func RegisterPluginConnectorMetadata(pluginID, name, description string) error {
 		Priority:     100,
 		AuthType:     "none",
 		Capabilities: []string{"incremental", "deletion_sync"},
+		ConfigSchema: cloneSchema(configSchema),
+		Source:       ConnectorSourcePlugin,
 	}
 	return nil
+}
+
+// cloneSchema deep-copies a plugin config schema so callers (and the JSON
+// responses built from the registry) can never mutate the manifest in place.
+func cloneSchema(schema map[string]any) map[string]any {
+	if len(schema) == 0 {
+		return nil
+	}
+	cloned := make(map[string]any, len(schema))
+	for key, value := range schema {
+		cloned[key] = cloneSchemaValue(value)
+	}
+	return cloned
+}
+
+func cloneSchemaValue(value any) any {
+	switch value := value.(type) {
+	case map[string]any:
+		return cloneSchema(value)
+	case []any:
+		cloned := make([]any, len(value))
+		for i, item := range value {
+			cloned[i] = cloneSchemaValue(item)
+		}
+		return cloned
+	default:
+		return value
+	}
 }
 
 // ListAvailableConnectors returns all available connector metadata sorted by priority.
