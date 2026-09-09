@@ -37,6 +37,8 @@ export interface WebSearchProviderTypeInfo {
   description?: string
   docs_url?: string
   config_fields?: WebSearchProviderConfigField[]
+  /** "plugin" when the provider type is provided by an external plugin. */
+  source?: string
 }
 
 export interface WebSearchProviderConfigField {

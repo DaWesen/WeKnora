@@ -72,6 +72,15 @@ export interface ConnectorMeta {
   priority: number
   auth_type: string
   capabilities: string[]
+  /**
+   * Settings schema declared by an external plugin manifest. Built-in
+   * connectors leave it undefined because their fields are hardcoded in the
+   * editor; plugins use it so the UI can render configuration it has never
+   * seen before.
+   */
+  config_schema?: Record<string, any>
+  /** "builtin" for in-tree connectors, "plugin" for external plugins. */
+  source?: string
 }
 
 export interface Resource {

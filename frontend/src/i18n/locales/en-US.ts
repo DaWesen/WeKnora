@@ -1965,6 +1965,7 @@ export default {
   },
   common: {
     add: 'Add',
+    pluginBadge: 'Plugin',
     me: 'Me',
     confirm: 'Confirm',
     cancel: 'Cancel',
@@ -5656,6 +5657,9 @@ export default {
     connectionFailed: 'Connection failed',
     isRequired: 'is required',
     credentialsLabel: 'credentials',
+    pluginBadge: 'Plugin',
+    pluginSettings: 'Plugin configuration',
+    pluginNoSettings: 'This plugin declares no configuration; continue to the next step.',
     gitlab: {
       baseUrl: 'GitLab URL', accessToken: 'Personal access token', projects: 'GitLab projects',
       projectsHint: 'Enter a project ID or namespace path (for example group/project), with optional branch and directories.',

@@ -586,6 +586,8 @@ export interface ModelProviderOption {
     description: string;  // 描述
     defaultUrls: Record<string, string>;  // 按模型类型区分的默认 URL
     modelTypes: string[]; // 支持的模型类型
+    /** "plugin" when the provider is provided by an external plugin. */
+    source?: string;
 }
 
 // 获取模型厂商列表

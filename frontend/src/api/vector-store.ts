@@ -20,6 +20,8 @@ export interface VectorStoreTypeInfo {
   display_name: string
   connection_fields: FieldSchema[]
   index_fields: FieldSchema[]
+  /** "plugin" when the engine type is provided by an external plugin. */
+  source?: string
 }
 
 export interface FieldSchema {

@@ -13,6 +13,8 @@ import {
   deleteDataSource,
   putDataSourceCredentials,
   deleteDataSourceCredentials,
+  getConnectorTypes,
+  type ConnectorMeta,
   type DataSource,
   type Resource,
 } from '@/api/datasource'
@@ -477,6 +479,17 @@ const schedulePresets = computed(() => [
 ])
 
 // --- Connector definitions ---
+// One configuration field derived from a plugin's JSON schema. Plugin settings
+// are non-secret (a directory path, a base URL), so they are stored in
+// config.settings — unlike the credential fields above.
+interface SettingFieldDef {
+  key: string
+  label: string
+  description: string
+  required: boolean
+  multiline: boolean
+}
+
 interface ConnectorDef {
   type: string
   available: boolean
@@ -494,9 +507,16 @@ interface ConnectorDef {
     multiline?: boolean
     fieldType?: 'custom_headers'
   }[]
+  // Set for connectors discovered from the backend (external plugins) instead
+  // of being hardcoded below. Their i18n keys do not exist, so the UI falls
+  // back to the name/description reported by the host.
+  external?: boolean
+  displayName?: string
+  displayDescription?: string
+  settingsFields?: SettingFieldDef[]
 }
 
-const connectorDefs = computed<ConnectorDef[]>(() => [
+const builtinConnectorDefs = computed<ConnectorDef[]>(() => [
   {
     type: 'feishu',
     available: true,
@@ -636,7 +656,84 @@ const connectorDefs = computed<ConnectorDef[]>(() => [
 ])
 
 
+// --- Connectors discovered from the host (external plugins) ---
+//
+// The host registers every loaded datasource plugin under its own type id in
+// GET /datasource/types. Anything the UI does not know about is an external
+// plugin: it has no i18n copy and no hardcoded credential form, so its
+// configuration is rendered from the configSchema the plugin declared in its
+// manifest.
+const remoteConnectorTypes = ref<ConnectorMeta[]>([])
+
+async function loadRemoteConnectorTypes() {
+  try {
+    const res = await getConnectorTypes()
+    remoteConnectorTypes.value = (res?.data || res || []) as ConnectorMeta[]
+  } catch {
+    // A failure here must not block the dialog: built-in connectors keep
+    // working exactly as before.
+    remoteConnectorTypes.value = []
+  }
+}
+
+function settingsFieldsFromSchema(meta: ConnectorMeta): SettingFieldDef[] {
+  const schema = (meta.config_schema || {}) as Record<string, any>
+  const properties = (schema.properties || {}) as Record<string, any>
+  const required = new Set<string>((schema.required || []).map((v: any) => String(v)))
+  return Object.keys(properties).map(key => {
+    const property = properties[key] || {}
+    return {
+      key,
+      label: String(property.title || property.description || key),
+      description: property.title ? String(property.description || '') : '',
+      required: required.has(key),
+      multiline: property.type === 'array' || property.type === 'object',
+    }
+  })
+}
+
+const pluginConnectorDefs = computed<ConnectorDef[]>(() => {
+  const known = new Set(builtinConnectorDefs.value.map(d => d.type))
+  return remoteConnectorTypes.value
+    // Only types the host flags as plugin-provided. A built-in connector that
+    // simply has no hardcoded form here must not be mistaken for a plugin —
+    // it would render an empty, unusable configuration step.
+    .filter(meta => meta?.type && meta.source === 'plugin' && !known.has(meta.type))
+    .map(meta => ({
+      type: meta.type,
+      available: true,
+      docUrl: '',
+      permissionDocUrl: '',
+      permissionPageUrl: '',
+      requiredPermissions: [],
+      fields: [],
+      external: true,
+      displayName: meta.name,
+      displayDescription: meta.description,
+      settingsFields: settingsFieldsFromSchema(meta),
+    }))
+})
+
+const connectorDefs = computed<ConnectorDef[]>(() => [
+  ...builtinConnectorDefs.value,
+  ...pluginConnectorDefs.value,
+])
+
 const currentDef = computed(() => connectorDefs.value.find(d => d.type === form.value.type))
+
+// External plugin types have no i18n entries; fall back to host-reported text.
+function typeLabel(def: ConnectorDef): string {
+  if (!def.external) return t(`datasource.connector.${def.type}`)
+  return def.displayName || def.type
+}
+
+function typeDesc(def: ConnectorDef): string {
+  if (!def.external) return t(`datasource.connectorDesc.${def.type}`)
+  return def.displayDescription || ''
+}
+
+const isExternalConnector = (type: string) =>
+  connectorDefs.value.some(d => d.type === type && d.external)
 
 // --- Drawer lifecycle ---
 watch(visible, async (v) => {
@@ -652,6 +749,9 @@ watch(visible, async (v) => {
     return
   }
   step.value = isEdit.value ? 1 : 0
+  // Refresh on every open so a plugin installed while the page was open shows
+  // up in the type grid without a reload.
+  void loadRemoteConnectorTypes()
   testResult.value = ''
   testErrorMsg.value = ''
   tempDsId.value = ''
@@ -765,8 +865,9 @@ watch(
 function selectType(def: ConnectorDef) {
   if (!def.available) return
   form.value.type = def.type
-  form.value.name = t(`datasource.connector.${def.type}`)
+  form.value.name = typeLabel(def)
   form.value.config.credentials = {}
+  if (def.external) form.value.config.settings = {}
   if (isGitLabConnector(def.type)) addGitLabProject()
   rssAuthHeaders.value = []
   step.value = 1
@@ -776,6 +877,25 @@ function selectType(def: ConnectorDef) {
 async function testConnection() {
   syncRssAuthHeadersToCredentials()
   if (!validateRssFeedUrls()) return
+  // External plugins expose no credentials; their settings ARE the config the
+  // host hands to the plugin, so they are what gets validated.
+  if (isExternalConnector(form.value.type)) {
+    if (!validateStep1Fields()) return
+    testing.value = true
+    testResult.value = ''
+    testErrorMsg.value = ''
+    try {
+      await validateCredentials(form.value.type, { ...form.value.config.settings })
+      testResult.value = 'success'
+      MessagePlugin.success(t('datasource.testSuccess'))
+    } catch (e: any) {
+      testResult.value = 'error'
+      testErrorMsg.value = e?.message || e?.error || ''
+      MessagePlugin.error(t('datasource.testFailed'))
+    }
+    testing.value = false
+    return
+  }
   if (!isEdit.value || !credentialsConfigured.value || replaceCredentialsMode.value) {
     const fields = currentDef.value?.fields || []
     for (const f of fields) {
@@ -978,6 +1098,15 @@ function validateStep1Fields(): boolean {
     if (f.optional || f.fieldType === 'custom_headers') continue
     if (!form.value.config.credentials[f.key]) {
       MessagePlugin.warning(`${t(f.labelKey)} ${t('datasource.isRequired')}`)
+      return false
+    }
+  }
+
+  // External plugins: required settings come from the manifest configSchema.
+  for (const f of currentDef.value?.settingsFields || []) {
+    if (!f.required) continue
+    if (!String(form.value.config.settings?.[f.key] ?? '').trim()) {
+      MessagePlugin.warning(`${f.label} ${t('datasource.isRequired')}`)
       return false
     }
   }
@@ -1307,16 +1436,52 @@ const drawerConfirmText = computed(() => {
         >
           <div class="ds-type-header">
             <DataSourceTypeIcon :type="def.type" :size="20" />
-            <span class="ds-type-name">{{ t(`datasource.connector.${def.type}`) }}</span>
+            <span class="ds-type-name">{{ typeLabel(def) }}</span>
             <span v-if="!def.available" class="ds-type-soon">{{ t('datasource.comingSoon') }}</span>
+            <span v-else-if="def.external" class="ds-type-soon">{{ t('datasource.pluginBadge') }}</span>
           </div>
-          <div class="ds-type-desc">{{ t(`datasource.connectorDesc.${def.type}`) }}</div>
+          <div class="ds-type-desc">{{ typeDesc(def) }}</div>
         </button>
       </div>
     </section>
 
     <!-- Step 1: Credentials -->
     <template v-if="step === 1">
+      <!-- External plugins carry no credentials; their configuration comes
+           from the configSchema declared in the plugin manifest and is stored
+           in config.settings. -->
+      <section v-if="currentDef?.external" class="setting-drawer__section">
+        <h4 class="setting-drawer__section-title">{{ t('datasource.pluginSettings') }}</h4>
+        <p v-if="currentDef.displayDescription" class="ds-resource-hint">
+          {{ currentDef.displayDescription }}
+        </p>
+        <div
+          v-for="field in currentDef.settingsFields || []"
+          :key="field.key"
+          class="form-item"
+        >
+          <label class="form-label" :class="{ required: field.required }">{{ field.label }}</label>
+          <t-textarea
+            v-if="field.multiline"
+            v-model="form.config.settings[field.key]"
+            :placeholder="field.description"
+            :autosize="{ minRows: 2, maxRows: 6 }"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <t-input
+            v-else
+            v-model="form.config.settings[field.key]"
+            :placeholder="field.description"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <p v-if="field.description" class="form-desc">{{ field.description }}</p>
+        </div>
+        <div v-if="(currentDef.settingsFields || []).length === 0" class="ds-resource-hint">
+          {{ t('datasource.pluginNoSettings') }}
+        </div>
+      </section>
       <div
         v-if="currentDef && currentDef.requiredPermissions.length > 0"
         class="ds-setup-guide ds-setup-guide--standalone"

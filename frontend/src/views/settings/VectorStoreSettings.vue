@@ -225,8 +225,13 @@
                   v-for="st in storeTypes"
                   :key="st.type"
                   :value="st.type"
-                  :label="st.display_name"
-                />
+                  :disabled="st.source === 'plugin'"
+                >
+                  <span class="vs-type-option">
+                    <span>{{ st.display_name }}</span>
+                    <span v-if="st.source === 'plugin'" class="vs-type-option__badge">{{ t('common.pluginBadge') }}</span>
+                  </span>
+                </t-option>
               </t-select>
             </div>
 
@@ -757,6 +762,24 @@ onMounted(async () => {
 <style lang="less" scoped>
 .vectorstore-settings {
   width: 100%;
+}
+
+// 引擎类型下拉项：插件引擎带徽章（插件引擎为只读检索，不参与创建）。
+.vs-type-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.vs-type-option__badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--td-text-color-placeholder);
+  background: var(--td-bg-color-component);
+  padding: 1px 6px;
+  border-radius: 3px;
 }
 
 .section-header {

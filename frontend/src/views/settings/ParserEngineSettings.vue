@@ -67,6 +67,7 @@
           <div class="engine-card__body">
             <div class="engine-card__header">
               <h3 class="engine-card__title">{{ getEngineDisplayName(engine.Name) }}</h3>
+              <span v-if="engine.Source === 'plugin'" class="engine-plugin-badge">{{ t('common.pluginBadge') }}</span>
               <span v-if="engine.Available" class="engine-card__status engine-card__status--on">
                 <span class="engine-card__status-dot" />
                 {{ $t('settings.parser.available') }}
@@ -866,6 +867,16 @@ onMounted(loadAll)
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+// 插件引擎标识：与数据源类型选择的插件徽章同款小号灰底标签。
+.engine-plugin-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--td-text-color-placeholder);
+  background: var(--td-bg-color-component);
+  padding: 1px 6px;
+  border-radius: 3px;
 }
 
 // 与 McpSettings 一致的 dot+文字状态徽章。on=绿、err=红、help 用 cursor:help 提示。

@@ -107,6 +107,8 @@ export interface ParserEngineInfo {
   FileTypes: string[]
   Available?: boolean
   UnavailableReason?: string
+  /** "plugin" when the engine is provided by an external plugin. */
+  Source?: string
 }
 
 /** 解析引擎配置（引擎连接参数存空间；聊天附件解析策略在智能体中配置） */

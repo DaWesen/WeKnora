@@ -166,7 +166,10 @@
               <t-option v-for="opt in providerOptions" :key="opt.value" :value="opt.value" :label="opt.label"
                 :show-overflow-tooltip="false">
                 <div class="provider-option">
-                  <span class="provider-name">{{ opt.label }}</span>
+                  <div class="provider-option__title">
+                    <span class="provider-name">{{ opt.label }}</span>
+                    <span v-if="opt.source === 'plugin'" class="provider-option__plugin-badge">{{ $t('common.pluginBadge') }}</span>
+                  </div>
                   <span class="provider-desc">{{ opt.description }}</span>
                 </div>
               </t-option>
@@ -2409,11 +2412,28 @@ const handleCancel = () => {
     width: 100%;
     min-width: 0;
 
+    .provider-option__title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
     .provider-name {
       font-size: 13px;
       font-weight: 500;
       color: var(--td-text-color-primary);
       line-height: 20px;
+    }
+
+    // 插件厂商标识：与解析引擎/数据源的插件徽章同款小号灰底标签。
+    .provider-option__plugin-badge {
+      flex-shrink: 0;
+      font-size: 10px;
+      color: var(--td-text-color-placeholder);
+      background: var(--td-bg-color-component);
+      padding: 1px 6px;
+      border-radius: 3px;
     }
 
     .provider-desc {

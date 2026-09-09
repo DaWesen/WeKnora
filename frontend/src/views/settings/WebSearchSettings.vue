@@ -43,6 +43,7 @@
         <div class="provider-card__body">
           <div class="provider-card__header">
             <h3 class="provider-card__title" :title="entity.name">{{ entity.name }}</h3>
+            <span v-if="isPluginProvider(entity.provider)" class="provider-plugin-badge">{{ t('common.pluginBadge') }}</span>
             <div
               v-if="getProviderOptions(entity).length > 0"
               class="provider-card__actions"
@@ -183,7 +184,12 @@
                 "免费"分类对用户决策没什么帮助（DuckDuckGo / SearXNG 也都
                 需要可用的网络/自托管实例），反而占视觉空间。
               -->
-              <t-option v-for="pt in providerTypes" :key="pt.id" :value="pt.id" :label="pt.name" />
+              <t-option v-for="pt in providerTypes" :key="pt.id" :value="pt.id">
+                <span class="provider-option">
+                  <span>{{ pt.name }}</span>
+                  <span v-if="pt.source === 'plugin'" class="provider-option__badge">{{ t('common.pluginBadge') }}</span>
+                </span>
+              </t-option>
             </t-select>
           </div>
 
@@ -485,6 +491,10 @@ const badgeStyle = (providerId: string): Record<string, string> => {
 
 const providerTypeLabel = (providerId: string) => {
   return providerTypes.value.find(p => p.id === providerId)?.name || providerId
+}
+
+const isPluginProvider = (providerId: string) => {
+  return providerTypes.value.find(p => p.id === providerId)?.source === 'plugin'
 }
 
 const configFieldText = (key: string | undefined, fallback: string) => {
@@ -946,6 +956,25 @@ onMounted(async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+// 插件 provider 标识：与解析引擎/数据源的插件徽章同款小号灰底标签。
+.provider-plugin-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--td-text-color-placeholder);
+  background: var(--td-bg-color-component);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.provider-option__badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--td-text-color-placeholder);
+  background: var(--td-bg-color-component);
+  padding: 1px 6px;
+  border-radius: 3px;
 }
 
 .provider-card__more {

@@ -630,6 +630,9 @@ export default {
     connectionFailed: 'Подключение не удалось',
     isRequired: 'обязательно для заполнения',
     credentialsLabel: 'учётные данные',
+    pluginBadge: 'Плагин',
+    pluginSettings: 'Настройки плагина',
+    pluginNoSettings: 'Этот плагин не объявляет настроек — переходите к следующему шагу.',
     gitlab: {
       baseUrl: 'URL GitLab', accessToken: 'Персональный токен доступа', projects: 'Проекты GitLab',
       projectsHint: 'Укажите ID проекта или путь в пространстве имён (например group/project), а также при необходимости ветку и каталоги.',
@@ -4439,6 +4442,7 @@ export default {
   },
   common: {
     add: 'Добавить',
+    pluginBadge: 'Плагин',
     me: 'Я',
     confirm: 'Подтвердить',
     cancel: 'Отмена',

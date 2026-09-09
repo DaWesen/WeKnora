@@ -630,6 +630,9 @@ export default {
     connectionFailed: '连接失败',
     isRequired: '为必填项',
     credentialsLabel: '凭证',
+    pluginBadge: '插件',
+    pluginSettings: '插件配置',
+    pluginNoSettings: '该插件未声明配置项，可直接进入下一步。',
     gitlab: {
       baseUrl: 'GitLab 地址',
       accessToken: '个人访问令牌',
@@ -4441,6 +4444,7 @@ export default {
   },
   common: {
     add: '添加',
+    pluginBadge: '插件',
     me: '我',
     confirm: '确认',
     cancel: '取消',
