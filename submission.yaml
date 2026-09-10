@@ -11,5 +11,5 @@ result:
 repository:
   url: "https://github.com/DaWesen/WeKnora.git"
   branch: "feat/plugin-grpc-framework"
-  commit: "f48301c9e65d51d78d468eea4d980f08d433d26a"
+  commit: "3f6c0e2fcd7f6908ac61783389b35a48bbe823ad"
   tag: "rhino-2026-final-1"
