@@ -1,0 +1,15 @@
+version: 1
+student:
+  name: "<您的真实姓名>"
+  github_id: "DaWesen"
+topic:
+  id: "1"
+  title: "扩展能力插件化框架"
+result:
+  type: code
+  url: "https://github.com/DaWesen/WeKnora"
+repository:
+  url: "https://github.com/DaWesen/WeKnora.git"
+  branch: "feat/plugin-grpc-framework"
+  commit: "f48301c9e65d51d78d468eea4d980f08d433d26a"
+  tag: "rhino-2026-final-1"
