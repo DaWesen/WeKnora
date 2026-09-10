@@ -60,3 +60,13 @@ miniprogram/project.private.config.json
 
 # Staging dir for the Docker sandbox self-check probe (removed after each run)
 .weknora-sandbox-check-*
+
+# 本地运行时插件与工具（编译产物/脚本，勿提交）
+plugins/
+tools/
+
+# 示例插件编译产物（勿提交；源码已在仓库中）
+examples/standalone-repo/local-files/weknora-plugin-local-files
+examples/wasm-parser-plugin/parser.wasm
+
+

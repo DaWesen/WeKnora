@@ -44,6 +44,11 @@ WeKnora-lite
 /build/
 cmd/desktop/build/bin/
 
+# 本地插件二进制与回滚快照（dev 产物；运行期由 compose bind mount 提供，无需进入镜像。
+# 三个 15MB 的 weknora-plugin-local-files 在 WSL 挂载下让 app context 传输变慢 100s+）
+plugins/
+examples/standalone-repo/
+
 # 本地数据 / 模型文件
 /models/
 data/files/
