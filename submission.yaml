@@ -7,7 +7,7 @@ topic:
   title: "扩展能力插件化框架"
 result:
   type: code
-  url: "https://github.com/DaWesen/WeKnora"
+  url: "https://github.com/DaWesen/WeKnora/tree/rhino-2026-final-1"
 repository:
   url: "https://github.com/DaWesen/WeKnora.git"
   branch: "feat/plugin-grpc-framework"
