@@ -563,7 +563,10 @@ spec:
     properties:
       rootPath: { type: string }
   permissions:
-    network: { enabled: false }    # 本地目录插件不需要网络
+    # 进程模式不能声明禁网：宿主只在容器运行时（container）下强制网络隔离，
+    # 进程插件声明 network.enabled: false 会被 lint / 装载器拒绝。
+    # 需要离线且强制隔离时改用容器形态，参考 plugin.container.yaml 示例。
+    network: { enabled: true }
     filesystem: { readOnly: [] }
 ```
 
