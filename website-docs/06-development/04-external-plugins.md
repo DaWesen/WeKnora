@@ -33,7 +33,7 @@ examples/local-files-plugin/
 - [Deterministic Models 示例](https://github.com/Tencent/WeKnora/tree/main/examples/model-provider-plugin)（model_provider 扩展）：完全离线的确定性模型 provider——echo 流式 Chat、hashing trick 向量 Embed、词重叠评分 Rerank，无需网络与 API key。演示 model provider 三个推理 RPC（`Chat`/`Embed`/`Rerank`）的完整实现与流式协议形状。
 - [Memory Vector Retriever 示例](https://github.com/Tencent/WeKnora/tree/main/examples/retriever-plugin)（retriever 扩展）：进程内内存向量检索引擎，实现完整索引生命周期全部 9 个 RPC（写入/删除/拷贝/状态更新/查询）。接收宿主计算的 embedding 并按余弦相似度召回，演示声明 `index` capability 的检索插件如何注册为完整索引后端。
 - [Markdown & Plain Text Parser 示例](https://github.com/Tencent/WeKnora/tree/main/examples/document-parser-plugin)（document_parser 扩展）：Markdown/纯文本解析引擎，零第三方依赖——换行归一、YAML front matter 提取为 metadata、标题提升、纯文本分段转 Markdown。演示 document parser 扩展的完整开发流程，含 `ParseStream` 分块上传实现（声明 `stream` capability 后大文件不再受 unary 4MB 限制）。
-- [Standalone Repo 示例](https://github.com/Tencent/WeKnora/tree/main/examples/standalone-repo/local-files)（独立仓库形态）：以独立 Go module 的形式实现 local-files 数据源插件，不 import 主仓任何包、仅依赖 `sdk/plugin`，并附增量同步测试。配合下方"从零构建一个插件"教程使用。
+- [Standalone Repo 示例](https://github.com/Tencent/WeKnora/tree/main/examples/standalone-repo/local-files)（独立仓库形态）：以独立 Go module 的形式实现 local-files 数据源插件，不 import 主仓任何包、仅依赖 `sdk/plugin`，并附增量同步测试。该插件同时托管为独立仓库 [weknora-plugin-local-files](https://github.com/DaWesen/weknora-plugin-local-files)（独立构建、独立测试、内嵌 SDK，不依赖主仓）。配合下方"从零构建一个插件"教程使用。
 
 按照示例 README 构建程序或镜像，将单个插件放入插件根目录的子目录，并设置：
 
@@ -466,7 +466,7 @@ docker compose up -d app
 
 ## 从零构建一个插件（逐步教程）
 
-本节演示如何在一个**全新目录**中从零写出一个最小可运行的 WeKnora datasource 插件，不 clone 主仓、不修改主仓代码。完整代码见 [standalone-repo 示例](https://github.com/Tencent/WeKnora/tree/main/examples/standalone-repo/local-files)。
+本节演示如何在一个**全新目录**中从零写出一个最小可运行的 WeKnora datasource 插件，不 clone 主仓、不修改主仓代码。完整代码见 [standalone-repo 示例](https://github.com/Tencent/WeKnora/tree/main/examples/standalone-repo/local-files)，也可直接克隆独立仓库 [weknora-plugin-local-files](https://github.com/DaWesen/weknora-plugin-local-files) 作为起点。
 
 ### 第 1 步：创建模块
 
